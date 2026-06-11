@@ -2,6 +2,11 @@
 
 # Madapp
 
+**The project owner is not a developer.** Claude does all coding and terminal
+work; explain technical matters in plain language, give click-by-click steps
+when the owner must do something himself (accounts, websites, simulators), and
+frame decisions as product trade-offs rather than technical ones.
+
 Meal-planning app for families: recipes, weekly meal plan, auto-generated
 shopping list with real-time sync across household members. Target: iOS App
 Store first, Android later.
