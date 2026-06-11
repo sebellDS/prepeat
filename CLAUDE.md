@@ -14,7 +14,8 @@ Store first, Android later.
 **Read [docs/projektgrundlag.md](docs/projektgrundlag.md) before making product
 or data-model decisions.** It records the agreed scope (v1 vs later vs
 deliberately excluded), the data model, and the core principles. The document
-is in Danish; the app's UI language is Danish too.
+is in Danish (it predates this decision), but the app's UI language is
+English – the app targets an international audience. App name TBD.
 
 ## Stack
 
