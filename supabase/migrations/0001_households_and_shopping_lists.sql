@@ -1,4 +1,4 @@
--- Madapp – initial schema (minimal slice: what the shopping list needs).
+-- Prep+Eat – initial schema (minimal slice: what the shopping list needs).
 -- Recipes and meal plans arrive in later migrations; shopping_list_items
 -- therefore keeps source_entry_id as a plain uuid until meal_plan_entries
 -- exists to reference.
@@ -78,7 +78,7 @@ $$;
 create table public.shopping_lists (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households (id) on delete cascade,
-  name text not null default 'Indkøbsliste',
+  name text not null default 'Shopping list',
   week_start_date date,
   created_by_user_id uuid not null references auth.users (id),
   created_at timestamptz not null default now(),

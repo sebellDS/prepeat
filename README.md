@@ -1,43 +1,46 @@
-# Madapp
+# Prep+Eat
 
-Madplanlægning for familier: opskrifter, ugeplan og en delt indkøbsliste med
-real-time sync mellem husstandens medlemmer.
+Meal planning for families: recipes, a weekly plan, and a shared shopping
+list that syncs in real time across household members.
 
-Projektgrundlaget – beslutninger, datamodel og scope – ligger i
-[docs/projektgrundlag.md](docs/projektgrundlag.md).
+*Prep. Eat. Repeat.*
+
+The project foundation – decisions, data model and scope – lives in
+[docs/projektgrundlag.md](docs/projektgrundlag.md) (in Danish; it predates the
+decision to target an international audience).
 
 ## Stack
 
 - [Expo](https://expo.dev) (React Native) + TypeScript
-- [NativeWind](https://www.nativewind.dev) (Tailwind til React Native)
+- [NativeWind](https://www.nativewind.dev) (Tailwind for React Native)
 - [Supabase](https://supabase.com) – Postgres, Realtime, Auth, RLS
 
-## Kom i gang
+## Getting started
 
-1. Installer afhængigheder:
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Opret `.env` ud fra `.env.example` og udfyld Supabase-nøglerne
-   (Project Settings → API i Supabase-dashboardet).
+2. Create `.env` from `.env.example` and fill in the Supabase keys
+   (Project Settings → API in the Supabase dashboard).
 
-3. Kør database-migrationerne i `supabase/migrations/` mod dit
-   Supabase-projekt (via SQL-editoren eller `supabase db push`).
+3. Run the database migrations in `supabase/migrations/` against your
+   Supabase project (via the SQL editor or `supabase db push`).
 
-4. Start dev-serveren:
+4. Start the dev server:
 
    ```bash
    npm start
    ```
 
-   Tryk `i` for at åbne iOS-simulatoren.
+   Press `i` to open the iOS simulator.
 
-## Struktur
+## Structure
 
-- `src/app/` – skærme (expo-router, file-based routing)
-- `src/components/` – delte UI-komponenter
-- `src/lib/` – Supabase-klient og dataadgang
-- `supabase/migrations/` – databaseskema, nummererede SQL-migrationer
-- `docs/` – projektgrundlag og beslutninger
+- `src/app/` – screens (expo-router, file-based routing)
+- `src/components/` – shared UI components
+- `src/lib/` – Supabase client and data access
+- `supabase/migrations/` – database schema, numbered SQL migrations
+- `docs/` – project foundation and decisions

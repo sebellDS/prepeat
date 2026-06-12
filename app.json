@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "madapp",
-    "slug": "madapp",
+    "name": "Prep+Eat",
+    "slug": "prepeat",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "madapp",
+    "scheme": "prepeat",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"

@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Madapp
+# Prep+Eat
 
 **The project owner is not a developer.** Claude does all coding and terminal
 work; explain technical matters in plain language, give click-by-click steps
@@ -15,7 +15,12 @@ Store first, Android later.
 or data-model decisions.** It records the agreed scope (v1 vs later vs
 deliberately excluded), the data model, and the core principles. The document
 is in Danish (it predates this decision), but the app's UI language is
-English – the app targets an international audience. App name TBD.
+English – the app targets an international audience.
+
+The app is named **Prep+Eat** (decided 2026-06-12): "Prep+Eat" is the visual
+wordmark (the + is the brand mark), "Prepeat" (pronounced PREP-eat) is the
+plain-text form used for slug, scheme, domains and handles. Tagline: "Prep.
+Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
 
 ## Stack
 
