@@ -13,9 +13,8 @@ Store first, Android later.
 
 **Read [docs/projektgrundlag.md](docs/projektgrundlag.md) before making product
 or data-model decisions.** It records the agreed scope (v1 vs later vs
-deliberately excluded), the data model, and the core principles. The document
-is in Danish (it predates this decision), but the app's UI language is
-English – the app targets an international audience.
+deliberately excluded), the data model, and the core principles. The app's UI
+language is English and it targets an international audience.
 
 The app is named **Prep+Eat** (decided 2026-06-12): "Prep+Eat" is the visual
 wordmark (the + is the brand mark), "Prepeat" (pronounced PREP-eat) is the
@@ -52,8 +51,11 @@ Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
   Household-scoped access goes through `is_household_member()`.
 - Key data-model principles (from projektgrundlag): ingredients are
   snapshotted onto the meal plan (never read live from recipes), soft delete
-  via `deleted_at`, last-write-wins concurrency via `updated_at`, recipes are
-  owned by users while meal plans and shopping lists are owned by households.
+  via `deleted_at`, last-write-wins concurrency via `updated_at`. Recipes,
+  meal plans and shopping lists are all owned by the household; recipes carry
+  `created_by_user_id` for attribution and use copy-on-leave so a departing
+  member keeps a snapshot. Every user always belongs to at least one
+  household.
 - Realtime only where it matters: shopping list and meal plan. Not recipe
   editing.
 

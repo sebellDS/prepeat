@@ -1,152 +1,249 @@
-# Madapp – Projektgrundlag
+# Prep+Eat – Project Foundation
 
-Et samlet dokument over beslutninger, stack og datamodel for en familie-mad-app. Udgangspunkt for videre arbejde i et dedikeret projekt.
+A single document capturing the decisions, stack and data model for a family
+meal-planning app. The basis for further work in a dedicated project.
 
-## Appens formål
+> Formerly working-titled "Madapp". The app is now **Prep+Eat** (plain-text
+> form "Prepeat"). UI language is English; audience is international.
 
-En mobilapp til madplanlægning for familier. Kernefunktionalitet:
+## Purpose
 
-- **Opskrifter**: tilføjes manuelt eller importeres fra URL
-- **Ugeplan**: planlægning af måltider for en uge ad gangen
-- **Indkøbsliste**: genereres automatisk fra ugeplanen, kan også redigeres manuelt
-- **Familiedeling**: flere familiemedlemmer deler opskrifter, ugeplan og indkøbsliste
-- **Real-time sync**: afkrydsning i indkøbslisten på én telefon opdateres øjeblikkeligt på de andres
+A mobile app for family meal planning. Core functionality:
 
-Målet er udgivelse på App Store (iOS), eventuelt Android senere.
+- **Recipes**: added manually or imported from a URL
+- **Weekly plan**: planning meals one week at a time
+- **Shopping list**: generated automatically from the weekly plan, also
+  editable manually
+- **Family sharing**: several family members share recipes, the weekly plan
+  and the shopping list
+- **Real-time sync**: ticking off an item on one phone updates everyone
+  else's instantly
 
-## Teknologivalg
+The goal is release on the App Store (iOS), possibly Android later.
+
+## Technology choices
 
 **Platform: React Native via Expo**
 
-Ingen af appens features kræver native iOS. Real-time sync, URL-parsing og delt data er alle områder, hvor React Native-økosystemet er stærkt eller stærkere end native. Expo fjerner det meste af besværet omkring iOS-signering og App Store-udgivelse via EAS Build. Android kan tilføjes senere uden at bygge alt om.
+None of the app's features require native iOS. Real-time sync, URL parsing and
+shared data are all areas where the React Native ecosystem is strong or
+stronger than native. Expo removes most of the hassle around iOS signing and
+App Store release via EAS Build. Android can be added later without rebuilding
+everything.
 
 ### Stack
 
-- **Expo** (React Native-rammen)
-- **TypeScript** – bedre AI-genereret kode, tidlig fejlfangst
-- **Supabase** – Postgres, realtime, auth og row-level security i én pakke
-- **NativeWind** (Tailwind til React Native) – hvis Figma-designet bruger Tailwind-tokens, oversætter det pænt
-- **Supabase Edge Functions** – til backend URL-parsing
+- **Expo** (the React Native framework)
+- **TypeScript** – better AI-generated code, early error catching
+- **Supabase** – Postgres, realtime, auth and row-level security in one package
+- **NativeWind** (Tailwind for React Native) – translates cleanly if the Figma
+  design uses Tailwind tokens
+- **Supabase Edge Functions** – for backend URL parsing
 
 ### Workflow
 
-- Design i Figma med Auto Layout, navngivne komponenter og variables til farver/typografi
-- Claude Code læser Figma-frames via Figma MCP-integration og bygger skærmene
-- Git-versioneret kode, committet af udvikleren efter review
+- Design in Figma with Auto Layout, named components and variables for
+  colors/typography
+- Claude Code reads Figma frames via the Figma MCP integration and builds the
+  screens
+- Git-versioned code, committed after review
 
-## Kernebeslutninger (datamodel)
+## Core decisions (data model)
 
-### 1. Opskrifter ejes personligt, ikke af husstanden
+> The household and recipe-ownership decisions below were revised on
+> 2026-06-12 after working through the full household lifecycle (create,
+> invite/join, multi-household, leave, merge). The reasoning is preserved so
+> the "why" survives.
 
-Spejler hvordan folk faktisk tænker ("det er min mors opskrift"). Opskrifter deles med en husstand, men ejes af en bruger. Ved fraflytning tager brugeren sine opskrifter med.
+### 1. Recipes are owned by the household (with copy-on-leave)
 
-### 2. Flere husstande pr. bruger (i datamodellen, skjult i v1-UI)
+Within a family the cookbook is shared. Every recipe a household has is
+automatically visible to all its members – no "share" button, no "mine vs
+shared" distinction. This matches how a family actually thinks about its
+cookbook, and keeps both the data model and the UI simple (no `recipe_shares`
+table, no per-recipe sharing step).
 
-Datamodellen understøtter, at en bruger kan være i flere husstande (relevant for skilte forældre, bofællesskaber osv.). I v1 viser UI'et kun én husstand for at holde kompleksiteten nede. Det koster stort set intet i datamodellen og undgår smertefuld migration senere.
+The classic counter-argument – "take your recipes with you when you move out"
+– is solved by **copy-on-leave**: when a member leaves a household, that
+household's recipes are copied into a personal household for the person
+leaving. From that moment the two cookbooks drift apart (the snapshot
+principle, same as decision #5) – edits made after the split do not cross
+over. Everyday life is therefore as simple as possible, and only the rare
+leaving event costs a little extra work.
 
-### 3. Ugeplan og indkøbsliste ejes af husstanden
+Attribution is preserved via `created_by_user_id` on the recipe ("added by
+Anna") without making ownership personal.
 
-Det er hele pointen med delingen.
+This resolves the old open question "fork vs share": because recipes are
+household-owned and copies are made at lifecycle moments, a per-recipe fork
+feature is not needed for v1.
 
-### 4. Ingredienser "snapshottes" ved planlægning
+### 2. Every user always belongs to at least one household
 
-Når en opskrift sættes på ugeplanen, kopieres ingredienserne ind i `meal_plan_entry_ingredients`. Indkøbslisten læser fra snapshots, ikke fra opskriften selv. Det betyder at ændringer eller sletning af en opskrift ikke bryder ugeplan eller indkøbsliste – samme princip som en faktura-linje, der ikke må ændre sig.
+There is no such thing as a household-less user. At sign-up a household is
+created automatically (a "household of one") unless the user joins an existing
+one via an invite. A solo household is not a special type – just a household
+with one member; it grows when someone is invited. This invariant removes a
+whole category of edge cases: no "you have no family yet" empty state, and the
+user's data always has a home to live in.
 
-### 5. Ingen roller i v1
+### 3. Multiple households per user (model supports it, switcher deferred)
 
-Alle husstandsmedlemmer er ligeværdige. Der er ingen owner/member-distinktion. Rolle-kolonnen kan tilføjes senere hvis behovet opstår.
+The data model supports a user being a member of several households at the
+same time (separated parents, helping aging parents, shared housing plus
+family). It costs next to nothing in `household_members` (a join table). In v1
+the UI shows only one household, to avoid a "which family am I looking at now?"
+switcher on every screen. Because recipes are household-owned, each household
+has its own cookbook – which for the two-homes case is actually the correct
+behavior. Moving a recipe between your own households is a simple "copy to my
+other kitchen" action (the same copy mechanic as copy-on-leave).
 
-## Datamodel
+**Merging households** is a related future operation: two households are
+combined into one by adding one's members to the other and copying one's
+recipes across; one household's active weekly plan / shopping list is kept and
+the other's archived (two weekly plans cannot be meaningfully fused).
+Implemented by letting one household "survive" rather than minting a third.
+Deferred to v1.1+.
 
-### Brugere og husstande
+### 4. Weekly plan and shopping list are owned by the household
 
-- `users` – håndteres primært af Supabase Auth
+That is the whole point of sharing.
+
+### 5. Ingredients are "snapshotted" at planning time
+
+When a recipe is added to the weekly plan, its ingredients are copied into
+`meal_plan_entry_ingredients`. The shopping list reads from the snapshots, not
+from the recipe itself. This means changing or deleting a recipe does not break
+the weekly plan or shopping list – the same principle as an invoice line that
+must not change retroactively.
+
+### 6. No roles in v1
+
+All household members are equal. There is no owner/member distinction. A role
+column can be added later if the need arises.
+
+## Data model
+
+### Users and households
+
+- `users` – handled mainly by Supabase Auth
 - `households` – id, name, created_at, updated_at
-- `household_members` – user_id, household_id, joined_at (join-tabel)
-- `household_invites` – id, household_id, code (unik), created_by, expires_at, used_at, used_by_user_id
+- `household_members` – user_id, household_id, joined_at (join table; multiple
+  rows per user supports multi-household)
+- `household_invites` – id, household_id, code (unique), created_by,
+  expires_at, used_at, used_by_user_id
 
-### Opskrifter
+### Recipes
 
-- `recipes` – id, owner_user_id, title, description, source_url, servings, prep_time, cook_time, image_url, created_at, updated_at, deleted_at
-- `recipe_ingredients` – id, recipe_id, name, quantity, unit, note, sort_order, aisle/category (optional)
+- `recipes` – id, household_id, created_by_user_id, title, description,
+  source_url, servings, prep_time, cook_time, image_url, forked_from_recipe_id
+  (nullable – set when the recipe is a copy), created_at, updated_at, deleted_at
+- `recipe_ingredients` – id, recipe_id, name, quantity, unit, note, sort_order,
+  aisle/category (optional)
 - `recipe_steps` – id, recipe_id, step_number, text
-- `recipe_shares` – recipe_id, household_id (hvilke husstande en opskrift er delt med)
+- `recipe_shares` – **removed.** Recipes are household-owned, so everything in
+  a household is shared by definition. The "share with another household"
+  concept is replaced by copying recipes between households at lifecycle
+  moments (leave, merge, copy-to-my-other-kitchen).
 
-### Måltidsplanlægning
+### Meal planning
 
-- `meal_plans` – id, household_id, week_start_date (mandag), created_at, updated_at, deleted_at
-- `meal_plan_entries` – id, meal_plan_id, date, meal_type (breakfast/lunch/dinner/snack), recipe_id, servings_override
-- `meal_plan_entry_ingredients` – id, entry_id, name, quantity, unit, note (snapshot fra opskriften på planlægningstidspunktet)
+- `meal_plans` – id, household_id, week_start_date (Monday), created_at,
+  updated_at, deleted_at
+- `meal_plan_entries` – id, meal_plan_id, date, meal_type
+  (breakfast/lunch/dinner/snack), recipe_id, servings_override
+- `meal_plan_entry_ingredients` – id, entry_id, name, quantity, unit, note
+  (snapshot from the recipe at planning time)
 
-### Indkøbsliste
+### Shopping list
 
-- `shopping_lists` – id, household_id, name, week_start_date (optional), created_at, updated_at, deleted_at
-- `shopping_list_items` – id, list_id, name, quantity, unit, aisle, is_checked, checked_by_user_id, checked_at, added_manually (bool), source_entry_id (nullable, peger på meal_plan_entry hvis auto-genereret), updated_at
+- `shopping_lists` – id, household_id, name, week_start_date (optional),
+  created_at, updated_at, deleted_at
+- `shopping_list_items` – id, list_id, name, quantity, unit, aisle, is_checked,
+  checked_by_user_id, checked_at, added_manually (bool), source_entry_id
+  (nullable, points to a meal_plan_entry if auto-generated), updated_at
 
-### Gennemgående felter
+### Cross-cutting fields
 
-- `created_at`, `updated_at`, `created_by_user_id` på alle hovedtabeller
-- `deleted_at` (soft delete) på recipes, shopping_lists, meal_plans
-- `updated_at` er kritisk for "last write wins" concurrency
+- `created_at`, `updated_at`, `created_by_user_id` on all main tables
+- `deleted_at` (soft delete) on recipes, shopping_lists, meal_plans
+- `updated_at` is critical for "last write wins" concurrency
 
-## Scope i v1
+## Scope in v1
 
-### Med i v1 (MVP)
+### In v1 (MVP)
 
-- Personlige opskrifter (manuel oprettelse + URL-import med schema.org fallback)
-- Én husstand pr. bruger i UI (multi-household i datamodel)
-- Ugeplan pr. uge
-- Indkøbsliste genereret fra ugeplan + manuel tilføjelse
-- Real-time sync af indkøbslisten og ugeplanen
-- Invite-flow via link/kode
-- Simpel ingrediens-sammenlægning (match på trimmet, lowercased name + unit)
-- Snapshot af ingredienser ved planlægning
-- Optimistic updates og loading states i indkøbslisten
+- Household-owned recipes (manual creation + URL import with schema.org
+  fallback)
+- Auto-created household at sign-up; every user always has at least one
+  household
+- One household per user in the UI (multi-household in the data model)
+- Weekly plan, one week at a time
+- Shopping list generated from the weekly plan + manual additions
+- Real-time sync of the shopping list and weekly plan
+- Invite flow via link/code
+- Simple ingredient merging (match on trimmed, lowercased name + unit)
+- Snapshot of ingredients at planning time
+- Optimistic updates and loading states in the shopping list
 - Soft deletes
 - "Last write wins" concurrency
 
-### Senere (v1.1+)
+### Later (v1.1+)
 
-- Multi-household UI
-- Avanceret ingrediens-normalisering ("løg" vs "gule løg", g ↔ kg)
-- Backend URL-parsing robusthed
-- Bedre visuel feedback under sync
+- Multi-household UI (the household switcher)
+- Copy-on-leave, and "copy a recipe to my other household"
+- Merging two households into one
+- Advanced ingredient normalization ("onion" vs "yellow onion", g ↔ kg)
+- Backend URL-parsing robustness
+- Better visual feedback during sync
 
-### Bevidst udeladt (ikke i planen)
+### Deliberately excluded (not planned)
 
-- Roller og permissions (read-only, børn vs voksne)
-- Offline-first / sync queues / conflict resolution offline
-- Realtime-redigering af opskrifter (klassisk konflikt-problem)
-- Versionering af opskrifter (snapshot på ugeplanen dækker de fleste behov)
+- Roles and permissions (read-only, kids vs adults)
+- Offline-first / sync queues / offline conflict resolution
+- Real-time editing of recipes (the classic conflict problem)
+- Recipe versioning (the snapshot on the weekly plan covers most needs)
+- Per-recipe forking between strangers / a public recipe library (a much
+  larger product; not in the plan)
 
-## Vigtige principper at holde fast i
+## Important principles to hold on to
 
-- **Realtime kun hvor det tæller**: indkøbsliste og ugeplan, ikke opskriftsredigering
-- **Simpel konfliktstrategi**: last-write-wins på række-niveau, Supabase håndterer rækkefølge
-- **Snapshot frem for reference**: når det handler om data der ikke må ændre sig retroaktivt
-- **UI-skjul frem for datamodel-begrænsning**: byg datamodellen fleksibel, skjul features i UI hvis de ikke er klar
+- **Realtime only where it counts**: shopping list and weekly plan, not recipe
+  editing
+- **Simple conflict strategy**: last-write-wins at the row level, Supabase
+  handles ordering
+- **Snapshot over reference**: when it concerns data that must not change
+  retroactively
+- **Hide in the UI rather than limit the data model**: build the data model
+  flexible, hide features in the UI if they are not ready
 
-## Næste skridt
+## Next steps
 
-1. Opsæt Supabase-projekt med minimalt skema (kun det indkøbslisten behøver)
-2. Design én skærm i Figma – indkøbslisten anbefales, fordi den tester både datamodel, realtime og den mest kritiske UX på én gang
-3. Opsæt Expo-projekt med TypeScript, NativeWind og Supabase-klient
-4. Lad Claude Code bygge skærmen ud fra Figma-designet via MCP
-5. Evaluer loopet – hvor tæt er resultatet på Figma-designet, hvor god er den genererede kode, hvad skal justeres i Figma-setuppet
+1. Set up the Supabase project with a minimal schema (only what the shopping
+   list needs) – *done: project "prepeat", migration 0001 applied*
+2. Design one screen in Figma – the shopping list is recommended, because it
+   tests the data model, realtime and the most critical UX all at once
+3. Set up the Expo project with TypeScript, NativeWind and the Supabase client
+   – *done*
+4. Have Claude Code build the screen from the Figma design via MCP
+5. Evaluate the loop – how close is the result to the Figma design, how good is
+   the generated code, what needs adjusting in the Figma setup
 
-## Krav før udgivelse
+## Requirements before release
 
-- Apple Developer Program ($99/år)
-- Mac med Xcode (til signering, også med Expo EAS)
-- App Store Connect-konto
-- Privacy policy (appen gemmer brugerdata)
-- App Store review – afsæt tid til iterationer
+- Apple Developer Program ($99/year)
+- A Mac with Xcode (for signing, also with Expo EAS)
+- App Store Connect account
+- Privacy policy (the app stores user data)
+- App Store review – allow time for iterations
+- A proper trademark search on "Prep+Eat" / "Prepeat" before launch
 
-## Åbne spørgsmål
+## Open questions
 
-Ting der skal besluttes før kodning, men ikke nødvendigvis før projektopsætning:
+Things to decide before coding, but not necessarily before project setup:
 
-- Skal opskrifter kunne kopieres mellem brugere (fork), eller kun deles med read-adgang via husstanden?
-- Skal indkøbslisten kunne gemmes til efter ugen er gået (historik), eller arkiveres/slettes?
-- Hvordan håndteres portionsjustering på ugeplanen? (servings_override-feltet er der, men UX'en skal designes)
-- Aisle/kategori på ingredienser – fast liste eller fri tekst?
+- Should the shopping list be kept after the week is over (history), or
+  archived/deleted?
+- How is portion adjustment handled on the weekly plan? (the servings_override
+  field is there, but the UX needs designing)
+- Aisle/category on ingredients – a fixed list or free text?
