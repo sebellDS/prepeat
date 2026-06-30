@@ -1,56 +1,54 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Imperative constants for the few React Native styling spots that aren't
+ * expressed as NativeWind classes. Going forward, prefer DS utility classes
+ * (bg-surface-primary, text-text-default, p-comp-small, font-header, …) in
+ * components – see tailwind.config.js. The colors and fonts below are
+ * re-pointed to the Sebell DS Prep+Eat tokens so nothing here is a generic
+ * Expo-scaffold default.
+ *
+ * Light appearance only for v1; dark is deferred, so the dark map mirrors
+ * light for now.
  */
 
 import '@/global.css';
 
 import { Platform } from 'react-native';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ds = require('./ds-theme.cjs') as {
+  colors: {
+    text: { default: string; subtle: string };
+    surface: { neutral: { white: string; lighter: string; light: string } };
+  };
+};
+
+const light = {
+  text: ds.colors.text.default,
+  background: ds.colors.surface.neutral.white,
+  backgroundElement: ds.colors.surface.neutral.lighter,
+  backgroundSelected: ds.colors.surface.neutral.light,
+  textSecondary: ds.colors.text.subtle,
+} as const;
+
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  light,
+  // Dark mode is deferred for v1 – mirror light so consumers stay valid.
+  dark: light,
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+// The DS family is Montserrat across the board; mono falls back to a system
+// monospaced face since the DS has no mono token.
+export const Fonts = {
+  sans: 'Montserrat',
+  serif: 'Montserrat',
+  rounded: 'Montserrat',
+  mono: Platform.select({ ios: 'ui-monospace', default: 'monospace' }),
+} as const;
 
+// Numeric scale for inline RN styles. Prefer DS spacing classes
+// (gap-layout-*, p-comp-*) in new components.
 export const Spacing = {
   half: 2,
   one: 4,
