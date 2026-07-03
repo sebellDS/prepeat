@@ -122,6 +122,23 @@ must not change retroactively.
 All household members are equal. There is no owner/member distinction. A role
 column can be added later if the need arises.
 
+### 7. Shopping categories are learned per household, not built in
+
+Decided 2026-07-03. The app has no built-in knowledge of which store section
+an item belongs in – no shipped dictionary, no AI call in v1. Instead each
+household teaches its own app: an unrecognized item lands in an "Other" group
+on the shopping list; assigning it a category once (a single tap) is
+remembered in `item_category_memory` and applied to every future item with
+the same normalized name (trimmed, lowercased – the same rule as ingredient
+merging). Categorizing is always optional; "Other" items are fully usable.
+
+Consequences: works in any language and survives misspellings (each spelling
+is just a word to be taught once); recipe screens need no category picker –
+categories live only on the shopping list; the v1 category list is a fixed
+set of constants in app code, not a table. AI-assisted first guesses are a
+possible v1.1 upgrade that would slot in front of the same memory table
+without redesign.
+
 ## Data model
 
 ### Users and households
@@ -162,6 +179,9 @@ column can be added later if the need arises.
 - `shopping_list_items` – id, list_id, name, quantity, unit, aisle, is_checked,
   checked_by_user_id, checked_at, added_manually (bool), source_entry_id
   (nullable, points to a meal_plan_entry if auto-generated), updated_at
+- `item_category_memory` – household_id, name (normalized: trimmed,
+  lowercased), aisle, updated_at; primary key (household_id, name). The
+  household's learned mapping from item names to categories (decision #7)
 
 ### Cross-cutting fields
 
@@ -183,6 +203,8 @@ column can be added later if the need arises.
 - Real-time sync of the shopping list and weekly plan
 - Invite flow via link/code
 - Simple ingredient merging (match on trimmed, lowercased name + unit)
+- Shopping list grouped by category; learned per-household categorization
+  with an "Other" fallback group (decision #7)
 - Snapshot of ingredients at planning time
 - Optimistic updates and loading states in the shopping list
 - Soft deletes
