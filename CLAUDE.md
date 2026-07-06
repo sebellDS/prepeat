@@ -16,6 +16,11 @@ or data-model decisions.** It records the agreed scope (v1 vs later vs
 deliberately excluded), the data model, and the core principles. The app's UI
 language is English and it targets an international audience.
 
+**The work list lives in [docs/backlog.md](docs/backlog.md).** Keep it
+current: check items off as they land, add new tasks and ideas there (with
+attribution and date for ideas), and consult it when the owner asks what's
+next.
+
 The app is named **Prep+Eat** (decided 2026-06-12): "Prep+Eat" is the visual
 wordmark (the + is the brand mark), "Prepeat" (pronounced PREP-eat) is the
 plain-text form used for slug, scheme, domains and handles. Tagline: "Prep.
