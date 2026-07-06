@@ -124,13 +124,15 @@ column can be added later if the need arises.
 
 ### 7. Shopping categories are learned per household, not built in
 
-Decided 2026-07-03. The app has no built-in knowledge of which store section
-an item belongs in – no shipped dictionary, no AI call in v1. Instead each
-household teaches its own app: an unrecognized item lands in an "Other" group
-on the shopping list; assigning it a category once (a single tap) is
-remembered in `item_category_memory` and applied to every future item with
-the same normalized name (trimmed, lowercased – the same rule as ingredient
-merging). Categorizing is always optional; "Other" items are fully usable.
+Decided 2026-07-03, mechanism refined 2026-07-04. The app has no built-in
+knowledge of which store section an item belongs in – no shipped dictionary,
+no AI call in v1. Instead each household teaches its own app: an unrecognized
+item stays **uncategorized at the top of the shopping list**, right where it
+was typed; assigning it a category once (via the edit sheet) is remembered in
+`item_category_memory` and applied to every future item with the same
+normalized name (trimmed, lowercased – the same rule as ingredient merging).
+Categorizing is always optional; uncategorized items are fully usable.
+"Other" remains an explicit category for things that genuinely fit nowhere.
 
 Consequences: works in any language and survives misspellings (each spelling
 is just a word to be taught once); recipe screens need no category picker –

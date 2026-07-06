@@ -8,7 +8,7 @@ import { CATEGORIES, type Category, type ShoppingItem } from '@/lib/shopping-lis
 interface EditItemSheetProps {
   item: ShoppingItem | null;
   onClose: () => void;
-  onSave: (fields: { name: string; quantity: string | null; aisle: Category }) => void;
+  onSave: (fields: { name: string; quantity: string | null; aisle: Category | null }) => void;
 }
 
 export function EditItemSheet({ item, onClose, onSave }: EditItemSheetProps) {
@@ -22,13 +22,13 @@ export function EditItemSheet({ item, onClose, onSave }: EditItemSheetProps) {
 interface SheetContentProps {
   item: ShoppingItem;
   onClose: () => void;
-  onSave: (fields: { name: string; quantity: string | null; aisle: Category }) => void;
+  onSave: (fields: { name: string; quantity: string | null; aisle: Category | null }) => void;
 }
 
 function SheetContent({ item, onClose, onSave }: SheetContentProps) {
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity ?? '');
-  const [aisle, setAisle] = useState<Category>(item.aisle);
+  const [aisle, setAisle] = useState<Category | null>(item.aisle);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const save = () => {
@@ -77,9 +77,15 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
             <Pressable
               onPress={() => setPickerOpen((value) => !value)}
               accessibilityRole="button"
-              accessibilityLabel={`Category: ${aisle}`}
+              accessibilityLabel={`Category: ${aisle ?? 'none yet'}`}
               className="w-full flex-row items-center rounded-small border border-border bg-surface-neutral-lighter p-comp-large">
-              <Text className="flex-1 font-paragraph text-paragraph text-text-default">{aisle}</Text>
+              <Text
+                className={
+                  'flex-1 font-paragraph text-paragraph ' +
+                  (aisle == null ? 'text-text-subtle' : 'text-text-default')
+                }>
+                {aisle ?? 'Choose a category'}
+              </Text>
               <SymbolView
                 name={pickerOpen ? 'chevron.up' : 'chevron.down'}
                 size={14}

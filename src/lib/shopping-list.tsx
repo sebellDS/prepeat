@@ -36,7 +36,9 @@ export interface ShoppingItem {
   // Quantity is a single display string for now ("250g", "2 pcs"). When this
   // wires to Supabase it splits into numeric quantity + unit text.
   quantity: string | null;
-  aisle: Category;
+  // null = not categorized yet; such items show at the top of the list until
+  // the household teaches the app where they belong.
+  aisle: Category | null;
   isChecked: boolean;
   checkedByInitial: string | null;
   checkedAt: number | null;
@@ -77,7 +79,7 @@ type Action =
       id: string;
       name: string;
       quantity: string | null;
-      aisle: Category;
+      aisle: Category | null;
     }
   | { type: 'remove'; id: string }
   | { type: 'fill-sample'; items: ShoppingItem[] }
@@ -89,7 +91,8 @@ function reducer(state: State, action: Action): State {
     case 'add': {
       const name = action.name.replace(/\s+/g, ' ').trim();
       if (!name) return state;
-      const aisle = state.memory[normalizeItemName(name)] ?? 'Other';
+      // Unknown names stay uncategorized (top of the list) until taught.
+      const aisle = state.memory[normalizeItemName(name)] ?? null;
       const item: ShoppingItem = {
         id: action.id,
         name,
@@ -140,7 +143,7 @@ function reducer(state: State, action: Action): State {
       // Teaching moment: an explicit category choice is remembered for the
       // household and applied to every future item with the same name.
       const memory =
-        action.aisle === prev.aisle
+        action.aisle === prev.aisle || action.aisle == null
           ? state.memory
           : { ...state.memory, [normalizeItemName(name)]: action.aisle };
       return {
@@ -203,7 +206,10 @@ interface ShoppingListApi {
   categoryOrder: Category[];
   addItem: (name: string) => void;
   toggleItem: (id: string) => void;
-  updateItem: (id: string, fields: { name: string; quantity: string | null; aisle: Category }) => void;
+  updateItem: (
+    id: string,
+    fields: { name: string; quantity: string | null; aisle: Category | null },
+  ) => void;
   removeItem: (id: string) => void;
   fillFromWeeklyPlan: () => void;
   setCategoryOrder: (order: Category[]) => void;
@@ -268,7 +274,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateItem = useCallback(
-    (id: string, fields: { name: string; quantity: string | null; aisle: Category }) =>
+    (id: string, fields: { name: string; quantity: string | null; aisle: Category | null }) =>
       dispatch({ type: 'update', id, ...fields }),
     [],
   );
