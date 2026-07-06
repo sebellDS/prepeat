@@ -8,12 +8,12 @@ module.exports = {
   "colors": {
     "surface": {
       "primary": {
-        "lighter": "#EFFCE9",
-        "light": "#A3ED7E",
-        "main": "#5AD21E",
-        "dark": "#3B8A14",
-        "darker": "#2C670F",
-        "DEFAULT": "#5AD21E"
+        "lighter": "#E9FBE0",
+        "light": "#9CEB75",
+        "main": "#47A518",
+        "dark": "#378112",
+        "darker": "#285E0D",
+        "DEFAULT": "#47A518"
       },
       "secondary": {
         "lighter": "#9E8561",
@@ -52,13 +52,13 @@ module.exports = {
       "DEFAULT": "#F6CB4C"
     },
     "success": {
-      "lighter": "#EFFCE9",
-      "light": "#BCF2A1",
-      "main": "#89E75A",
-      "dark": "#5AD21E",
-      "darker": "#3B8A14",
+      "lighter": "#E9FBE0",
+      "light": "#B6F098",
+      "main": "#83E651",
+      "dark": "#56C91D",
+      "darker": "#378112",
       "contrast-text": "#4F4230",
-      "DEFAULT": "#89E75A"
+      "DEFAULT": "#83E651"
     },
     "info": {
       "lighter": "#E5F2FF",
@@ -73,12 +73,12 @@ module.exports = {
       "default": "#4F4230",
       "subtle": "#5F503A",
       "disabled": "#C5C2BE",
-      "link": "#5AD21E",
-      "brand": "#5AD21E",
+      "link": "#47A518",
+      "brand": "#378112",
       "accent": "#7E6A4E",
       "inverse": "#FFFFFF",
       "danger": "#DE2D12",
-      "success": "#5AD21E",
+      "success": "#56C91D",
       "warning": "#F4C025",
       "info": "#0078F0",
       "DEFAULT": "#4F4230"
@@ -90,6 +90,26 @@ module.exports = {
     "icon": {
       "default": "#4F4230",
       "DEFAULT": "#4F4230"
+    },
+    "tab-bar": {
+      "surface": "#FFFFFF",
+      "border": "#E7E6E4",
+      "item": {
+        "icon": {
+          "inactive": "#6F5D44",
+          "active": "#47A518"
+        },
+        "label": {
+          "inactive": "#6F5D44",
+          "active": "#378112"
+        },
+        "indicator": {
+          "active": "#47A518"
+        },
+        "background": {
+          "pressed": "#F8F7F7"
+        }
+      }
     }
   },
   "spacing": {
@@ -148,7 +168,7 @@ module.exports = {
       "Montserrat"
     ],
     "paragraph": [
-      "Montserrat"
+      "IBM Plex Sans"
     ]
   }
 };
