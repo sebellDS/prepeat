@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "app.prepeat"
+      "bundleIdentifier": "app.prepeat",
+      "appleTeamId": "Z58TG8X9KB"
     },
     "android": {
       "package": "app.prepeat",
