@@ -8,7 +8,9 @@ const ds = require('./src/constants/ds-theme.cjs');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/**/*.{ts,tsx}'],
+  // Absolute glob for the same reason as metro.config.js: release bundling
+  // runs from ios/, and a cwd-relative glob would scan nothing.
+  content: [require('path').join(__dirname, 'src/**/*.{ts,tsx}')],
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
