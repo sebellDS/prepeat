@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +27,8 @@ import {
 } from '@/lib/household';
 
 const welcomePhoto = require('../../../assets/images/onboarding/welcome-macarons.jpg');
+const splashPhoto = require('../../../assets/images/onboarding/splash-poke.jpg');
+const bottomScrim = require('../../../assets/images/onboarding/scrim-bottom.png');
 
 interface OnboardingFlowProps {
   session: Session | null;
@@ -56,17 +59,62 @@ function AuthSteps() {
 
   if (step.kind === 'welcome') {
     return (
-      <Screen>
-        <View className="flex-1 items-center justify-center gap-layout-small">
-          <Wordmark size="large" />
-          <Text className="text-center font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-            Plan dinners, collect recipes and shop together – as a family
-          </Text>
-        </View>
-        <View className="w-full px-layout-small pb-layout-medium">
-          <PrimaryButton label="Get started" onPress={() => setStep({ kind: 'email' })} />
-        </View>
-      </Screen>
+      <ImageBackground source={splashPhoto} resizeMode="cover" className="flex-1">
+        <Image
+          source={bottomScrim}
+          resizeMode="stretch"
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%', width: '100%' }}
+        />
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 px-layout-small">
+          <View className="h-[370px] w-full items-center justify-center gap-layout-small">
+            <View className="flex-row">
+              {/* 48px is the splash-only wordmark size; inline to match the design exactly. */}
+              <Text
+                className="font-header font-emphasized text-text-subtle"
+                style={{ fontSize: 48, lineHeight: 48 }}>
+                prep
+              </Text>
+              <Text
+                className="font-header font-emphasized text-success-dark"
+                style={{ fontSize: 48, lineHeight: 48 }}>
+                +
+              </Text>
+              <Text
+                className="font-header font-emphasized text-text-subtle"
+                style={{ fontSize: 48, lineHeight: 48 }}>
+                eat
+              </Text>
+            </View>
+            <Text className="text-center font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+              Plan dinners, collect recipes{'\n'}and shop together – as a family
+            </Text>
+          </View>
+          <View className="w-full flex-1 items-center justify-end gap-layout-small pb-layout-xsmall">
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setStep({ kind: 'email' })}
+              className="w-full items-center rounded-medium bg-surface-neutral-white px-comp-xlarge py-comp-large">
+              <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+                Get started
+              </Text>
+            </Pressable>
+            <View className="flex-row items-center" style={{ columnGap: 4 }}>
+              <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-inverse">
+                Already cooking?
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setStep({ kind: 'email' })}
+                hitSlop={8}
+                style={{ borderBottomWidth: 2, borderBottomColor: ds.colors.text.inverse, paddingBottom: 2 }}>
+                <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-inverse">
+                  Sign in
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
     );
   }
 
