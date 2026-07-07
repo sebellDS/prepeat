@@ -1,11 +1,12 @@
-// Functional onboarding flow: welcome → email → code → name → household
-// choice → create/join. Deliberately plain screens using DS tokens – the
-// visual design lands in Figma and gets applied on top; the flow logic,
-// error handling and waiting states live here and stay.
+// Onboarding flow, skinned from the Figma sign-up designs (login page:
+// signin / household set up / join a household sections). Flow logic and
+// error/waiting states predate the skin; visuals follow the frames.
+import { MaterialIcons } from '@expo/vector-icons';
 import type { Session } from '@supabase/supabase-js';
 import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,6 +24,8 @@ import {
   joinHousehold,
   type Household,
 } from '@/lib/household';
+
+const welcomePhoto = require('../../../assets/images/onboarding/welcome-macarons.jpg');
 
 interface OnboardingFlowProps {
   session: Session | null;
@@ -54,13 +57,15 @@ function AuthSteps() {
   if (step.kind === 'welcome') {
     return (
       <Screen>
-        <View className="flex-1 items-center justify-center gap-layout-xsmall">
-          <Wordmark large />
-          <Text className="text-center font-paragraph text-paragraph font-default text-text-subtle">
-            Plan dinners, collect recipes, and shop together.
+        <View className="flex-1 items-center justify-center gap-layout-small">
+          <Wordmark size="large" />
+          <Text className="text-center font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+            Plan dinners, collect recipes and shop together – as a family
           </Text>
         </View>
-        <PrimaryButton label="Get started" onPress={() => setStep({ kind: 'email' })} />
+        <View className="w-full px-layout-small pb-layout-medium">
+          <PrimaryButton label="Get started" onPress={() => setStep({ kind: 'email' })} />
+        </View>
       </Screen>
     );
   }
@@ -78,17 +83,20 @@ function AuthSteps() {
           setStep({ kind: 'code', email });
         }}
         canSubmit={/.+@.+\..+/.test(email.trim())}>
-        <Field label="Email">
-          <Input
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            autoFocus
-          />
-        </Field>
+        {(error) => (
+          <Field label="Email" error={error}>
+            <Input
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoFocus
+              hasError={error != null}
+            />
+          </Field>
+        )}
       </FormScreen>
     );
   }
@@ -96,27 +104,25 @@ function AuthSteps() {
   return (
     <FormScreen
       title="Check your email"
-      subtitle={`We sent a code to ${step.email}.`}
+      subtitle={`We sent a code to ${step.email}. Can't find it? Check your spam folder.`}
       onBack={() => setStep({ kind: 'email' })}
       submitLabel="Continue"
       onSubmit={() => verifyCode(step.email, code)}
       canSubmit={code.trim().length >= 6}
-      footer={
-        <TextButton
-          label="Send a new code"
-          onPress={() => requestCode(step.email)}
-        />
-      }>
-      <Field label="Code">
-        <Input
-          value={code}
-          onChangeText={setCode}
-          placeholder="123456"
-          keyboardType="number-pad"
-          maxLength={10}
-          autoFocus
-        />
-      </Field>
+      footer={<LinkButton label="Send a new code" onPress={() => requestCode(step.email)} />}>
+      {(error) => (
+        <Field label="Code" error={error}>
+          <Input
+            value={code}
+            onChangeText={setCode}
+            placeholder="12345678"
+            keyboardType="number-pad"
+            maxLength={10}
+            autoFocus
+            hasError={error != null}
+          />
+        </Field>
+      )}
     </FormScreen>
   );
 }
@@ -131,9 +137,17 @@ function NameStep() {
       submitLabel="Continue"
       onSubmit={() => saveFirstName(name)}
       canSubmit={name.trim().length > 0}>
-      <Field label="First name">
-        <Input value={name} onChangeText={setName} placeholder="Your first name" autoFocus />
-      </Field>
+      {(error) => (
+        <Field label="First name" error={error}>
+          <Input
+            value={name}
+            onChangeText={setName}
+            placeholder="Thomas"
+            autoFocus
+            hasError={error != null}
+          />
+        </Field>
+      )}
     </FormScreen>
   );
 }
@@ -148,21 +162,26 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
   if (step.kind === 'choice') {
     return (
       <Screen>
-        <View className="flex-1 justify-center gap-layout-small">
-          <Text className="font-header text-display-5 font-emphasized text-text-default">
+        <TopBar />
+        <View className="w-full gap-layout-small px-layout-small pb-layout-medium">
+          <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
             Set up your household
           </Text>
-          <Text className="font-paragraph text-paragraph font-default text-text-subtle">
+          <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
             The shared space where your family plans meals and shops together.
           </Text>
+        </View>
+        <View className="w-full gap-layout-small px-layout-small">
           <ChoiceCard
+            icon="add-home"
             title="Start a household"
-            body="Create a new shared space and invite your family."
+            body="If you're the first one here, start your family's shared space – you'll get a code to invite the others."
             onPress={() => setStep({ kind: 'create' })}
           />
           <ChoiceCard
+            icon="card-membership"
             title="Join with a code"
-            body="Someone in your family already has Prep+Eat? Enter their invite code."
+            body="Got a code from your family? Join them here."
             onPress={() => setStep({ kind: 'join' })}
           />
         </View>
@@ -174,28 +193,43 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
     if (created) {
       return (
         <Screen>
-          <View className="flex-1 justify-center gap-layout-small">
-            <Text className="font-header text-display-5 font-emphasized text-text-default">
+          <TopBar />
+          <View className="w-full gap-layout-small px-layout-small pb-layout-medium">
+            <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
               {created.household.name} is ready
             </Text>
-            <Text className="font-paragraph text-paragraph font-default text-text-subtle">
-              Share this code with your family so they can join:
+            <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+              Share this code so your family can join.
             </Text>
-            <View className="items-center rounded-large bg-surface-neutral-white p-layout-small">
-              <Text className="font-header text-display-5 font-emphasized text-text-default">
+          </View>
+          <View className="w-full gap-layout-small px-layout-small">
+            <View className="w-full flex-row items-center rounded-large bg-surface-neutral-white p-layout-small">
+              <Text className="flex-1 text-center font-header text-display-5 font-emphasized leading-small text-text-default">
                 {created.inviteCode}
               </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Share the code"
+                hitSlop={8}
+                onPress={() => shareInvite(created.household.name, created.inviteCode)}>
+                <MaterialIcons name="content-copy" size={24} color={ds.colors.icon.default} />
+              </Pressable>
             </View>
-            <TextButton
-              label="Share the code"
-              onPress={() =>
-                Share.share({
-                  message: `Join our household "${created.household.name}" in Prep+Eat with the code ${created.inviteCode}`,
-                })
-              }
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => shareInvite(created.household.name, created.inviteCode)}
+              className="w-full items-center rounded-medium bg-surface-neutral-white py-comp-large">
+              <Text className="font-paragraph text-paragraph font-default text-text-default">
+                Share the code
+              </Text>
+            </Pressable>
+          </View>
+          <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
+            <PrimaryButton
+              label="Start planning"
+              onPress={() => onHouseholdReady(created.household)}
             />
           </View>
-          <PrimaryButton label="Start planning" onPress={() => onHouseholdReady(created.household)} />
         </Screen>
       );
     }
@@ -209,27 +243,23 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
           setCreated(await createHousehold(name));
         }}
         canSubmit={name.trim().length > 0}>
-        <Field label="Household name">
-          <Input value={name} onChangeText={setName} placeholder="e.g. The Sebell Kitchen" autoFocus />
-        </Field>
+        {(error) => (
+          <Field label="Household name" error={error}>
+            <Input
+              value={name}
+              onChangeText={setName}
+              placeholder="The Hanson Kitchen"
+              autoFocus
+              hasError={error != null}
+            />
+          </Field>
+        )}
       </FormScreen>
     );
   }
 
   if (joined) {
-    return (
-      <Screen>
-        <View className="flex-1 items-center justify-center gap-layout-xsmall">
-          <Text className="font-header text-display-5 font-emphasized text-text-default">
-            Welcome to {joined.name}
-          </Text>
-          <Text className="text-center font-paragraph text-paragraph font-default text-text-subtle">
-            {"You're in – the family's plans and shopping list are now yours too."}
-          </Text>
-        </View>
-        <PrimaryButton label="Start planning" onPress={() => onHouseholdReady(joined)} />
-      </Screen>
-    );
+    return <WelcomeScreen household={joined} onContinue={() => onHouseholdReady(joined)} />;
   }
 
   return (
@@ -242,27 +272,117 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
         setJoined(await joinHousehold(code));
       }}
       canSubmit={code.trim().length >= 4}>
-      <Field label="Invite code">
-        <Input
-          value={code}
-          onChangeText={setCode}
-          placeholder="PREP-7X4K"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          autoFocus
-        />
-      </Field>
+      {(error) => (
+        <Field label="Invite code" error={error}>
+          <Input
+            value={code}
+            onChangeText={setCode}
+            placeholder="PREP-XXXX"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            autoFocus
+            hasError={error != null}
+          />
+        </Field>
+      )}
     </FormScreen>
   );
 }
 
-// ── Building blocks (plain, DS-tokened, replaced by Figma designs later) ──
+function WelcomeScreen({ household, onContinue }: { household: Household; onContinue: () => void }) {
+  return (
+    <ImageBackground source={welcomePhoto} resizeMode="cover" className="flex-1">
+      <SafeAreaView edges={['top', 'bottom']} className="flex-1">
+        <View className="h-[300px] w-full items-center justify-center gap-layout-small px-layout-small">
+          <Text className="text-center font-header text-display-4 font-emphasized leading-medium text-text-subtle">
+            Welcome to {household.name}
+          </Text>
+          <View className="flex-row">
+            <WordmarkPart text="prep" />
+            <WordmarkPlus />
+            <WordmarkPart text="eat" />
+            <WordmarkPlus />
+            <WordmarkPart text="repeat" />
+          </View>
+        </View>
+        <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
+          <PrimaryButton label="Start planning" onPress={onContinue} />
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
+  );
+}
+
+async function shareInvite(householdName: string, inviteCode: string) {
+  try {
+    await Share.share({
+      message: `Join our household "${householdName}" in Prep+Eat with the code ${inviteCode}`,
+    });
+  } catch {
+    // Sharing was dismissed – nothing to handle.
+  }
+}
+
+// ── Building blocks from the design system ──────────────────────────────
 
 function Screen({ children }: { children: ReactNode }) {
   return (
-    <SafeAreaView className="flex-1 bg-surface-neutral-lighter">
-      <View className="flex-1 p-layout-small pb-layout-medium">{children}</View>
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-neutral-lighter">
+      {children}
     </SafeAreaView>
+  );
+}
+
+function TopBar({ onBack }: { onBack?: () => void }) {
+  return (
+    <View className="mb-layout-xlarge w-full flex-row items-center justify-center px-layout-small pt-layout-xsmall">
+      {onBack != null && (
+        <Pressable
+          onPress={onBack}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          className="absolute bottom-0 left-layout-small">
+          <MaterialIcons name="arrow-back" size={28} color={ds.colors.surface.primary.main} />
+        </Pressable>
+      )}
+      <Wordmark size="small" />
+    </View>
+  );
+}
+
+function WordmarkPart({ text, large }: { text: string; large?: boolean }) {
+  return (
+    <Text
+      className={
+        'font-header font-emphasized text-text-subtle ' +
+        (large ? 'text-display-4 leading-medium' : 'text-display-5 leading-small')
+      }>
+      {text}
+    </Text>
+  );
+}
+
+function WordmarkPlus({ large }: { large?: boolean }) {
+  return (
+    <Text
+      className={
+        'font-header font-emphasized text-success-dark ' +
+        (large ? 'text-display-4 leading-medium' : 'text-display-5 leading-small')
+      }>
+      +
+    </Text>
+  );
+}
+
+function Wordmark({ size }: { size: 'small' | 'large' }) {
+  const large = size === 'large';
+  return (
+    <View className="flex-row">
+      <WordmarkPart text="prep" large={large} />
+      <WordmarkPlus large={large} />
+      <WordmarkPart text="eat" large={large} />
+    </View>
   );
 }
 
@@ -274,7 +394,7 @@ interface FormScreenProps {
   canSubmit: boolean;
   onBack?: () => void;
   footer?: ReactNode;
-  children: ReactNode;
+  children: (error: string | null) => ReactNode;
 }
 
 function FormScreen({
@@ -313,55 +433,63 @@ function FormScreen({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
-        <View className="flex-1 gap-layout-small pt-layout-large">
-          {onBack != null && <TextButton label="← Back" onPress={onBack} align="left" />}
-          <Text className="font-header text-display-5 font-emphasized text-text-default">
+        <TopBar onBack={onBack} />
+        <View className="w-full gap-layout-small px-layout-small pb-layout-medium">
+          <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
             {title}
           </Text>
-          <Text className="font-paragraph text-paragraph font-default text-text-subtle">
+          <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
             {subtitle}
           </Text>
-          {children}
-          {error != null && (
-            <Text className="font-paragraph text-small font-default text-text-danger">{error}</Text>
-          )}
+        </View>
+        <View className="w-full gap-layout-small px-layout-small">
+          {children(error)}
           {footer}
         </View>
-        <PrimaryButton label={submitLabel} onPress={submit} disabled={!canSubmit} busy={busy} />
+        <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
+          <PrimaryButton label={submitLabel} onPress={submit} disabled={!canSubmit} busy={busy} />
+        </View>
       </KeyboardAvoidingView>
     </Screen>
   );
 }
 
-function ChoiceCard({ title, body, onPress }: { title: string; body: string; onPress: () => void }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string | null;
+  children: ReactNode;
+}) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className="w-full gap-comp-xsmall rounded-large border border-border bg-surface-neutral-white p-layout-small">
-      <Text className="font-paragraph text-paragraph font-emphasized text-text-default">
-        {title}
+    <View className="w-full gap-layout-xsmall">
+      <Text className="font-paragraph text-components-label font-default leading-xxsmall text-text-default">
+        {label}
       </Text>
-      <Text className="font-paragraph text-small font-default text-text-subtle">{body}</Text>
-    </Pressable>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <View className="w-full gap-comp-xsmall">
-      <Text className="font-paragraph text-small font-default text-text-subtle">{label}</Text>
+      {error != null && (
+        <View className="w-full flex-row items-start gap-comp-large rounded-medium bg-error-lighter px-comp-large py-comp-small">
+          <Text className="flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+            {error}
+          </Text>
+          <MaterialIcons name="error-outline" size={24} color={ds.colors.icon.default} />
+        </View>
+      )}
       {children}
     </View>
   );
 }
 
-function Input(props: React.ComponentProps<typeof TextInput>) {
+function Input({ hasError, ...props }: React.ComponentProps<typeof TextInput> & { hasError?: boolean }) {
   return (
     <TextInput
       placeholderTextColor={ds.colors.text.disabled}
       {...props}
-      className="w-full rounded-small border border-border bg-surface-neutral-white p-comp-large font-paragraph text-paragraph text-text-default"
+      className={
+        'w-full rounded-medium bg-surface-neutral-lighter p-comp-large font-paragraph text-paragraph text-text-default ' +
+        (hasError ? 'border-2 border-error' : 'border border-border')
+      }
     />
   );
 }
@@ -380,13 +508,13 @@ function PrimaryButton({ label, onPress, disabled, busy }: PrimaryButtonProps) {
       onPress={onPress}
       disabled={disabled || busy}
       className={
-        'w-full items-center rounded-small py-comp-large ' +
+        'w-full items-center rounded-medium px-comp-xlarge py-comp-large ' +
         (disabled ? 'bg-surface-neutral-main' : 'bg-surface-primary-main')
       }>
       {busy ? (
-        <ActivityIndicator color={ds.colors.text.default} />
+        <ActivityIndicator color={ds.colors.text.inverse} />
       ) : (
-        <Text className="font-paragraph text-components-button-label font-emphasized text-text-default">
+        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-inverse">
           {label}
         </Text>
       )}
@@ -394,35 +522,45 @@ function PrimaryButton({ label, onPress, disabled, busy }: PrimaryButtonProps) {
   );
 }
 
-function TextButton({
-  label,
-  onPress,
-  align = 'center',
-}: {
-  label: string;
-  onPress: () => void;
-  align?: 'left' | 'center';
-}) {
+function LinkButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8}>
-      <Text
-        className={
-          'font-paragraph text-paragraph font-default text-success-darker ' +
-          (align === 'center' ? 'text-center' : '')
-        }>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      hitSlop={8}
+      className="self-start border-b-2 border-surface-primary-main pb-[2px]">
+      <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
         {label}
       </Text>
     </Pressable>
   );
 }
 
-function Wordmark({ large }: { large?: boolean }) {
-  const size = large ? 'text-display-4' : 'text-display-5';
+function ChoiceCard({
+  icon,
+  title,
+  body,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  title: string;
+  body: string;
+  onPress: () => void;
+}) {
   return (
-    <View className="flex-row">
-      <Text className={`font-header ${size} font-emphasized text-text-default`}>PREP</Text>
-      <Text className={`font-header ${size} font-emphasized text-text-brand`}>+</Text>
-      <Text className={`font-header ${size} font-emphasized text-text-default`}>EAT</Text>
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      className="w-full flex-row gap-comp-large rounded-large bg-surface-neutral-white p-layout-small">
+      <MaterialIcons name={icon} size={48} color={ds.colors.surface.primary.main} />
+      <View className="min-w-0 flex-1 gap-comp-small">
+        <Text className="font-paragraph text-paragraph font-emphasized leading-xsmall text-text-default">
+          {title}
+        </Text>
+        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+          {body}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
