@@ -206,6 +206,9 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
   const [code, setCode] = useState('');
   const [created, setCreated] = useState<{ household: Household; inviteCode: string } | null>(null);
   const [joined, setJoined] = useState<Household | null>(null);
+  // Both paths end on the welcome screen (design: household set up 5 and
+  // join a household 4) – creators see it after the invite-code screen.
+  const [createdWelcome, setCreatedWelcome] = useState(false);
 
   if (step.kind === 'choice') {
     return (
@@ -238,6 +241,14 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
   }
 
   if (step.kind === 'create') {
+    if (created && createdWelcome) {
+      return (
+        <WelcomeScreen
+          household={created.household}
+          onContinue={() => onHouseholdReady(created.household)}
+        />
+      );
+    }
     if (created) {
       return (
         <Screen>
@@ -273,10 +284,7 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
             </Pressable>
           </View>
           <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
-            <PrimaryButton
-              label="Start planning"
-              onPress={() => onHouseholdReady(created.household)}
-            />
+            <PrimaryButton label="Continue" onPress={() => setCreatedWelcome(true)} />
           </View>
         </Screen>
       );
