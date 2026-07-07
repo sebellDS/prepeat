@@ -3,7 +3,7 @@
 // error/waiting states predate the skin; visuals follow the frames.
 import { MaterialIcons } from '@expo/vector-icons';
 import type { Session } from '@supabase/supabase-js';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -156,22 +156,11 @@ function AuthSteps() {
       onBack={() => setStep({ kind: 'email' })}
       submitLabel="Continue"
       onSubmit={() => verifyCode(step.email, code)}
-      canSubmit={code.trim().length >= 6}
+      canSubmit={code.length === CODE_LENGTH}
       footer={<LinkButton label="Send a new code" onPress={() => requestCode(step.email)} />}>
       {(error) => (
         <Field label="Code" error={error}>
-          <Input
-            value={code}
-            onChangeText={setCode}
-            placeholder="123456"
-            keyboardType="number-pad"
-            // Codes are 6 digits (Supabase auth setting, shortened from 8 on
-            // 2026-07-07); the input stays lenient so a code from an email
-            // sent before the change still fits.
-            maxLength={10}
-            autoFocus
-            hasError={error != null}
-          />
+          <CodeInput value={code} onChangeText={setCode} hasError={error != null} />
         </Field>
       )}
     </FormScreen>
@@ -536,6 +525,68 @@ function Field({
         </View>
       )}
       {children}
+    </View>
+  );
+}
+
+// Codes are 6 digits (Supabase auth setting, shortened from 8 on 2026-07-07).
+export const CODE_LENGTH = 6;
+
+/**
+ * The sign-in code as six boxes (Figma signin 3, node 60:5200). One
+ * invisible full-width TextInput holds the real value so typing, backspace
+ * and iOS's code autofill from Mail keep working exactly like a plain
+ * field; the boxes underneath just display its digits.
+ */
+function CodeInput({
+  value,
+  onChangeText,
+  hasError,
+}: {
+  value: string;
+  onChangeText: (code: string) => void;
+  hasError?: boolean;
+}) {
+  const inputRef = useRef<TextInput>(null);
+  const [focused, setFocused] = useState(false);
+  const digits = value.split('');
+  // The box the next digit lands in gets the focused border.
+  const activeIndex = Math.min(value.length, CODE_LENGTH - 1);
+
+  return (
+    <View className="w-full">
+      <View className="w-full flex-row gap-layout-xsmall">
+        {Array.from({ length: CODE_LENGTH }, (_, index) => (
+          <View
+            key={index}
+            className={
+              'h-[56px] flex-1 items-center justify-center rounded-medium bg-surface-neutral-lighter ' +
+              (hasError
+                ? 'border-2 border-error'
+                : focused && index === activeIndex
+                  ? 'border-2 border-text-subtle'
+                  : 'border border-border')
+            }>
+            <Text className="font-paragraph text-paragraph text-text-default">
+              {digits[index] ?? ''}
+            </Text>
+          </View>
+        ))}
+      </View>
+      <TextInput
+        ref={inputRef}
+        value={value}
+        onChangeText={(text) => onChangeText(text.replace(/\D/g, '').slice(0, CODE_LENGTH))}
+        keyboardType="number-pad"
+        textContentType="oneTimeCode"
+        autoComplete="one-time-code"
+        autoFocus
+        caretHidden
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        accessibilityLabel="Code"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.011 }}
+      />
     </View>
   );
 }
