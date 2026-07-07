@@ -22,8 +22,8 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
       the family joining
 - [x] Re-skin the onboarding flow from Thomas's Figma designs – splash,
       sign-in, name, household and join screens all match (2026-07-07)
-- [ ] Swap the splash photo for a higher-resolution source someday – the
-      Figma copy is 584px wide, slightly soft on a 3x screen
+- [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
+      (2026-07-07) is 402px wide (1x), soft on a Retina screen
 - [ ] "Continue with Apple" button once the paid developer account exists
 - [ ] Shopping list reads/writes Supabase instead of in-memory state
       (split quantity into numeric + unit at this point; move learned
