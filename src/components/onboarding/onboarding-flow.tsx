@@ -163,8 +163,11 @@ function AuthSteps() {
           <Input
             value={code}
             onChangeText={setCode}
-            placeholder="12345678"
+            placeholder="123456"
             keyboardType="number-pad"
+            // Codes are 6 digits (Supabase auth setting, shortened from 8 on
+            // 2026-07-07); the input stays lenient so a code from an email
+            // sent before the change still fits.
             maxLength={10}
             autoFocus
             hasError={error != null}
