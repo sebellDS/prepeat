@@ -17,9 +17,8 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
       onboarding@resend.dev for now)
 - [x] Household onboarding: create + shareable multi-use invite code +
       join (migrations 0003 + 0004 applied)
-- [ ] Verify the prepeat.app domain in Resend (DNS records) – until then
-      sign-in emails can only reach Thomas's own address, so this blocks
-      the family joining
+- [x] Verify the prepeat.app domain in Resend – done 2026-07-07, codes
+      now send from hello@prepeat.app to any address
 - [x] Re-skin the onboarding flow from Thomas's Figma designs – splash,
       sign-in, name, household and join screens all match (2026-07-07)
 - [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
