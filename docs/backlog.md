@@ -9,10 +9,16 @@ upward when we commit to them.
 
 The jump from "demo on Thomas's phone" to "the family's real shopping list".
 
-- [ ] Sign-in flow (needs a product decision: email/password, magic link
-      and/or Sign in with Apple – App Store rules require Apple's button if
-      other social logins are offered)
-- [ ] Household auto-created at signup; invite via link/code (tables exist)
+- [ ] Sign-in flow – decided 2026-07-07: email + one-time code, no
+      passwords; sessions never expire on a schedule, sign-out lives on the
+      Household tab. Plumbing + placeholder screens built; needs the
+      Supabase email template updated to show the code, then end-to-end
+      testing, then re-skinning from Thomas's Figma designs
+- [ ] Custom SMTP (e.g. Resend) before family/TestFlight testing –
+      Supabase's built-in email sender is limited to ~2 emails/hour
+- [ ] Household onboarding: create + invite code + join built (multi-use
+      codes via migration 0003, pending apply); "Continue with Apple" slot
+      reserved for after the paid developer account
 - [ ] Shopping list reads/writes Supabase instead of in-memory state
       (split quantity into numeric + unit at this point; move learned
       categories and category order from device storage to the household)
