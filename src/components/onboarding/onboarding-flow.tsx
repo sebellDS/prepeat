@@ -555,7 +555,7 @@ function CodeInput({
 
   return (
     <View className="w-full">
-      <View className="w-full flex-row gap-layout-xsmall">
+      <View className="w-full flex-row gap-layout-small">
         {Array.from({ length: CODE_LENGTH }, (_, index) => (
           <View
             key={index}
