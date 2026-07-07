@@ -24,6 +24,7 @@ import AppTabs from '@/components/app-tabs';
 import { OnboardingFlow } from '@/components/onboarding/onboarding-flow';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { fetchMyHousehold, type Household } from '@/lib/household';
+import { HouseholdProvider } from '@/lib/household-context';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -131,5 +132,9 @@ function RootGate() {
     );
   }
 
-  return <AppTabs />;
+  return (
+    <HouseholdProvider household={household}>
+      <AppTabs />
+    </HouseholdProvider>
+  );
 }

@@ -25,6 +25,7 @@ import { BottomTabInset } from '@/constants/theme';
 
 function ShoppingListScreen() {
   const {
+    loading,
     items,
     categoryOrder,
     addItem,
@@ -124,7 +125,9 @@ function ShoppingListScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: BottomTabInset + 56, gap: 16 }}>
           {items.length === 0 ? (
-            <EmptyState onFillFromPlan={fillFromWeeklyPlan} />
+            // While the first fetch is in flight the list area stays blank –
+            // flashing the empty state at a household with items would lie.
+            !loading && <EmptyState onFillFromPlan={fillFromWeeklyPlan} />
           ) : (
             <>
               <CategoryGroup

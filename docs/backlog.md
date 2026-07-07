@@ -24,12 +24,20 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 - [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
       (2026-07-07) is 402px wide (1x), soft on a Retina screen
 - [ ] "Continue with Apple" button once the paid developer account exists
-- [ ] Shopping list reads/writes Supabase instead of in-memory state
-      (split quantity into numeric + unit at this point; move learned
-      categories and category order from device storage to the household)
-- [ ] Migration: household category order (store-walk sorting) in Supabase
-- [ ] Realtime sync between phones; Live badge reflects the actual
-      connection state
+- [x] Shopping list reads/writes Supabase instead of in-memory state
+      (quantity split into numeric + unit; learned categories and category
+      order migrate from device storage to the household on first launch)
+      – built 2026-07-07
+- [x] Migration: household category order (store-walk sorting) in Supabase
+      – part of migration 0005
+- [x] Realtime sync between phones; Live badge reflects the actual
+      connection state (green Live / grey connecting / grey Off) – built
+      2026-07-07
+- [ ] Apply migration 0005 in the Supabase dashboard (Thomas, with
+      click-by-click steps from Claude) – the app needs it before the new
+      shopping list works
+- [ ] Test the shared list on two devices once a second family member's
+      phone is available (realtime, checked-by initials, category teaching)
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables
 
@@ -43,8 +51,9 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 
 ## Code debts (small, known, deliberate)
 
-- [ ] Delete an item has no undo – add a "Deleted · Undo" toast once soft
-      delete is wired to the database
+- [ ] Delete an item has no undo – soft delete is wired to the database now
+      (migration 0005), so a "Deleted · Undo" toast just needs to clear
+      deleted_at
 - [ ] Edit sheet grows past the top safe area when the category picker is
       open – cap its height and scroll inside
 - [ ] "Fill from weekly plan" loads sample data until the Plan tab exists
