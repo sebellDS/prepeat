@@ -67,7 +67,9 @@ export type LiveStatus = 'connecting' | 'live' | 'offline';
 
 // How long a freshly checked item stays in its category group before moving
 // down to the done section (design decision: forgiving of accidental taps).
-export const LINGER_MS = 1500;
+// Short – the move itself is animated, so the linger only needs to absorb
+// an immediate "oops" re-tap (was 1.5s; felt too long, Thomas 2026-07-07).
+export const LINGER_MS = 600;
 
 export function normalizeItemName(name: string): string {
   // Same rule as ingredient merging: trimmed, lowercased. Also collapse
@@ -427,6 +429,8 @@ interface ShoppingListApi {
     fields: { name: string; quantity: string | null; aisle: Category | null },
   ) => void;
   removeItem: (id: string) => void;
+  /** Soft-deletes every checked item (the manual "Clear" in the done section). */
+  clearCompleted: () => void;
   fillFromWeeklyPlan: () => void;
   setCategoryOrder: (order: Category[]) => void;
 }
@@ -669,6 +673,27 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     [guard],
   );
 
+  // Shared by the Clear button and fill-from-plan: checked items leave the
+  // list together, as one soft-delete on the server.
+  const clearCompleted = useCallback(() => {
+    const listId = stateRef.current.listId;
+    if (!listId) return;
+    const checked = stateRef.current.items.filter((item) => item.isChecked);
+    if (checked.length === 0) return;
+    for (const item of checked) {
+      dispatch({ type: 'remove', id: item.id });
+    }
+    guard(
+      'clear completed',
+      supabase
+        .from('shopping_list_items')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('list_id', listId)
+        .eq('is_checked', true)
+        .is('deleted_at', null),
+    );
+  }, [guard]);
+
   const setCategoryOrder = useCallback(
     (order: Category[]) => {
       const next = sanitizeOrder(order);
@@ -684,6 +709,10 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const fillFromWeeklyPlan = useCallback(() => {
     const listId = stateRef.current.listId;
     if (!listId) return;
+    // A new week starts clean: last week's checked-off items leave the list
+    // when the plan fills it (decided 2026-07-07, together with the manual
+    // Clear button).
+    clearCompleted();
     const now = Date.now();
     const rows = SAMPLE_BASKET.map(([name, quantityText, aisle]) => {
       const { quantity, unit } = parseQuantity(quantityText);
@@ -713,7 +742,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       })),
     });
     guard('fill from plan', supabase.from('shopping_list_items').insert(rows));
-  }, [guard, userId]);
+  }, [guard, userId, clearCompleted]);
 
   const api = useMemo(
     () => ({
@@ -725,6 +754,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
+      clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,
     }),
@@ -737,6 +767,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
+      clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,
     ],

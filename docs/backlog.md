@@ -40,9 +40,20 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables
 
+## Decisions log (recent)
+
+- Checked items clear two ways (decided 2026-07-07): a manual "Clear" button
+  in the done section, plus an automatic sweep when the list is filled from
+  the weekly plan. No time-based auto-clear. Cleared items are soft-deleted,
+  so undo/history stays possible.
+- Checked items now move to the done section after 0.6s (was 1.5s – felt
+  too long) with a fade/slide animation.
+
 ## Design – in Thomas's court
 
 - [ ] Weekly plan screen (Plan tab) – next screen after shopping
+- [ ] The "Clear" button in the done section header is improvised in code –
+      restyle from Figma if it should look different (2026-07-07)
 - [ ] Recipes screens (list, detail, create/edit)
 - [ ] Parked question from the shopping review: how do new plan items reach
       a non-empty shopping list mid-week? ("Fill from weekly plan" exists

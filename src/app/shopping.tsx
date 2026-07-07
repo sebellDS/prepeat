@@ -32,6 +32,7 @@ function ShoppingListScreen() {
     toggleItem,
     updateItem,
     removeItem,
+    clearCompleted,
     fillFromWeeklyPlan,
     setCategoryOrder,
   } = useShoppingList();
@@ -153,6 +154,7 @@ function ShoppingListScreen() {
                 onToggle={toggleItem}
                 onEdit={setEditing}
                 onDelete={removeItem}
+                onClear={clearCompleted}
               />
             </>
           )}

@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { Fragment } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { ds } from '@/constants/ds';
 
@@ -40,28 +40,41 @@ export function CategoryGroup({
     </Pressable>
   );
   return (
-    <View className="w-full gap-layout-xsmall px-layout-small">
-      {title != null && (
-        <View className="w-full flex-row items-center">
-          <Text className="flex-1 font-paragraph text-small font-emphasized text-text-default">
-            {title}
-          </Text>
-          {dragGesture ? <GestureDetector gesture={dragGesture}>{handle}</GestureDetector> : handle}
+    // The animation wrapper stays style-free: rows fade out/in when an item
+    // settles into the done section, and the layout transitions slide the
+    // remaining rows and following groups smoothly into the freed space.
+    <Animated.View layout={LinearTransition.duration(250)} exiting={FadeOut.duration(150)}>
+      <View className="w-full gap-layout-xsmall px-layout-small">
+        {title != null && (
+          <View className="w-full flex-row items-center">
+            <Text className="flex-1 font-paragraph text-small font-emphasized text-text-default">
+              {title}
+            </Text>
+            {dragGesture ? (
+              <GestureDetector gesture={dragGesture}>{handle}</GestureDetector>
+            ) : (
+              handle
+            )}
+          </View>
+        )}
+        <View className="w-full overflow-hidden rounded-large">
+          {items.map((item, index) => (
+            <Animated.View
+              key={item.id}
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              layout={LinearTransition.duration(250)}>
+              {index > 0 && <View className="h-px w-full bg-surface-neutral-lighter" />}
+              <ItemRow
+                item={item}
+                onToggle={() => onToggle(item.id)}
+                onEdit={() => onEdit(item)}
+                onDelete={() => onDelete(item.id)}
+              />
+            </Animated.View>
+          ))}
         </View>
-      )}
-      <View className="w-full overflow-hidden rounded-large">
-        {items.map((item, index) => (
-          <Fragment key={item.id}>
-            {index > 0 && <View className="h-px w-full bg-surface-neutral-lighter" />}
-            <ItemRow
-              item={item}
-              onToggle={() => onToggle(item.id)}
-              onEdit={() => onEdit(item)}
-              onDelete={() => onDelete(item.id)}
-            />
-          </Fragment>
-        ))}
       </View>
-    </View>
+    </Animated.View>
   );
 }
