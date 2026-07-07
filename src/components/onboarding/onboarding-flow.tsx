@@ -142,7 +142,7 @@ function NameStep() {
           <Input
             value={name}
             onChangeText={setName}
-            placeholder="Thomas"
+            placeholder="Sofia"
             autoFocus
             hasError={error != null}
           />
