@@ -52,8 +52,8 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 ## Design – in Thomas's court
 
 - [ ] Weekly plan screen (Plan tab) – next screen after shopping
-- [ ] The "Clear" button in the done section header is improvised in code –
-      restyle from Figma if it should look different (2026-07-07)
+- [x] The "Clear done items" button now matches Thomas's Figma design
+      (danger button below the done list, node 74:5804) – 2026-07-07
 - [ ] Recipes screens (list, detail, create/edit)
 - [ ] Parked question from the shopping review: how do new plan items reach
       a non-empty shopping list mid-week? ("Fill from weekly plan" exists
