@@ -9,16 +9,20 @@ upward when we commit to them.
 
 The jump from "demo on Thomas's phone" to "the family's real shopping list".
 
-- [ ] Sign-in flow – decided 2026-07-07: email + one-time code, no
-      passwords; sessions never expire on a schedule, sign-out lives on the
-      Household tab. Plumbing + placeholder screens built; needs the
-      Supabase email template updated to show the code, then end-to-end
-      testing, then re-skinning from Thomas's Figma designs
-- [ ] Custom SMTP (e.g. Resend) before family/TestFlight testing –
-      Supabase's built-in email sender is limited to ~2 emails/hour
-- [ ] Household onboarding: create + invite code + join built (multi-use
-      codes via migration 0003, pending apply); "Continue with Apple" slot
-      reserved for after the paid developer account
+- [x] Sign-in flow – email + one-time code (decided 2026-07-07), sessions
+      never expire on a schedule, sign-out on the Household tab. Tested
+      end-to-end 2026-07-07: Thomas is user #1, "Sebell Kitchen" is
+      household #1
+- [x] Custom SMTP via Resend (connected 2026-07-07; sender is
+      onboarding@resend.dev for now)
+- [x] Household onboarding: create + shareable multi-use invite code +
+      join (migrations 0003 + 0004 applied)
+- [ ] Verify the prepeat.app domain in Resend (DNS records) – until then
+      sign-in emails can only reach Thomas's own address, so this blocks
+      the family joining
+- [ ] Re-skin the onboarding flow from Thomas's Figma designs (flow logic
+      and error states are built; screens are plain placeholders)
+- [ ] "Continue with Apple" button once the paid developer account exists
 - [ ] Shopping list reads/writes Supabase instead of in-memory state
       (split quantity into numeric + unit at this point; move learned
       categories and category order from device storage to the household)

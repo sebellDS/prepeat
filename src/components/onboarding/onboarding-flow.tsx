@@ -69,7 +69,7 @@ function AuthSteps() {
     return (
       <FormScreen
         title="What's your email?"
-        subtitle="We'll send you a six-digit code – no password to remember."
+        subtitle="We'll send you a sign-in code – no password to remember."
         onBack={() => setStep({ kind: 'welcome' })}
         submitLabel="Send code"
         onSubmit={async () => {
@@ -113,7 +113,7 @@ function AuthSteps() {
           onChangeText={setCode}
           placeholder="123456"
           keyboardType="number-pad"
-          maxLength={6}
+          maxLength={10}
           autoFocus
         />
       </Field>
@@ -296,7 +296,13 @@ function FormScreen({
     try {
       await onSubmit();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong – please try again');
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err != null && 'message' in err
+            ? String((err as { message: unknown }).message)
+            : 'Something went wrong – please try again';
+      setError(message);
     } finally {
       setBusy(false);
     }
