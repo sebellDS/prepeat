@@ -1,3 +1,8 @@
+// Side-effect import FIRST: release builds lazy-load modules, and the
+// NativeWind stylesheet must register before anything renders (leaving this
+// to a leaf module like constants/theme.ts ships an unstyled app).
+import '../global.css';
+
 import {
   IBMPlexSans_400Regular,
   IBMPlexSans_700Bold,
