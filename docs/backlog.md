@@ -33,9 +33,8 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 - [x] Realtime sync between phones; Live badge reflects the actual
       connection state (green Live / grey connecting / grey Off) – built
       2026-07-07
-- [ ] Apply migration 0005 in the Supabase dashboard (Thomas, with
-      click-by-click steps from Claude) – the app needs it before the new
-      shopping list works
+- [x] Apply migration 0005 in the Supabase dashboard – applied by Thomas
+      2026-07-07, verified working on-device (items survive force-quit)
 - [ ] Test the shared list on two devices once a second family member's
       phone is available (realtime, checked-by initials, category teaching)
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
