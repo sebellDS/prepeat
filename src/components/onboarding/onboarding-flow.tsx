@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Share,
   Text,
   TextInput,
@@ -493,24 +494,31 @@ function FormScreen({
         <TopBar onBack={onBack} />
         {/* The 2026-07-08 design puts the form on a white card: header,
             fields and footer live inside it; the action button stays on the
-            page background below. */}
-        <View className="w-full px-layout-small">
-          <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white px-layout-small pb-layout-small pt-layout-large">
-            <View className="w-full gap-layout-small">
-              <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
-                {title}
-              </Text>
-              <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-                {subtitle}
-              </Text>
-            </View>
-            <View className="w-full gap-layout-small">
-              {children(error)}
-              {footer}
+            page background below. The card scrolls when the keyboard plus
+            an error banner leave too little room – otherwise the button
+            would get squeezed into a labelless green bar. */}
+        <ScrollView
+          className="w-full flex-1"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 16 }}>
+          <View className="w-full px-layout-small">
+            <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white px-layout-small pb-layout-small pt-layout-large">
+              <View className="w-full gap-layout-small">
+                <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
+                  {title}
+                </Text>
+                <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+                  {subtitle}
+                </Text>
+              </View>
+              <View className="w-full gap-layout-small">
+                {children(error)}
+                {footer}
+              </View>
             </View>
           </View>
-        </View>
-        <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
+        </ScrollView>
+        <View className="w-full px-layout-small pb-layout-medium">
           <PrimaryButton label={submitLabel} onPress={submit} disabled={!canSubmit} busy={busy} />
         </View>
       </KeyboardAvoidingView>
