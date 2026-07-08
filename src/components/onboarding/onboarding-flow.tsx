@@ -206,27 +206,29 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
     return (
       <Screen>
         <TopBar />
-        <View className="w-full gap-layout-small px-layout-small pb-layout-medium">
-          <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
-            Set up your household
-          </Text>
-          <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-            The shared space where your family plans meals and shops together.
-          </Text>
-        </View>
-        <View className="w-full gap-layout-small px-layout-small">
-          <ChoiceCard
-            icon="add-home"
-            title="Start a household"
-            body="If you're the first one here, start your family's shared space – you'll get a code to invite the others."
-            onPress={() => setStep({ kind: 'create' })}
-          />
-          <ChoiceCard
-            icon="card-membership"
-            title="Join with a code"
-            body="Got a code from your family? Join them here."
-            onPress={() => setStep({ kind: 'join' })}
-          />
+        <View className="w-full px-layout-small">
+          <View className="w-full gap-layout-small px-layout-small pb-layout-small">
+            <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
+              Set up your household
+            </Text>
+            <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+              The shared space where your family plans meals and shops together.
+            </Text>
+          </View>
+          <View className="w-full gap-layout-small px-layout-small">
+            <ChoiceCard
+              icon="add-home"
+              title="Start a household"
+              body="If you're the first one here, start your family's shared space – you'll get a code to invite the others."
+              onPress={() => setStep({ kind: 'create' })}
+            />
+            <ChoiceCard
+              icon="card-membership"
+              title="Join with a code"
+              body="Got a code from your family? Join them here."
+              onPress={() => setStep({ kind: 'join' })}
+            />
+          </View>
         </View>
       </Screen>
     );
@@ -245,35 +247,37 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
       return (
         <Screen>
           <TopBar />
-          <View className="w-full gap-layout-small px-layout-small pb-layout-medium">
-            <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
-              {created.household.name} is ready
-            </Text>
-            <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-              Share this code so your family can join.
-            </Text>
-          </View>
-          <View className="w-full gap-layout-small px-layout-small">
-            <View className="w-full flex-row items-center rounded-large bg-surface-neutral-white p-layout-small">
-              <Text className="flex-1 text-center font-header text-display-5 font-emphasized leading-small text-text-default">
-                {created.inviteCode}
+          <View className="w-full px-layout-small">
+            <View className="w-full gap-layout-small px-layout-small pb-layout-small">
+              <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
+                {created.household.name} is ready
               </Text>
+              <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+                Share this code so your family can join.
+              </Text>
+            </View>
+            <View className="w-full gap-layout-small px-layout-small">
+              <View className="w-full flex-row items-center rounded-large bg-surface-neutral-white p-layout-small">
+                <Text className="flex-1 text-center font-header text-display-5 font-emphasized leading-small text-text-default">
+                  {created.inviteCode}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share the code"
+                  hitSlop={8}
+                  onPress={() => shareInvite(created.household.name, created.inviteCode)}>
+                  <MaterialIcons name="content-copy" size={24} color={ds.colors.icon.default} />
+                </Pressable>
+              </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Share the code"
-                hitSlop={8}
-                onPress={() => shareInvite(created.household.name, created.inviteCode)}>
-                <MaterialIcons name="content-copy" size={24} color={ds.colors.icon.default} />
+                onPress={() => shareInvite(created.household.name, created.inviteCode)}
+                className="w-full items-center rounded-medium bg-surface-neutral-white py-comp-large">
+                <Text className="font-paragraph text-paragraph font-default text-text-default">
+                  Share the code
+                </Text>
               </Pressable>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => shareInvite(created.household.name, created.inviteCode)}
-              className="w-full items-center rounded-medium bg-surface-neutral-white py-comp-large">
-              <Text className="font-paragraph text-paragraph font-default text-text-default">
-                Share the code
-              </Text>
-            </Pressable>
           </View>
           <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
             <PrimaryButton label="Continue" onPress={() => setCreatedWelcome(true)} />
@@ -383,7 +387,7 @@ function Screen({ children }: { children: ReactNode }) {
 
 function TopBar({ onBack }: { onBack?: () => void }) {
   return (
-    <View className="mb-layout-xlarge w-full flex-row items-center justify-center px-layout-small pt-layout-xsmall">
+    <View className="mb-layout-large w-full flex-row items-center justify-center px-layout-small pt-layout-xsmall">
       {onBack != null && (
         <Pressable
           onPress={onBack}
@@ -482,17 +486,22 @@ function FormScreen({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
         <TopBar onBack={onBack} />
-        <View className="w-full gap-layout-small px-layout-small pb-layout-medium">
-          <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
-            {title}
-          </Text>
-          <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-            {subtitle}
-          </Text>
-        </View>
-        <View className="w-full gap-layout-small px-layout-small">
-          {children(error)}
-          {footer}
+        {/* The 2026-07-08 design nests the form content one step in: 16px
+            outer + 16px inner padding, so headers and fields sit 32px from
+            the screen edge while the action button keeps the outer 16px. */}
+        <View className="w-full px-layout-small">
+          <View className="w-full gap-layout-small px-layout-small pb-layout-small">
+            <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
+              {title}
+            </Text>
+            <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+              {subtitle}
+            </Text>
+          </View>
+          <View className="w-full gap-layout-small px-layout-small">
+            {children(error)}
+            {footer}
+          </View>
         </View>
         <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
           <PrimaryButton label={submitLabel} onPress={submit} disabled={!canSubmit} busy={busy} />
