@@ -35,8 +35,8 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
       2026-07-07
 - [x] Apply migration 0005 in the Supabase dashboard – applied by Thomas
       2026-07-07, verified working on-device (items survive force-quit)
-- [ ] Test the shared list on two devices once a second family member's
-      phone is available (realtime, checked-by initials, category teaching)
+- [x] Test the shared list on two devices – Thomas + Pia, 2026-07-08:
+      realtime sync works across Wi-Fi and 5G, checked-by initials shown
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables
 
