@@ -46,8 +46,10 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
   in the done section, plus an automatic sweep when the list is filled from
   the weekly plan. No time-based auto-clear. Cleared items are soft-deleted,
   so undo/history stays possible.
-- Checked items now move to the done section after 0.6s (was 1.5s – felt
-  too long) with a fade/slide animation.
+- Checked items move to the done section after 0.2s with a fade/slide
+  animation (tuned down from 1.5s via 0.6s and 0.4s; 0.2s felt right,
+  2026-07-08). Accidental taps are undone from the done section instead
+  of a linger window.
 
 ## Design – in Thomas's court
 
