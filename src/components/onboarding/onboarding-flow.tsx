@@ -467,6 +467,7 @@ function FormScreen({
 }: FormScreenProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const submit = async () => {
     setBusy(true);
@@ -498,9 +499,16 @@ function FormScreen({
             an error banner leave too little room – otherwise the button
             would get squeezed into a labelless green bar. */}
         <ScrollView
+          ref={scrollRef}
           className="w-full flex-1"
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 16 }}>
+          contentContainerStyle={{ paddingBottom: 16 }}
+          // Fields, error banners and resend feedback live at the card's
+          // bottom, so whenever the card outgrows the space above the
+          // keyboard (small screens), keep the bottom in view (Thomas's
+          // call, 2026-07-08) – the title scrolling off is fine.
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => scrollRef.current?.scrollToEnd({ animated: false })}>
           <View className="w-full px-layout-small">
             <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white px-layout-small pb-layout-small pt-layout-large">
               <View className="w-full gap-layout-small">
