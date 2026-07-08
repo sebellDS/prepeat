@@ -3,7 +3,7 @@
 // error/waiting states predate the skin; visuals follow the frames.
 import { MaterialIcons } from '@expo/vector-icons';
 import type { Session } from '@supabase/supabase-js';
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -157,7 +157,7 @@ function AuthSteps() {
       submitLabel="Continue"
       onSubmit={() => verifyCode(step.email, code)}
       canSubmit={code.length === CODE_LENGTH}
-      footer={<LinkButton label="Send a new code" onPress={() => requestCode(step.email)} />}>
+      footer={<ResendLink email={step.email} onSent={() => setCode('')} />}>
       {(error) => (
         <Field label="Code" error={error}>
           <CodeInput value={code} onChangeText={setCode} hasError={error != null} />
@@ -663,6 +663,60 @@ function PrimaryButton({ label, onPress, disabled, busy }: PrimaryButtonProps) {
         </Text>
       )}
     </Pressable>
+  );
+}
+
+/**
+ * "Send a new code" with feedback (no design for this yet – improvised in
+ * the link's own spot): sending shows progress, success confirms and clears
+ * the boxes for the fresh code, failure offers a retry.
+ */
+function ResendLink({ email, onSent }: { email: string; onSent: () => void }) {
+  const { requestCode } = useAuth();
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  const revertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (revertTimer.current) clearTimeout(revertTimer.current);
+    },
+    [],
+  );
+
+  const send = async () => {
+    setStatus('sending');
+    try {
+      await requestCode(email);
+      onSent();
+      setStatus('sent');
+    } catch {
+      setStatus('failed');
+    }
+    // Either way the label reverts, so another code can be requested.
+    revertTimer.current = setTimeout(() => setStatus('idle'), 5000);
+  };
+
+  if (status === 'sending') {
+    return (
+      <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+        Sending a new code…
+      </Text>
+    );
+  }
+  if (status === 'sent') {
+    return (
+      <View className="flex-row items-center gap-comp-xsmall">
+        <MaterialIcons name="check" size={20} color={ds.colors.text.link} />
+        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+          New code sent – check your email
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <LinkButton
+      label={status === 'failed' ? "Couldn't send – tap to retry" : 'Send a new code'}
+      onPress={send}
+    />
   );
 }
 
