@@ -52,6 +52,9 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 ## Design – in Thomas's court
 
 - [ ] Weekly plan screen (Plan tab) – next screen after shopping
+- [ ] Resend-code feedback states ("Sending…" / "New code sent" / retry)
+      are improvised in code – design them if they should look different
+      (2026-07-08)
 - [x] The "Clear done items" button now matches Thomas's Figma design
       (danger button below the done list, node 74:5804) – 2026-07-07
 - [ ] Recipes screens (list, detail, create/edit)
