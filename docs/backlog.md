@@ -64,6 +64,10 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 
 ## Code debts (small, known, deliberate)
 
+- [ ] Onboarding error banners show raw technical messages ("fetch failed:
+      The network connection was lost.") – translate the common cases
+      (offline, wrong code, expired code) to plain language (2026-07-08)
+
 - [ ] Delete an item has no undo – soft delete is wired to the database now
       (migration 0005), so a "Deleted · Undo" toast just needs to clear
       deleted_at
