@@ -5,43 +5,54 @@ The working to-do list for the project. Scope and decisions live in
 next and in which order. Checked items move to git history; ideas graduate
 upward when we commit to them.
 
-## Next milestone: the shared list
+Ordering principle (agreed 2026-07-08): things that stand on their own and
+deliver value by themselves come before things that depend on them – and
+when a milestone finishes, the order gets a fresh look before starting the
+next one.
 
-The jump from "demo on Thomas's phone" to "the family's real shopping list".
+## Next milestone: recipes
 
-- [x] Sign-in flow – email + one-time code (decided 2026-07-07), sessions
-      never expire on a schedule, sign-out on the Household tab. Tested
-      end-to-end 2026-07-07: Thomas is user #1, "Sebell Kitchen" is
-      household #1
-- [x] Custom SMTP via Resend (connected 2026-07-07; sender is
-      onboarding@resend.dev for now)
-- [x] Household onboarding: create + shareable multi-use invite code +
-      join (migrations 0003 + 0004 applied)
-- [x] Verify the prepeat.app domain in Resend – done 2026-07-07, codes
-      now send from hello@prepeat.app to any address
-- [x] Re-skin the onboarding flow from Thomas's Figma designs – splash,
-      sign-in, name, household and join screens all match (2026-07-07)
+Chosen ahead of the weekly plan (2026-07-08): the planner's core
+interaction is picking a recipe, the plan→shopping-list magic needs recipe
+ingredients to snapshot, and recipes are useful on their own from day one –
+the family can start collecting favourites immediately.
+
+- [ ] Design: recipes screens – list, detail, create/edit with ingredients
+      (Thomas, in Figma). The create/edit ingredient rows should carry
+      name + quantity + unit, since these snapshot to the shopping list
+- [ ] Build: recipes tables (household-owned, created_by attribution,
+      copy-on-leave per projektgrundlag) + screens from the designs
+- [ ] URL import (schema.org with manual fallback) – deliberately its own
+      step after manual recipes work; the most technical piece
+
+## Then: the weekly plan
+
+- [ ] Design: weekly plan screen (Plan tab) – Monday start, up to four meal
+      slots/day, visible servings control; decide whether meals without a
+      recipe ("Leftovers", "Eating out") are allowed (recommended – needs a
+      small data-model change)
+- [ ] Parked question, becomes urgent here: how do new plan items reach a
+      non-empty shopping list mid-week? ("Fill from weekly plan" exists
+      only on the empty state today)
+- [ ] Build: meal plan tables + screen, ingredient snapshots into the
+      shopping list, realtime like the shopping list
+
+## In parallel – when it fits
+
+- [ ] Apple Developer account ($99/year) + TestFlight so the family can
+      install without cables (also ends the 7-day rebuild ritual on both
+      phones)
+- [ ] "Continue with Apple" button once the paid developer account exists
 - [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
       (2026-07-07) is 402px wide (1x), soft on a Retina screen
-- [ ] "Continue with Apple" button once the paid developer account exists
-- [x] Shopping list reads/writes Supabase instead of in-memory state
-      (quantity split into numeric + unit; learned categories and category
-      order migrate from device storage to the household on first launch)
-      – built 2026-07-07
-- [x] Migration: household category order (store-walk sorting) in Supabase
-      – part of migration 0005
-- [x] Realtime sync between phones; Live badge reflects the actual
-      connection state (green Live / grey connecting / grey Off) – built
-      2026-07-07
-- [x] Apply migration 0005 in the Supabase dashboard – applied by Thomas
-      2026-07-07, verified working on-device (items survive force-quit)
-- [x] Test the shared list on two devices – Thomas + Pia, 2026-07-08:
-      realtime sync works across Wi-Fi and 5G, checked-by initials shown
-- [ ] Apple Developer account ($99/year) + TestFlight so the family can
-      install without cables
+- [ ] Resend-code feedback states ("Sending…" / "New code sent" / retry)
+      are improvised in code – design them if they should look different
+      (2026-07-08)
 
 ## Decisions log (recent)
 
+- Recipes before the weekly plan (2026-07-08, Thomas's catch): build the
+  dependency first; the backlog gets re-ordered at each milestone boundary.
 - Checked items clear two ways (decided 2026-07-07): a manual "Clear" button
   in the done section, plus an automatic sweep when the list is filled from
   the weekly plan. No time-based auto-clear. Cleared items are soft-deleted,
@@ -51,31 +62,14 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
   2026-07-08). Accidental taps are undone from the done section instead
   of a linger window.
 
-## Design – in Thomas's court
-
-- [ ] Weekly plan screen (Plan tab) – next screen after shopping
-- [ ] Resend-code feedback states ("Sending…" / "New code sent" / retry)
-      are improvised in code – design them if they should look different
-      (2026-07-08)
-- [x] The "Clear done items" button now matches Thomas's Figma design
-      (danger button below the done list, node 74:5804) – 2026-07-07
-- [ ] Recipes screens (list, detail, create/edit)
-- [ ] Parked question from the shopping review: how do new plan items reach
-      a non-empty shopping list mid-week? ("Fill from weekly plan" exists
-      only on the empty state today)
-
 ## Code debts (small, known, deliberate)
 
 - [ ] Onboarding error banners show raw technical messages ("fetch failed:
       The network connection was lost.") – translate the common cases
       (offline, wrong code, expired code) to plain language (2026-07-08)
-
 - [ ] Delete an item has no undo – soft delete is wired to the database now
       (migration 0005), so a "Deleted · Undo" toast just needs to clear
       deleted_at
-- [x] Edit sheet grows past the top safe area when the category picker is
-      open – capped, scrolls inside, and the keyboard now dismisses when
-      the picker opens (2026-07-08). Whole item rows toggle on tap too.
 - [ ] "Fill from weekly plan" loads sample data until the Plan tab exists
 
 ## Ideas – not yet committed
@@ -92,8 +86,8 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 
 ## Recurring
 
-- [ ] Rebuild the app on Thomas's iPhone every ~7 days (free-signing expiry)
-      until TestFlight takes over
+- [ ] Rebuild the app on both family iPhones every ~7 days (free-signing
+      expiry, both clocks reset 2026-07-08) until TestFlight takes over
 
 ## Pre-launch checklist (v1 ship)
 
