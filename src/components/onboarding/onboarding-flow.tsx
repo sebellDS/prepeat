@@ -673,7 +673,7 @@ function PrimaryButton({ label, onPress, disabled, busy }: PrimaryButtonProps) {
  */
 function ResendLink({ email, onSent }: { email: string; onSent: () => void }) {
   const { requestCode } = useAuth();
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'wait' | 'failed'>('idle');
   const revertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -688,11 +688,14 @@ function ResendLink({ email, onSent }: { email: string; onSent: () => void }) {
       await requestCode(email);
       onSent();
       setStatus('sent');
-    } catch {
-      setStatus('failed');
+    } catch (err) {
+      // Supabase rate-limits codes ("you can only request this once every
+      // 60 seconds") – that is patience, not failure, so say so.
+      const message = err instanceof Error ? err.message : '';
+      setStatus(/security purposes|once every|rate limit/i.test(message) ? 'wait' : 'failed');
     }
     // Either way the label reverts, so another code can be requested.
-    revertTimer.current = setTimeout(() => setStatus('idle'), 5000);
+    revertTimer.current = setTimeout(() => setStatus('idle'), 8000);
   };
 
   if (status === 'sending') {
@@ -710,6 +713,13 @@ function ResendLink({ email, onSent }: { email: string; onSent: () => void }) {
           New code sent – check your email
         </Text>
       </View>
+    );
+  }
+  if (status === 'wait') {
+    return (
+      <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+        A code was just sent – wait a minute, then try again
+      </Text>
     );
   }
   return (
