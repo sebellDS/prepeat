@@ -37,17 +37,18 @@ function Checkbox({ checked }: { checked: boolean }) {
 export function ItemRow({ item, onToggle, onEdit, onDelete, showInitial }: ItemRowProps) {
   const swipeable = useRef<SwipeableMethods>(null);
 
+  // The whole row toggles (a checkbox alone is a small target in a store
+  // aisle, Thomas 2026-07-08); edit and delete live behind the swipe.
   const row = (
-    <View className="w-full flex-row items-center gap-comp-small bg-surface-neutral-white p-layout-small">
-      <Pressable
-        onPress={onToggle}
-        hitSlop={12}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: item.isChecked }}
-        accessibilityLabel={item.name}
-        className="h-[24px] justify-center">
+    <Pressable
+      onPress={onToggle}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: item.isChecked }}
+      accessibilityLabel={item.name}
+      className="w-full flex-row items-center gap-comp-small bg-surface-neutral-white p-layout-small">
+      <View className="h-[24px] justify-center">
         <Checkbox checked={item.isChecked} />
-      </Pressable>
+      </View>
       <View className="min-w-0 flex-1 justify-center">
         <Text className="font-paragraph text-paragraph font-default text-text-default">
           {item.name}
@@ -65,7 +66,7 @@ export function ItemRow({ item, onToggle, onEdit, onDelete, showInitial }: ItemR
           </Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 
   if (showInitial) {

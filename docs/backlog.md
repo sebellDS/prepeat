@@ -73,8 +73,9 @@ The jump from "demo on Thomas's phone" to "the family's real shopping list".
 - [ ] Delete an item has no undo – soft delete is wired to the database now
       (migration 0005), so a "Deleted · Undo" toast just needs to clear
       deleted_at
-- [ ] Edit sheet grows past the top safe area when the category picker is
-      open – cap its height and scroll inside
+- [x] Edit sheet grows past the top safe area when the category picker is
+      open – capped, scrolls inside, and the keyboard now dismisses when
+      the picker opens (2026-07-08). Whole item rows toggle on tap too.
 - [ ] "Fill from weekly plan" loads sample data until the Plan tab exists
 
 ## Ideas – not yet committed

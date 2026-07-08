@@ -1,6 +1,16 @@
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { ds } from '@/constants/ds';
 import { CATEGORIES, type Category, type ShoppingItem } from '@/lib/shopping-list';
@@ -75,7 +85,12 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
           <View className="w-full gap-comp-xsmall">
             <Text className="font-paragraph text-small font-default text-text-subtle">Category</Text>
             <Pressable
-              onPress={() => setPickerOpen((value) => !value)}
+              onPress={() => {
+                // The keyboard and the picker fight for the same space –
+                // hand it over cleanly instead of flickering.
+                Keyboard.dismiss();
+                setPickerOpen((value) => !value);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Category: ${aisle ?? 'none yet'}`}
               className="w-full flex-row items-center rounded-small border border-border bg-surface-neutral-lighter p-comp-large">
@@ -93,7 +108,12 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
               />
             </Pressable>
             {pickerOpen && (
-              <View className="w-full overflow-hidden rounded-small border border-border">
+              // Capped and scrollable so all nine categories are reachable
+              // even on small screens (bottom options were cut off before).
+              <ScrollView
+                className="w-full overflow-hidden rounded-small border border-border"
+                style={{ maxHeight: 264 }}
+                nestedScrollEnabled>
                 {CATEGORIES.map((category, index) => (
                   <Pressable
                     key={category}
@@ -114,7 +134,7 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
                     </Text>
                   </Pressable>
                 ))}
-              </View>
+              </ScrollView>
             )}
             <Text className="font-paragraph text-small font-default text-text-subtle">
               Your household will remember this.
