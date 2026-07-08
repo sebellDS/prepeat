@@ -68,8 +68,8 @@ export type LiveStatus = 'connecting' | 'live' | 'offline';
 // How long a freshly checked item stays in its category group before moving
 // down to the done section (design decision: forgiving of accidental taps).
 // Short – the move itself is animated, so the linger only needs to absorb
-// an immediate "oops" re-tap (1.5s → 0.6s → 0.4s, Thomas 2026-07-08).
-export const LINGER_MS = 400;
+// an immediate "oops" re-tap (1.5s → 0.6s → 0.4s → 0.2s, Thomas 2026-07-08).
+export const LINGER_MS = 200;
 
 export function normalizeItemName(name: string): string {
   // Same rule as ingredient merging: trimmed, lowercased. Also collapse
