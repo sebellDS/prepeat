@@ -124,6 +124,11 @@ function ShoppingListScreen() {
         <ScrollView
           className="flex-1"
           keyboardShouldPersistTaps="handled"
+          // The add-input keeps the keyboard up for entering several items;
+          // scrolling the list is the natural "I'm done typing, now I'm
+          // shopping" signal, so it puts the keyboard away (in-store
+          // feedback, 2026-07-09).
+          keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: BottomTabInset + 56, gap: 16 }}>
           {items.length === 0 ? (
             // While the first fetch is in flight the list area stays blank –
