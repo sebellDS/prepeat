@@ -28,7 +28,7 @@ import {
 } from '@/lib/household';
 
 const welcomePhoto = require('../../../assets/images/onboarding/welcome-macarons.jpg');
-const splashPhoto = require('../../../assets/images/onboarding/splash-poke.jpg');
+const splashPhoto = require('../../../assets/images/onboarding/splash.jpg');
 const bottomScrim = require('../../../assets/images/onboarding/scrim-bottom.png');
 
 interface OnboardingFlowProps {
