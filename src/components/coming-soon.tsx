@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Placeholder for tabs whose screens are not designed yet.
 export function ComingSoon({ title }: { title: string }) {
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lighter">
+    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lightest">
       <View className="w-full px-layout-small pb-layout-small">
         <Text className="font-header text-display-4 font-emphasized leading-medium text-text-default">
           {title}

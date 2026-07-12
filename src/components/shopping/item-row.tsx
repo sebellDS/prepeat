@@ -17,6 +17,8 @@ interface ItemRowProps {
   onDelete: () => void;
   /** Done-section rows show who checked the item and cannot be swiped. */
   showInitial?: boolean;
+  /** Your own checks get the quiet outlined badge; others' are filled. */
+  checkedByMe?: boolean;
 }
 
 function Checkbox({ checked }: { checked: boolean }) {
@@ -25,7 +27,7 @@ function Checkbox({ checked }: { checked: boolean }) {
       className={
         checked
           ? 'size-[18px] items-center justify-center rounded-xsmall bg-surface-primary-main'
-          : 'size-[18px] rounded-xsmall border border-border bg-surface-neutral-lighter'
+          : 'size-[18px] rounded-xsmall border border-border bg-surface-neutral-lightest'
       }>
       {checked && (
         <SymbolView name="checkmark" size={12} tintColor="#FFFFFF" weight="bold" />
@@ -34,7 +36,14 @@ function Checkbox({ checked }: { checked: boolean }) {
   );
 }
 
-export function ItemRow({ item, onToggle, onEdit, onDelete, showInitial }: ItemRowProps) {
+export function ItemRow({
+  item,
+  onToggle,
+  onEdit,
+  onDelete,
+  showInitial,
+  checkedByMe,
+}: ItemRowProps) {
   const swipeable = useRef<SwipeableMethods>(null);
 
   // The whole row toggles (a checkbox alone is a small target in a store
@@ -60,8 +69,20 @@ export function ItemRow({ item, onToggle, onEdit, onDelete, showInitial }: ItemR
         )}
       </View>
       {showInitial && item.checkedByInitial != null && (
-        <View className="size-[24px] items-center justify-center rounded-xlarge border border-text-accent">
-          <Text className="font-paragraph text-small font-emphasized text-text-accent">
+        // Figma initicial component (35:8260): outlined for your own
+        // checks, filled secondary for the rest of the household.
+        <View
+          className={
+            'size-[24px] items-center justify-center rounded-xlarge ' +
+            (checkedByMe
+              ? 'border border-surface-secondary-main bg-surface-neutral-lighter'
+              : 'bg-surface-secondary-main')
+          }>
+          <Text
+            className={
+              'font-header text-display-6 font-emphasized leading-xsmall ' +
+              (checkedByMe ? 'text-icon-accent' : 'text-text-inverse')
+            }>
             {item.checkedByInitial}
           </Text>
         </View>
@@ -88,7 +109,7 @@ export function ItemRow({ item, onToggle, onEdit, onDelete, showInitial }: ItemR
               swipeable.current?.close();
               onEdit();
             }}
-            className="w-[56px] items-center justify-center bg-surface-neutral-light">
+            className="w-[56px] items-center justify-center bg-surface-neutral-lighter">
             <MaterialIcons name="edit-note" size={24} color={ds.colors.icon.default} />
           </Pressable>
           <Pressable

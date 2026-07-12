@@ -12,6 +12,10 @@ module.exports = {
   // runs from ios/, and a cwd-relative glob would scan nothing.
   content: [require('path').join(__dirname, 'src/**/*.{ts,tsx}')],
   presets: [require('nativewind/preset')],
+  // v1 is light-only (dark deferred, see ds-theme.cjs header). Class-based
+  // dark mode means dark styles never activate on their own, and NativeWind's
+  // web runtime stops objecting to the forced light scheme.
+  darkMode: 'class',
   theme: {
     extend: {
       ...ds,

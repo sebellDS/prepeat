@@ -3,12 +3,32 @@
 // Tailwind class. Classes remain the default way to consume tokens.
 /* eslint-disable @typescript-eslint/no-require-imports */
 interface ColorScale {
+  lightest: string;
   lighter: string;
   light: string;
   main: string;
   dark: string;
   darker: string;
+  darkest: string;
   DEFAULT: string;
+}
+
+// Button state recipe. Hover exists for the web; native uses enabled/pressed.
+interface ButtonStates {
+  enabled: string;
+  hover: string;
+  pressed: string;
+}
+
+// Chip state recipe. The hover keys exist for the web; native chips use
+// enabled/pressed/active/active-pressed.
+interface ChipStates {
+  enabled: string;
+  hover: string;
+  pressed: string;
+  active: string;
+  'active-hover': string;
+  'active-pressed': string;
 }
 
 interface DsTheme {
@@ -38,6 +58,23 @@ interface DsTheme {
     };
     border: { default: string; DEFAULT: string };
     icon: { default: string; DEFAULT: string };
+    button: {
+      solid: { fill: ButtonStates; label: ButtonStates };
+      outline: {
+        border: ButtonStates;
+        fill: Omit<ButtonStates, 'enabled'>; // enabled is transparent
+        label: ButtonStates;
+      };
+      text: { label: ButtonStates; underline: ButtonStates };
+    };
+    chip: {
+      solid: { fill: ChipStates; label: ChipStates };
+      outline: {
+        border: ChipStates;
+        fill: Omit<ChipStates, 'enabled'>; // enabled is transparent
+        label: ChipStates;
+      };
+    };
   };
 }
 

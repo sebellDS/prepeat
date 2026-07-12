@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Input } from '@/components/ui/input';
 import { ds } from '@/constants/ds';
 import { useAuth } from '@/lib/auth';
 import {
@@ -261,7 +262,7 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
                 </Text>
               </View>
               <View className="w-full gap-layout-small">
-                <View className="w-full flex-row items-center rounded-large bg-surface-neutral-lighter p-layout-small">
+                <View className="w-full flex-row items-center rounded-large bg-surface-neutral-lightest p-layout-small">
                   <Text className="flex-1 text-center font-header text-display-4 font-emphasized leading-medium text-text-link">
                     {created.inviteCode}
                   </Text>
@@ -276,9 +277,9 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => shareInvite(created.household.name, created.inviteCode)}
-                  className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium bg-surface-primary-main py-comp-large">
-                  <MaterialIcons name="ios-share" size={24} color={ds.colors.text.inverse} />
-                  <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-inverse">
+                  className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium bg-button-solid-fill-enabled py-comp-large">
+                  <MaterialIcons name="ios-share" size={24} color={ds.colors.button.solid.label.enabled} />
+                  <Text className="font-paragraph text-paragraph font-default leading-xsmall text-button-solid-label-enabled">
                     Share the code
                   </Text>
                 </Pressable>
@@ -385,7 +386,7 @@ async function shareInvite(householdName: string, inviteCode: string) {
 
 function Screen({ children }: { children: ReactNode }) {
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-neutral-lighter">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-neutral-lightest">
       {children}
     </SafeAreaView>
   );
@@ -549,7 +550,7 @@ function Field({
         {label}
       </Text>
       {error != null && (
-        <View className="w-full flex-row items-start gap-comp-large rounded-medium bg-error-lighter px-comp-large py-comp-small">
+        <View className="w-full flex-row items-start gap-comp-large rounded-medium bg-error-lightest px-comp-large py-comp-small">
           <Text className="flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default">
             {error}
           </Text>
@@ -591,13 +592,16 @@ function CodeInput({
         {Array.from({ length: CODE_LENGTH }, (_, index) => (
           <View
             key={index}
+            // A box stays lit once it holds a digit (Figma signin 4: all
+            // filled boxes keep the lime border), plus the box being typed
+            // into while the field has focus.
             className={
-              'h-[56px] flex-1 items-center justify-center rounded-medium bg-surface-neutral-lighter ' +
+              'h-[56px] flex-1 items-center justify-center rounded-medium ' +
               (hasError
-                ? 'border-2 border-error'
-                : focused && index === activeIndex
-                  ? 'border-2 border-surface-primary-main'
-                  : 'border border-border')
+                ? 'border-2 border-forms-border-error bg-forms-background-default'
+                : index < value.length || (focused && index === activeIndex)
+                  ? 'border-2 border-forms-border-focused bg-forms-background-active'
+                  : 'border border-forms-border-enabled bg-forms-background-default')
             }>
             <Text className="font-paragraph text-paragraph text-text-default">
               {digits[index] ?? ''}
@@ -623,37 +627,6 @@ function CodeInput({
   );
 }
 
-function Input({
-  hasError,
-  onFocus,
-  onBlur,
-  ...props
-}: React.ComponentProps<typeof TextInput> & { hasError?: boolean }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <TextInput
-      placeholderTextColor={ds.colors.text.disabled}
-      {...props}
-      onFocus={(event) => {
-        setFocused(true);
-        onFocus?.(event);
-      }}
-      onBlur={(event) => {
-        setFocused(false);
-        onBlur?.(event);
-      }}
-      className={
-        'w-full rounded-medium bg-surface-neutral-lighter p-comp-large font-paragraph text-paragraph text-text-default ' +
-        (hasError
-          ? 'border-2 border-error'
-          : focused
-            ? 'border-2 border-surface-primary-main'
-            : 'border border-border')
-      }
-    />
-  );
-}
-
 interface PrimaryButtonProps {
   label: string;
   onPress: () => void;
@@ -669,12 +642,12 @@ function PrimaryButton({ label, onPress, disabled, busy }: PrimaryButtonProps) {
       disabled={disabled || busy}
       className={
         'w-full items-center rounded-medium px-comp-xlarge py-comp-large ' +
-        (disabled ? 'bg-surface-neutral-main' : 'bg-surface-primary-main')
+        (disabled ? 'bg-surface-neutral-light' : 'bg-button-solid-fill-enabled')
       }>
       {busy ? (
-        <ActivityIndicator color={ds.colors.text.inverse} />
+        <ActivityIndicator color={ds.colors.button.solid.label.enabled} />
       ) : (
-        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-inverse">
+        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-button-solid-label-enabled">
           {label}
         </Text>
       )}
@@ -775,7 +748,7 @@ function ChoiceCard({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="w-full flex-row gap-comp-large rounded-large bg-surface-neutral-lighter p-layout-small">
+      className="w-full flex-row gap-comp-large rounded-large bg-surface-neutral-lightest p-layout-small">
       <MaterialIcons name={icon} size={48} color={ds.colors.surface.primary.main} />
       <View className="min-w-0 flex-1 gap-comp-small">
         <Text className="font-paragraph text-paragraph font-emphasized leading-xsmall text-text-default">

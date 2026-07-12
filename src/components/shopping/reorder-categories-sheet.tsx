@@ -118,7 +118,7 @@ function DraggableRow({ category, index, count, onMove }: DraggableRowProps) {
       ]}
       className={
         'flex-row items-center rounded-small px-comp-medium ' +
-        (dragging ? 'bg-surface-neutral-light' : 'bg-surface-neutral-white')
+        (dragging ? 'bg-surface-neutral-lighter' : 'bg-surface-neutral-white')
       }>
       <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
         {category}

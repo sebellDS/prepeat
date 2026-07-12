@@ -64,7 +64,7 @@ export function CategoryGroup({
               entering={FadeIn.duration(200)}
               exiting={FadeOut.duration(150)}
               layout={LinearTransition.duration(250)}>
-              {index > 0 && <View className="h-px w-full bg-surface-neutral-lighter" />}
+              {index > 0 && <View className="h-px w-full bg-surface-neutral-lightest" />}
               <ItemRow
                 item={item}
                 onToggle={() => onToggle(item.id)}

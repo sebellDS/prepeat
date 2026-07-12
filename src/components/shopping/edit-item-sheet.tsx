@@ -8,10 +8,10 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
+import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
 import {
   CATEGORIES,
@@ -113,31 +113,27 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
               <Text className="font-paragraph text-small font-default text-text-subtle">
                 Name
               </Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                accessibilityLabel="Name"
-                className="w-full rounded-small border border-border bg-surface-neutral-lighter p-comp-large font-paragraph text-paragraph text-text-default"
-              />
+              <Input value={name} onChangeText={setName} accessibilityLabel="Name" />
             </View>
 
             <View className="w-full gap-comp-xsmall">
               <Text className="font-paragraph text-small font-default text-text-subtle">
                 Quantity
               </Text>
-              <TextInput
+              <Input
                 value={quantity}
                 onChangeText={setQuantity}
                 placeholder="e.g. 250g"
-                placeholderTextColor={ds.colors.text.disabled}
                 accessibilityLabel="Quantity"
-                className="w-full rounded-small border border-border bg-surface-neutral-lighter p-comp-large font-paragraph text-paragraph text-text-default"
               />
             </View>
 
             <View className="w-full gap-comp-xsmall">
               <Text className="font-paragraph text-small font-default text-text-subtle">
                 Category
+              </Text>
+              <Text className="font-paragraph text-small font-default text-text-subtle">
+                Your household will remember this.
               </Text>
               <Pressable
                 onPress={() => {
@@ -148,7 +144,7 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Category: ${aisle ?? "none yet"}`}
-                className="w-full flex-row items-center rounded-small border border-border bg-surface-neutral-lighter p-comp-large"
+                className="w-full flex-row items-center rounded-medium border border-forms-border-enabled bg-forms-background-default p-comp-large"
               >
                 <Text
                   className={
@@ -168,7 +164,7 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
                 // Capped and scrollable so all nine categories are reachable
                 // even on small screens (bottom options were cut off before).
                 <ScrollView
-                  className="w-full overflow-hidden rounded-small border border-border"
+                  className="w-full overflow-hidden rounded-medium border border-border"
                   style={{ maxHeight: 264 }}
                   nestedScrollEnabled
                 >
@@ -183,10 +179,10 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
                       }}
                       className={
                         (category === aisle
-                          ? "bg-success-lighter"
+                          ? "bg-success-lightest"
                           : "bg-surface-neutral-white") +
                         (index > 0
-                          ? " border-t border-surface-neutral-lighter"
+                          ? " border-t border-surface-neutral-lightest"
                           : "")
                       }
                     >
@@ -197,29 +193,17 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
                   ))}
                 </ScrollView>
               )}
-              <Text className="font-paragraph text-small font-default text-text-subtle">
-                Your household will remember this.
-              </Text>
             </View>
           </View>
         </ScrollView>
 
-        <View className="w-full flex-row items-center justify-between pt-comp-small">
-          <Pressable
-            onPress={onClose}
-            accessibilityRole="button"
-            className="rounded-small border border-surface-primary-main px-comp-xlarge py-comp-medium"
-          >
-            <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
-              Cancel
-            </Text>
-          </Pressable>
+        <View className="w-full pt-comp-small">
           <Pressable
             onPress={save}
             accessibilityRole="button"
-            className="rounded-small bg-surface-primary-main px-comp-xlarge py-comp-medium"
+            className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
           >
-            <Text className="font-paragraph text-components-button-label font-emphasized text-text-default">
+            <Text className="font-paragraph text-components-button-label font-default text-text-default">
               Done
             </Text>
           </Pressable>

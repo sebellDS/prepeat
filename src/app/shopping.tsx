@@ -28,6 +28,7 @@ function ShoppingListScreen() {
     loading,
     items,
     categoryOrder,
+    userId,
     addItem,
     toggleItem,
     updateItem,
@@ -103,7 +104,7 @@ function ShoppingListScreen() {
       });
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lighter">
+    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lightest">
       <View className="w-full flex-row items-center gap-comp-small px-layout-small pb-layout-small">
         <Text className="flex-1 font-header text-display-4 font-emphasized leading-medium text-text-default">
           Shopping list
@@ -156,6 +157,7 @@ function ShoppingListScreen() {
               ))}
               <DoneSection
                 items={doneItems}
+                currentUserId={userId}
                 onToggle={toggleItem}
                 onEdit={setEditing}
                 onDelete={removeItem}

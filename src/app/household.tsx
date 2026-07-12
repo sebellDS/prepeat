@@ -35,7 +35,7 @@ export default function HouseholdScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lighter">
+    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lightest">
       <View className="w-full px-layout-small pb-layout-small">
         <Text className="font-header text-display-4 font-emphasized leading-medium text-text-default">
           Household
@@ -57,8 +57,8 @@ export default function HouseholdScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={invite}
-          className="w-full items-center rounded-small bg-surface-primary-main py-comp-large">
-          <Text className="font-paragraph text-components-button-label font-emphasized text-text-default">
+          className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large">
+          <Text className="font-paragraph text-components-button-label font-default text-text-default">
             Invite a family member
           </Text>
         </Pressable>
@@ -74,7 +74,7 @@ export default function HouseholdScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={signOut}
-          className="w-full items-center rounded-small border border-border py-comp-large">
+          className="w-full items-center rounded-medium border border-border py-comp-large">
           <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
             Sign out
           </Text>

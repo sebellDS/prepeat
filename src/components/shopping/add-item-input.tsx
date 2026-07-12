@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
 
-import { ds } from '@/constants/ds';
+import { Input } from '@/components/ui/input';
 
 interface AddItemInputProps {
   onSubmit: (name: string) => void;
@@ -9,7 +9,6 @@ interface AddItemInputProps {
 
 export function AddItemInput({ onSubmit }: AddItemInputProps) {
   const [value, setValue] = useState('');
-  const inputRef = useRef<TextInput>(null);
 
   const submit = () => {
     const name = value.trim();
@@ -21,8 +20,7 @@ export function AddItemInput({ onSubmit }: AddItemInputProps) {
 
   return (
     <View className="w-full px-layout-small pb-layout-small">
-      <TextInput
-        ref={inputRef}
+      <Input
         value={value}
         onChangeText={setValue}
         onSubmitEditing={submit}
@@ -30,9 +28,7 @@ export function AddItemInput({ onSubmit }: AddItemInputProps) {
         submitBehavior="submit"
         returnKeyType="done"
         placeholder="Add an item"
-        placeholderTextColor={ds.colors.text.subtle}
         accessibilityLabel="Add an item"
-        className="w-full rounded-small border border-border bg-surface-neutral-lighter p-comp-large font-paragraph text-paragraph text-text-default"
       />
     </View>
   );

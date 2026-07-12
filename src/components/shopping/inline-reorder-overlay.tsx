@@ -23,7 +23,7 @@ export function InlineReorderOverlay({ order, active, fingerY, listTop }: Inline
   return (
     <View
       style={StyleSheet.absoluteFill}
-      className="bg-surface-neutral-lighter px-layout-small pt-layout-xsmall">
+      className="bg-surface-neutral-lightest px-layout-small pt-layout-xsmall">
       <View style={{ height: order.length * INLINE_ROW_HEIGHT }} className="w-full">
         {order.map((category, index) => (
           <OverlayRow
@@ -83,7 +83,7 @@ function OverlayRow({ category, index, count, activeIndex, isActive, fingerY, li
       <View
         className={
           'mb-comp-xsmall flex-1 flex-row items-center rounded-small px-comp-medium ' +
-          (isActive ? 'bg-surface-neutral-light' : 'bg-surface-neutral-white')
+          (isActive ? 'bg-surface-neutral-lighter' : 'bg-surface-neutral-white')
         }>
         <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
           {category}

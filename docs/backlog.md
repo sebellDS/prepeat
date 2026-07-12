@@ -51,6 +51,19 @@ the family can start collecting favourites immediately.
 
 ## Decisions log (recent)
 
+- DS 7-step colour ramps adopted (2026-07-11): tokens re-synced, existing
+  screens remapped one step (old "lighter" tints are now "lightest" etc.)
+  so backgrounds/badges kept their look; the brand green retuned
+  (#47A518 → #56C91D). The DS's new Chip component is implemented natively
+  at src/components/ui/chip.tsx (solid + outline, active/pressed/disabled),
+  ready for the recipes milestone's filter rows.
+- Solid buttons follow the DS button recipe now (2026-07-11): light-lime
+  fill + ink label (was green + white). The app consumes button/* tokens
+  from the theme fragment (classes like bg-button-solid-fill-enabled);
+  "button" was added to the DS's NativeWind export list alongside chip.
+  This was the visible piece of the redesign – Thomas flagged the phone
+  still "looking old" when only ramp values had shifted.
+
 - Recipes before the weekly plan (2026-07-08, Thomas's catch): build the
   dependency first; the backlog gets re-ordered at each milestone boundary.
 - Checked items clear two ways (decided 2026-07-07): a manual "Clear" button
@@ -72,6 +85,36 @@ the family can start collecting favourites immediately.
       deleted_at
 - [ ] "Fill from weekly plan" loads sample data until the Plan tab exists
 
+## Design QA – sign-in + shopping vs Figma (found + fixed 2026-07-12)
+
+Root cause for most of these was the DS `forms/*` tokens missing from the
+DS's NativeWind export list, so the app improvised input colours. Fixed by
+adding `forms` to the export list and re-syncing; the DS-defined active
+border resolved to lime #83E651 (the #47A518 in the Figma file was the
+pre-retune published value).
+
+- [x] Shopping: the "Add an item" field and all edit-sheet fields had no
+      active state – all text inputs now share src/components/ui/input.tsx
+      (grey + #B5B1AB border at rest, white + 2px lime when focused, red
+      on error)
+- [x] Sign-in code boxes: boxes that hold a digit now keep the lime border
+      and white fill (Figma signin 4), not just the box being typed into
+- [x] Empty-state "Fill from weekly plan" border → button outline token
+      (#83E651)
+- [x] Done-list initials: two variants like the design – your own checks
+      outlined (neutral-lighter fill, secondary border), other members
+      filled secondary with an inverse letter, Montserrat display-6; wired
+      checked_by_user_id through to the client for this
+- [x] Live badge (and its connecting/offline siblings) fill: lightest →
+      lighter ramp per the statusBatch component
+- [x] "Add an item" placeholder: keep the disabled grey (Thomas,
+      2026-07-12) – the dark text in the Figma mock is typed-value styling,
+      not placeholder styling
+- [ ] DS nit spotted in passing: color/text/contrast-text in the DS repo
+      aliases color.text.primary (dark), while Figma renders it near-white
+      – looks like a wiring slip in the DS token source, check on the DS
+      side
+
 ## Ideas – not yet committed
 
 - [ ] **Per-store category layouts** (Thomas, 2026-07-06): save the category
@@ -88,6 +131,9 @@ the family can start collecting favourites immediately.
 
 - [ ] Rebuild the app on both family iPhones every ~7 days (free-signing
       expiry, both clocks reset 2026-07-08) until TestFlight takes over
+- [ ] After every DS publish/retune (Thomas says "DS published"): rebuild
+      tokens in the DS repo, `npm run sync-ds-tokens` here, diff
+      ds-theme.cjs and walk the affected screens (agreed 2026-07-12)
 
 ## Pre-launch checklist (v1 ship)
 

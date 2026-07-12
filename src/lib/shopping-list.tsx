@@ -55,6 +55,9 @@ export interface ShoppingItem {
   aisle: Category | null;
   isChecked: boolean;
   checkedByInitial: string | null;
+  // Who checked it – the done section styles your own checks differently
+  // from the rest of the household's.
+  checkedByUserId: string | null;
   checkedAt: number | null;
   // UI-only: a checked item lingers in its category group until it settles
   // into the done section (forgiving of accidental taps).
@@ -86,6 +89,7 @@ interface ItemRow {
   aisle: string | null;
   is_checked: boolean;
   checked_by_initial: string | null;
+  checked_by_user_id: string | null;
   checked_at: string | null;
   updated_at: string;
   deleted_at: string | null;
@@ -103,6 +107,7 @@ function rowToItem(row: ItemRow, prev?: ShoppingItem): ShoppingItem {
     aisle: toCategory(row.aisle),
     isChecked: row.is_checked,
     checkedByInitial: row.checked_by_initial,
+    checkedByUserId: row.checked_by_user_id,
     checkedAt: row.checked_at ? Date.parse(row.checked_at) : null,
     // A check from another phone goes straight to the done section; our own
     // check keeps its local linger state so the realtime echo of the write
@@ -135,7 +140,7 @@ type Action =
   | { type: 'apply-row'; row: ItemRow }
   | { type: 'remove-row'; id: string }
   | { type: 'add'; name: string; id: string; now: number }
-  | { type: 'toggle'; id: string; now: number; initial: string }
+  | { type: 'toggle'; id: string; now: number; initial: string; userId: string }
   | { type: 'settle'; id: string }
   | {
       type: 'update';
@@ -198,6 +203,7 @@ function reducer(state: State, action: Action): State {
         aisle,
         isChecked: false,
         checkedByInitial: null,
+        checkedByUserId: null,
         checkedAt: null,
         settled: false,
         updatedAt: action.now,
@@ -214,6 +220,7 @@ function reducer(state: State, action: Action): State {
                   ...item,
                   isChecked: false,
                   checkedByInitial: null,
+                  checkedByUserId: null,
                   checkedAt: null,
                   settled: false,
                 }
@@ -221,6 +228,7 @@ function reducer(state: State, action: Action): State {
                   ...item,
                   isChecked: true,
                   checkedByInitial: action.initial,
+                  checkedByUserId: action.userId,
                   checkedAt: action.now,
                 }
             : item,
@@ -347,7 +355,7 @@ async function fetchItems(listId: string): Promise<ItemRow[]> {
   const { data, error } = await supabase
     .from('shopping_list_items')
     .select(
-      'id, name, quantity, unit, aisle, is_checked, checked_by_initial, checked_at, updated_at, deleted_at',
+      'id, name, quantity, unit, aisle, is_checked, checked_by_initial, checked_by_user_id, checked_at, updated_at, deleted_at',
     )
     .eq('list_id', listId)
     .is('deleted_at', null)
@@ -422,6 +430,8 @@ interface ShoppingListApi {
   live: LiveStatus;
   items: ShoppingItem[];
   categoryOrder: Category[];
+  /** The signed-in member – done-section initials style "you" differently. */
+  userId: string;
   addItem: (name: string) => void;
   toggleItem: (id: string) => void;
   updateItem: (
@@ -603,7 +613,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       const item = stateRef.current.items.find((candidate) => candidate.id === id);
       if (!item) return;
       const now = Date.now();
-      dispatch({ type: 'toggle', id, now, initial });
+      dispatch({ type: 'toggle', id, now, initial, userId });
       // After the linger window the item settles into the done section (the
       // settle action is a no-op if it was unchecked again in the meantime).
       setTimeout(() => dispatch({ type: 'settle', id }), LINGER_MS);
@@ -736,6 +746,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
         aisle: row.aisle,
         isChecked: false,
         checkedByInitial: null,
+        checkedByUserId: null,
         checkedAt: null,
         settled: false,
         updatedAt: now,
@@ -750,6 +761,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       live,
       items: state.items,
       categoryOrder: state.categoryOrder,
+      userId,
       addItem,
       toggleItem,
       updateItem,
@@ -763,6 +775,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       live,
       state.items,
       state.categoryOrder,
+      userId,
       addItem,
       toggleItem,
       updateItem,

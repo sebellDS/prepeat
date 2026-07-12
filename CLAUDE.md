@@ -64,6 +64,30 @@ Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
 - Realtime only where it matters: shopping list and meal plan. Not recipe
   editing.
 
+## Design system workflow (agreed 2026-07-12)
+
+The app is a testbed for the Sebell DS, which is still under development.
+The DS is the source of truth for every colour, radius, spacing and type
+value – not the hex numbers visible in Figma frames (published library
+values in Figma lag behind the DS repo).
+
+1. **Never improvise a token.** If a screen needs a token family that is
+   not in `src/constants/ds-theme.cjs` yet (like forms/* before
+   2026-07-12), stop and add the group to the export list in the DS repo
+   (`packages/tokens/transforms/generate-nativewind.mjs`), run
+   `npm run tokens:build` there, then `npm run sync-ds-tokens` here.
+   Approximating with a neighbouring token silently drifts when the DS is
+   retuned.
+2. **After every DS publish or retune**, re-run the token build + sync,
+   diff `ds-theme.cjs` and walk the affected screens. The owner saying
+   "DS published" is the trigger (also under Recurring in the backlog).
+3. **Interactive states are built, not inherited.** React Native has no
+   hover/focus CSS – every state a component shows must be coded
+   explicitly. When implementing a component, check its Figma frames for
+   all states (default/active/error/disabled) and map web-ish token names
+   (`hover`) to their touch meaning (focused/pressed). Text inputs share
+   `src/components/ui/input.tsx` so the active state cannot drift apart.
+
 ## Writing style
 
 - Never use em-dashes (—); use an en-dash (–) instead, in prose, code comments

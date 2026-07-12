@@ -11,6 +11,8 @@ import type { ShoppingItem } from '@/lib/shopping-list';
 
 interface DoneSectionProps {
   items: ShoppingItem[];
+  /** The signed-in member, to tell "your" checkmarks from the family's. */
+  currentUserId: string;
   onToggle: (id: string) => void;
   onEdit: (item: ShoppingItem) => void;
   onDelete: (id: string) => void;
@@ -18,7 +20,14 @@ interface DoneSectionProps {
   onClear: () => void;
 }
 
-export function DoneSection({ items, onToggle, onEdit, onDelete, onClear }: DoneSectionProps) {
+export function DoneSection({
+  items,
+  currentUserId,
+  onToggle,
+  onEdit,
+  onDelete,
+  onClear,
+}: DoneSectionProps) {
   const [collapsed, setCollapsed] = useState(false);
   if (items.length === 0) return null;
   const label = `${items.length} ${items.length === 1 ? 'item' : 'items'} done`;
@@ -28,7 +37,7 @@ export function DoneSection({ items, onToggle, onEdit, onDelete, onClear }: Done
           cancel out) so the darker background runs to the bottom of the
           viewport and through bottom overscroll. */}
       <View
-        className="w-full gap-layout-small bg-surface-neutral-light px-layout-small pt-layout-xsmall"
+        className="w-full gap-layout-small bg-surface-neutral-lighter px-layout-small pt-layout-xsmall"
         style={{ paddingBottom: 1000, marginBottom: -1000 }}>
         <View className="w-full gap-layout-xsmall">
           <Pressable
@@ -54,10 +63,11 @@ export function DoneSection({ items, onToggle, onEdit, onDelete, onClear }: Done
                   entering={FadeIn.duration(200)}
                   exiting={FadeOut.duration(150)}
                   layout={LinearTransition.duration(250)}>
-                  {index > 0 && <View className="h-px w-full bg-surface-neutral-lighter" />}
+                  {index > 0 && <View className="h-px w-full bg-surface-neutral-lightest" />}
                   <ItemRow
                     item={item}
                     showInitial
+                    checkedByMe={item.checkedByUserId === currentUserId}
                     onToggle={() => onToggle(item.id)}
                     onEdit={() => onEdit(item)}
                     onDelete={() => onDelete(item.id)}
