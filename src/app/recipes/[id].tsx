@@ -1,20 +1,25 @@
-import { MaterialIcons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import ReanimatedSwipeable, {
-  type SwipeableMethods,
-} from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { EditIngredientSheet } from '@/components/recipes/edit-ingredient-sheet';
-import { EditStepSheet } from '@/components/recipes/edit-step-sheet';
-import { ServingsCounter } from '@/components/recipes/servings-counter';
-import { ds } from '@/constants/ds';
-import { BottomTabInset } from '@/constants/theme';
-import { useAuth } from '@/lib/auth';
-import { useHousehold } from '@/lib/household-context';
+import { EditIngredientSheet } from "@/components/recipes/edit-ingredient-sheet";
+import { EditStepSheet } from "@/components/recipes/edit-step-sheet";
+import { ServingsCounter } from "@/components/recipes/servings-counter";
+import { SwipeActions } from "@/components/recipes/swipe-actions";
+import { ds } from "@/constants/ds";
+import { BottomTabInset } from "@/constants/theme";
+import { useAuth } from "@/lib/auth";
+import { useHousehold } from "@/lib/household-context";
 import {
   addIngredientsToShoppingList,
   deleteIngredient,
@@ -27,9 +32,9 @@ import {
   type Recipe,
   type RecipeIngredient,
   type RecipeStep,
-} from '@/lib/recipes';
+} from "@/lib/recipes";
 
-type Dialog = 'delete' | 'shopping' | null;
+type Dialog = "delete" | "shopping" | null;
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,12 +46,18 @@ export default function RecipeDetailScreen() {
   const [servings, setServings] = useState<number | null>(null);
   // Cooking mode: checked-off ingredients/steps live on this phone only –
   // they are progress through tonight's cooking, not shared state.
-  const [doneIngredients, setDoneIngredients] = useState<Set<string>>(new Set());
+  const [doneIngredients, setDoneIngredients] = useState<Set<string>>(
+    new Set(),
+  );
   const [doneSteps, setDoneSteps] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
-  const [editingIngredient, setEditingIngredient] = useState<RecipeIngredient | 'new' | null>(null);
-  const [editingStep, setEditingStep] = useState<RecipeStep | 'new' | null>(null);
+  const [editingIngredient, setEditingIngredient] = useState<
+    RecipeIngredient | "new" | null
+  >(null);
+  const [editingStep, setEditingStep] = useState<RecipeStep | "new" | null>(
+    null,
+  );
 
   const reload = useCallback(async () => {
     try {
@@ -54,7 +65,7 @@ export default function RecipeDetailScreen() {
       setRecipe(fresh);
       setServings((current) => current ?? fresh.servings);
     } catch (error) {
-      console.warn('[recipes] detail fetch failed', error);
+      console.warn("[recipes] detail fetch failed", error);
     }
   }, [id]);
 
@@ -66,7 +77,10 @@ export default function RecipeDetailScreen() {
 
   if (recipe == null) {
     return (
-      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-surface-neutral-lighter">
+      <SafeAreaView
+        edges={["top"]}
+        className="flex-1 items-center justify-center bg-surface-neutral-lightest"
+      >
         <ActivityIndicator color={ds.colors.surface.primary.main} />
       </SafeAreaView>
     );
@@ -78,96 +92,139 @@ export default function RecipeDetailScreen() {
   const toggleFavorite = () => {
     setRecipe({ ...recipe, isFavorite: !recipe.isFavorite });
     setFavorite(recipe.id, !recipe.isFavorite).catch((error) =>
-      console.warn('[recipes] favorite failed', error),
+      console.warn("[recipes] favorite failed", error),
     );
   };
 
   const confirmDialog = async () => {
     try {
-      if (dialog === 'delete') {
+      if (dialog === "delete") {
         await softDeleteRecipe(recipe.id);
         setDialog(null);
         router.back();
         return;
       }
-      if (dialog === 'shopping') {
+      if (dialog === "shopping") {
         await addIngredientsToShoppingList(
           recipe,
           chosenServings,
           household.id,
-          session?.user?.id ?? '',
+          session?.user?.id ?? "",
         );
       }
     } catch (error) {
-      console.warn('[recipes] action failed', error);
+      console.warn("[recipes] action failed", error);
     }
     setDialog(null);
   };
 
-  const menuItems: { icon: keyof typeof MaterialIcons.glyphMap; label: string; onPress: () => void }[] = [
+  const menuItems: {
+    icon: keyof typeof MaterialIcons.glyphMap;
+    label: string;
+    onPress: () => void;
+  }[] = [
     {
-      icon: recipe.isFavorite ? 'favorite' : 'favorite-border',
-      label: recipe.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+      icon: recipe.isFavorite ? "favorite" : "favorite-border",
+      label: recipe.isFavorite ? "Remove from favorites" : "Add to favorites",
       onPress: toggleFavorite,
     },
     // "Add recipe to weekly plan" joins this menu when the Plan tab exists.
-    { icon: 'shopping-bag', label: 'Add ingredients to shopping list', onPress: () => setDialog('shopping') },
-    { icon: 'add', label: 'Add ingredient to this recipe', onPress: () => setEditingIngredient('new') },
-    { icon: 'add', label: 'Add instruction to this recipe', onPress: () => setEditingStep('new') },
-    { icon: 'edit-note', label: 'Edit recipe details', onPress: () => router.push(`/recipes/new?id=${recipe.id}`) },
-    { icon: 'delete', label: 'Delete recipe', onPress: () => setDialog('delete') },
+    {
+      icon: "shopping-bag",
+      label: "Add ingredients to shopping list",
+      onPress: () => setDialog("shopping"),
+    },
+    {
+      icon: "add",
+      label: "Add ingredient to this recipe",
+      onPress: () => setEditingIngredient("new"),
+    },
+    {
+      icon: "add",
+      label: "Add instruction to this recipe",
+      onPress: () => setEditingStep("new"),
+    },
+    {
+      icon: "delete",
+      label: "Delete recipe",
+      onPress: () => setDialog("delete"),
+    },
   ];
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lighter">
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-surface-neutral-lightest"
+    >
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: BottomTabInset + 24 }}
-        onScrollBeginDrag={() => setMenuOpen(false)}>
+        onScrollBeginDrag={() => setMenuOpen(false)}
+      >
         {/* Photo header with back, overflow menu and the favorite heart. */}
-        <View className="h-[220px] w-full bg-surface-neutral-light">
+        <View className="h-[320px] w-full bg-surface-neutral-light">
           {recipe.imageUrl != null && (
             <Image
               source={{ uri: recipe.imageUrl }}
-              style={{ width: '100%', height: '100%' }}
+              style={{ width: "100%", height: "100%" }}
               contentFit="cover"
             />
           )}
-          <SafeAreaView edges={[]} className="absolute left-0 right-0 top-0 w-full flex-row items-center justify-between p-layout-small">
+          <SafeAreaView
+            edges={[]}
+            className="absolute left-0 right-0 top-0 w-full flex-row items-center justify-between p-layout-small"
+          >
             <Pressable
               onPress={() => router.back()}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Back"
-              className="size-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-white/80">
-              <MaterialIcons name="arrow-back" size={22} color={ds.colors.surface.primary.main} />
+              className="size-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-white/80"
+            >
+              <MaterialIcons
+                name="arrow-back"
+                size={22}
+                color={ds.colors.surface.primary.main}
+              />
             </Pressable>
             <Pressable
               onPress={() => setMenuOpen((open) => !open)}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Recipe actions"
-              className="size-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-white/80">
-              <MaterialIcons name="more-horiz" size={22} color={ds.colors.icon.default} />
+              className="size-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-white/80"
+            >
+              <MaterialIcons
+                name="more-horiz"
+                size={22}
+                color={ds.colors.icon.default}
+              />
             </Pressable>
           </SafeAreaView>
           <Pressable
             onPress={toggleFavorite}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={recipe.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            className="absolute bottom-comp-large right-comp-large">
+            accessibilityLabel={
+              recipe.isFavorite ? "Remove from favorites" : "Add to favorites"
+            }
+            className="absolute right-layout-small top-[60px]"
+          >
             <MaterialIcons
-              name={recipe.isFavorite ? 'favorite' : 'favorite-border'}
-              size={26}
-              color={recipe.isFavorite ? ds.colors.surface.primary.main : ds.colors.text.inverse}
+              name={recipe.isFavorite ? "favorite" : "favorite-border"}
+              size={40}
+              color={
+                recipe.isFavorite
+                  ? ds.colors.surface.primary.main
+                  : ds.colors.text.inverse
+              }
             />
           </Pressable>
         </View>
 
         <View className="w-full gap-layout-small px-layout-small py-layout-small">
           <View className="w-full gap-comp-small">
-            <Text className="font-header text-display-5 font-emphasized leading-small text-text-default">
+            <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
               {recipe.title}
             </Text>
             {recipe.description != null && recipe.description.length > 0 && (
@@ -175,37 +232,48 @@ export default function RecipeDetailScreen() {
                 {recipe.description}
               </Text>
             )}
-            <View className="w-full flex-row gap-layout-small">
+            <View className="w-full flex-row gap-comp-small">
               <MetaItem icon="schedule" label="Total" value={total} />
-              <MetaItem icon="restaurant" label="Prep" value={recipe.prepMinutes} />
-              <MetaItem icon="local-fire-department" label="Cook" value={recipe.cookMinutes} />
+              <MetaItem
+                icon="restaurant"
+                label="Prep"
+                value={recipe.prepMinutes}
+              />
+              <MetaItem
+                icon="local-fire-department"
+                label="Cook"
+                value={recipe.cookMinutes}
+              />
             </View>
           </View>
 
-          <View className="w-full gap-comp-xsmall">
-            <Text className="font-paragraph text-small font-emphasized text-text-default">Servings</Text>
-            <ServingsCounter value={chosenServings} onChange={setServings} />
-          </View>
+          <ServingsCounter value={chosenServings} onChange={setServings} />
 
           <View className="w-full gap-comp-xsmall">
-            <Text className="font-paragraph text-small font-emphasized text-text-default">
+            <Text className="font-header text-display-6 font-emphasized leading-xsmall text-text-default">
               Ingredients
             </Text>
-            <View className="w-full overflow-hidden rounded-large">
+            <View className="w-full overflow-hidden">
               {recipe.ingredients.map((ingredient, index) => (
                 <IngredientRow
                   key={ingredient.id}
                   ingredient={ingredient}
                   divider={index > 0}
-                  quantityText={scaledQuantityText(ingredient, recipe.servings, chosenServings)}
+                  quantityText={scaledQuantityText(
+                    ingredient,
+                    recipe.servings,
+                    chosenServings,
+                  )}
                   done={doneIngredients.has(ingredient.id)}
                   onToggle={() =>
-                    setDoneIngredients((current) => toggleInSet(current, ingredient.id))
+                    setDoneIngredients((current) =>
+                      toggleInSet(current, ingredient.id),
+                    )
                   }
                   onEdit={() => setEditingIngredient(ingredient)}
                   onDelete={async () => {
                     await deleteIngredient(ingredient.id).catch((error) =>
-                      console.warn('[recipes] delete ingredient failed', error),
+                      console.warn("[recipes] delete ingredient failed", error),
                     );
                     reload();
                   }}
@@ -215,25 +283,26 @@ export default function RecipeDetailScreen() {
                 <EmptyRowHint text="No ingredients yet – add the first one below." />
               )}
             </View>
-            <AddRowButton label="Add ingredient" onPress={() => setEditingIngredient('new')} />
           </View>
 
           <View className="w-full gap-comp-xsmall">
-            <Text className="font-paragraph text-small font-emphasized text-text-default">
+            <Text className="font-header text-display-6 font-emphasized leading-xsmall text-text-default">
               Instructions
             </Text>
-            <View className="w-full overflow-hidden rounded-large">
+            <View className="w-full overflow-hidden">
               {recipe.steps.map((step, index) => (
                 <StepRow
                   key={step.id}
                   step={step}
                   divider={index > 0}
                   done={doneSteps.has(step.id)}
-                  onToggle={() => setDoneSteps((current) => toggleInSet(current, step.id))}
+                  onToggle={() =>
+                    setDoneSteps((current) => toggleInSet(current, step.id))
+                  }
                   onEdit={() => setEditingStep(step)}
                   onDelete={async () => {
                     await deleteStep(recipe.id, step.id).catch((error) =>
-                      console.warn('[recipes] delete step failed', error),
+                      console.warn("[recipes] delete step failed", error),
                     );
                     reload();
                   }}
@@ -243,7 +312,6 @@ export default function RecipeDetailScreen() {
                 <EmptyRowHint text="No instructions yet – add the first step below." />
               )}
             </View>
-            <AddRowButton label="Add instruction" onPress={() => setEditingStep('new')} />
           </View>
         </View>
       </ScrollView>
@@ -259,10 +327,15 @@ export default function RecipeDetailScreen() {
                 item.onPress();
               }}
               className={
-                'w-full flex-row items-center gap-comp-small px-comp-large py-comp-medium' +
-                (index > 0 ? ' border-t border-surface-neutral-lighter' : '')
-              }>
-              <MaterialIcons name={item.icon} size={20} color={ds.colors.icon.default} />
+                "w-full flex-row items-center gap-comp-small px-comp-large py-comp-medium" +
+                (index > 0 ? " border-t border-surface-neutral-lighter" : "")
+              }
+            >
+              <MaterialIcons
+                name={item.icon}
+                size={20}
+                color={ds.colors.icon.default}
+              />
               <Text className="flex-1 font-paragraph text-components-label font-default text-text-default">
                 {item.label}
               </Text>
@@ -273,14 +346,18 @@ export default function RecipeDetailScreen() {
 
       <ConfirmSheet
         visible={dialog != null}
-        title={dialog === 'delete' ? 'Delete recipe' : 'Add ingredients to shopping list'}
+        title={
+          dialog === "delete"
+            ? "Delete recipe"
+            : "Add ingredients to shopping list"
+        }
         body={
-          dialog === 'delete'
-            ? 'You are about to delete a recipe from your household. This action cannot be undone.'
+          dialog === "delete"
+            ? "You are about to delete a recipe from your household. This action cannot be undone."
             : `Add this recipe's ingredients for ${chosenServings} people to the shopping list? You can also do this from your weekly plan.`
         }
-        confirmLabel={dialog === 'delete' ? 'Delete recipe' : 'Add ingredients'}
-        destructive={dialog === 'delete'}
+        confirmLabel={dialog === "delete" ? "Delete recipe" : "Add ingredients"}
+        destructive={dialog === "delete"}
         onCancel={() => setDialog(null)}
         onConfirm={confirmDialog}
       />
@@ -328,10 +405,14 @@ function MetaItem({
 }) {
   if (value == null) return null;
   return (
-    <View className="flex-row items-center gap-comp-xxsmall">
-      <MaterialIcons name={icon} size={14} color={ds.colors.icon.default} />
-      <Text className="font-paragraph text-small font-emphasized text-text-default">{label}</Text>
-      <Text className="font-paragraph text-small font-default text-text-subtle">{value} min</Text>
+    <View className="flex-1 flex-row items-center gap-layout-xxsmall">
+      <MaterialIcons name={icon} size={16} color={ds.colors.icon.default} />
+      <Text className="font-paragraph text-small font-emphasized text-text-default">
+        {label}
+      </Text>
+      <Text className="font-paragraph text-small font-default text-text-subtle">
+        {value} min
+      </Text>
     </View>
   );
 }
@@ -339,70 +420,10 @@ function MetaItem({
 function EmptyRowHint({ text }: { text: string }) {
   return (
     <View className="w-full bg-surface-neutral-white p-layout-small">
-      <Text className="font-paragraph text-paragraph font-default text-text-subtle">{text}</Text>
-    </View>
-  );
-}
-
-function AddRowButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border border-button-outline-border-enabled py-comp-large">
-      <MaterialIcons name="add" size={20} color={ds.colors.icon.default} />
-      <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
-        {label}
+      <Text className="font-paragraph text-paragraph font-default text-text-subtle">
+        {text}
       </Text>
-    </Pressable>
-  );
-}
-
-/** Swipe-to-edit/delete row shells shared by ingredients and steps. */
-function SwipeActions({
-  onEdit,
-  onDelete,
-  children,
-  label,
-}: {
-  onEdit: () => void;
-  onDelete: () => void;
-  children: React.ReactNode;
-  label: string;
-}) {
-  const swipeable = useRef<SwipeableMethods>(null);
-  return (
-    <ReanimatedSwipeable
-      ref={swipeable}
-      friction={2}
-      rightThreshold={40}
-      overshootRight={false}
-      renderRightActions={() => (
-        <View className="flex-row">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Edit ${label}`}
-            onPress={() => {
-              swipeable.current?.close();
-              onEdit();
-            }}
-            className="w-[56px] items-center justify-center bg-surface-neutral-light">
-            <MaterialIcons name="edit-note" size={24} color={ds.colors.icon.default} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Delete ${label}`}
-            onPress={() => {
-              swipeable.current?.close();
-              onDelete();
-            }}
-            className="w-[56px] items-center justify-center bg-error">
-            <MaterialIcons name="delete" size={20} color={ds.colors.text.inverse} />
-          </Pressable>
-        </View>
-      )}>
-      {children}
-    </ReanimatedSwipeable>
+    </View>
   );
 }
 
@@ -424,27 +445,32 @@ function IngredientRow({
   onDelete: () => void;
 }) {
   return (
-    <View>
-      {divider && <View className="h-px w-full bg-surface-neutral-lightest" />}
+    <View className="border-b border-border-subtle">
       <SwipeActions label={ingredient.name} onEdit={onEdit} onDelete={onDelete}>
         <Pressable
           onPress={onToggle}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
           accessibilityLabel={ingredient.name}
-          className="w-full flex-row items-center gap-comp-small bg-surface-neutral-white p-layout-small">
+          className="w-full flex-row items-center gap-comp-small bg-surface-neutral-white p-layout-small"
+        >
           {done && (
-            <MaterialIcons name="check" size={18} color={ds.colors.surface.primary.main} />
+            <MaterialIcons
+              name="check"
+              size={18}
+              color={ds.colors.surface.primary.main}
+            />
           )}
           <Text
             className={
-              'flex-1 font-paragraph text-paragraph font-default ' +
-              (done ? 'text-text-subtle line-through' : 'text-text-default')
-            }>
+              "flex-1 font-paragraph text-paragraph font-default " +
+              (done ? "text-text-subtle line-through" : "text-text-default")
+            }
+          >
             {ingredient.name}
           </Text>
           {quantityText != null && (
-            <Text className="font-paragraph text-small font-default text-text-subtle">
+            <Text className="font-paragraph text-paragraph font-default text-text-subtle">
               {quantityText}
             </Text>
           )}
@@ -470,22 +496,33 @@ function StepRow({
   onDelete: () => void;
 }) {
   return (
-    <View>
-      {divider && <View className="h-px w-full bg-surface-neutral-lightest" />}
-      <SwipeActions label={`step ${step.stepNumber}`} onEdit={onEdit} onDelete={onDelete}>
+    <View className="border-b border-border-subtle">
+      <SwipeActions
+        label={`step ${step.stepNumber}`}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      >
         <Pressable
           onPress={onToggle}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
           accessibilityLabel={`Step ${step.stepNumber}`}
-          className="w-full flex-row items-start gap-comp-small bg-surface-neutral-white p-layout-small">
+          className="w-full flex-row items-start gap-comp-small bg-surface-neutral-white p-layout-small"
+        >
           <View
             className={
-              'size-[32px] items-center justify-center rounded-xlarge ' +
-              (done ? 'bg-surface-primary-main' : 'border border-border bg-surface-neutral-lighter')
-            }>
+              "size-[32px] items-center justify-center rounded-xlarge " +
+              (done
+                ? "bg-surface-primary-main"
+                : "border border-border bg-surface-neutral-lightest")
+            }
+          >
             {done ? (
-              <MaterialIcons name="check" size={18} color={ds.colors.text.inverse} />
+              <MaterialIcons
+                name="check"
+                size={18}
+                color={ds.colors.text.inverse}
+              />
             ) : (
               <Text className="font-paragraph text-small font-emphasized text-text-default">
                 {step.stepNumber}
@@ -494,9 +531,10 @@ function StepRow({
           </View>
           <Text
             className={
-              'min-w-0 flex-1 font-paragraph text-paragraph font-default leading-xsmall ' +
-              (done ? 'text-text-subtle' : 'text-text-default')
-            }>
+              "min-w-0 flex-1 font-paragraph text-paragraph font-default leading-xsmall " +
+              (done ? "text-text-subtle" : "text-text-default")
+            }
+          >
             {step.text}
           </Text>
         </Pressable>
@@ -523,12 +561,24 @@ function ConfirmSheet({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  if (!visible) return null;
+  // A real Modal so the sheet floats above the native tab bar (it used to
+  // hide the confirm button behind it).
   return (
-    <View className="absolute inset-0">
-      <Pressable className="flex-1 bg-black/30" onPress={onCancel} accessibilityLabel="Cancel" />
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onCancel}
+    >
+      <Pressable
+        className="flex-1 bg-black/30"
+        onPress={onCancel}
+        accessibilityLabel="Cancel"
+      />
       <View className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-white p-layout-small pb-layout-large">
-        <Text className="font-header text-display-5 font-emphasized text-text-default">{title}</Text>
+        <Text className="font-header text-display-5 font-emphasized text-text-default">
+          {title}
+        </Text>
         <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
           {body}
         </Text>
@@ -536,7 +586,8 @@ function ConfirmSheet({
         <Pressable
           onPress={onCancel}
           accessibilityRole="button"
-          className="w-full items-center rounded-medium border border-button-outline-border-enabled py-comp-large">
+          className="w-full items-center rounded-medium border border-button-outline-border-enabled py-comp-large"
+        >
           <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
             Cancel
           </Text>
@@ -545,18 +596,22 @@ function ConfirmSheet({
           onPress={onConfirm}
           accessibilityRole="button"
           className={
-            'w-full items-center rounded-medium py-comp-large ' +
-            (destructive ? 'bg-error-main' : 'bg-button-solid-fill-enabled')
-          }>
+            "w-full items-center rounded-medium py-comp-large " +
+            (destructive ? "bg-error-main" : "bg-button-solid-fill-enabled")
+          }
+        >
           <Text
             className={
-              'font-paragraph text-components-button-label font-default ' +
-              (destructive ? 'text-error-contrast-text' : 'text-button-solid-label-enabled')
-            }>
+              "font-paragraph text-components-button-label font-default " +
+              (destructive
+                ? "text-error-contrast-text"
+                : "text-button-solid-label-enabled")
+            }
+          >
             {confirmLabel}
           </Text>
         </Pressable>
       </View>
-    </View>
+    </Modal>
   );
 }

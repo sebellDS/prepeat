@@ -1,22 +1,33 @@
-import { MaterialIcons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { RecipeCard } from '@/components/recipes/recipe-card';
-import { Chip } from '@/components/ui/chip';
-import { Input } from '@/components/ui/input';
-import { ds } from '@/constants/ds';
-import { BottomTabInset } from '@/constants/theme';
-import { useHousehold } from '@/lib/household-context';
-import { fetchRecipes, matchesSearch, setFavorite, type RecipeSummary } from '@/lib/recipes';
+import { RecipeCard } from "@/components/recipes/recipe-card";
+import { Chip } from "@/components/ui/chip";
+import { Input } from "@/components/ui/input";
+import { ds } from "@/constants/ds";
+import { BottomTabInset } from "@/constants/theme";
+import { useHousehold } from "@/lib/household-context";
+import {
+  fetchRecipes,
+  matchesSearch,
+  setFavorite,
+  type RecipeSummary,
+} from "@/lib/recipes";
 
 export default function RecipesListScreen() {
   const household = useHousehold();
   const router = useRouter();
   const [recipes, setRecipes] = useState<RecipeSummary[] | null>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   // No realtime on recipes (deliberate) – refetch whenever the tab gains
@@ -28,7 +39,7 @@ export default function RecipesListScreen() {
         .then((rows) => {
           if (!cancelled) setRecipes(rows);
         })
-        .catch((error) => console.warn('[recipes] fetch failed', error));
+        .catch((error) => console.warn("[recipes] fetch failed", error));
       return () => {
         cancelled = true;
       };
@@ -38,7 +49,8 @@ export default function RecipesListScreen() {
   const visible = useMemo(
     () =>
       (recipes ?? []).filter(
-        (recipe) => (!favoritesOnly || recipe.isFavorite) && matchesSearch(recipe, query),
+        (recipe) =>
+          (!favoritesOnly || recipe.isFavorite) && matchesSearch(recipe, query),
       ),
     [recipes, favoritesOnly, query],
   );
@@ -47,25 +59,35 @@ export default function RecipesListScreen() {
     // Optimistic flip; shared household favorite (decided 2026-07-12).
     setRecipes(
       (current) =>
-        current?.map((r) => (r.id === recipe.id ? { ...r, isFavorite: !r.isFavorite } : r)) ?? null,
+        current?.map((r) =>
+          r.id === recipe.id ? { ...r, isFavorite: !r.isFavorite } : r,
+        ) ?? null,
     );
     setFavorite(recipe.id, !recipe.isFavorite).catch((error) =>
-      console.warn('[recipes] favorite failed', error),
+      console.warn("[recipes] favorite failed", error),
     );
   };
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lighter">
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-surface-neutral-lightest"
+    >
       <View className="w-full flex-row items-center gap-comp-small px-layout-small pb-layout-small">
         <Text className="flex-1 font-header text-display-4 font-emphasized leading-medium text-text-default">
           Recipes
         </Text>
         <Pressable
-          onPress={() => router.push('/recipes/new')}
+          onPress={() => router.push("/recipes/new")}
           accessibilityRole="button"
           accessibilityLabel="Add a recipe"
-          className="size-[40px] items-center justify-center rounded-xlarge bg-button-solid-fill-enabled">
-          <MaterialIcons name="add" size={24} color={ds.colors.button.solid.label.enabled} />
+          className="size-[40px] items-center justify-center rounded-xlarge bg-button-solid-fill-enabled"
+        >
+          <MaterialIcons
+            name="add"
+            size={24}
+            color={ds.colors.button.solid.label.enabled}
+          />
         </Pressable>
       </View>
 
@@ -79,7 +101,11 @@ export default function RecipesListScreen() {
           returnKeyType="search"
         />
         <View className="w-full flex-row gap-comp-small">
-          <Chip label="All" active={!favoritesOnly} onPress={() => setFavoritesOnly(false)} />
+          <Chip
+            label="All"
+            active={!favoritesOnly}
+            onPress={() => setFavoritesOnly(false)}
+          />
           <Chip
             label="Favorites"
             startIcon="favorite"
@@ -94,7 +120,7 @@ export default function RecipesListScreen() {
           <ActivityIndicator color={ds.colors.surface.primary.main} />
         </View>
       ) : recipes.length === 0 ? (
-        <EmptyState onAdd={() => router.push('/recipes/new')} />
+        <EmptyState onAdd={() => router.push("/recipes/new")} />
       ) : (
         <FlatList
           data={visible}
@@ -103,7 +129,10 @@ export default function RecipesListScreen() {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           columnWrapperStyle={{ gap: 16, paddingHorizontal: 16 }}
-          contentContainerStyle={{ gap: 16, paddingBottom: BottomTabInset + 24 }}
+          contentContainerStyle={{
+            gap: 16,
+            paddingBottom: BottomTabInset + 24,
+          }}
           renderItem={({ item }) => (
             <RecipeCard
               recipe={item}
@@ -113,7 +142,9 @@ export default function RecipesListScreen() {
           )}
           ListEmptyComponent={
             <Text className="px-layout-small py-layout-medium text-center font-paragraph text-paragraph font-default text-text-subtle">
-              {favoritesOnly ? 'No favorites match your search.' : 'No recipes match your search.'}
+              {favoritesOnly
+                ? "No favorites match your search."
+                : "No recipes match your search."}
             </Text>
           }
         />
@@ -126,19 +157,25 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <View className="w-full px-layout-small">
       <View className="w-full rounded-large bg-surface-neutral-white p-layout-small">
-        <MaterialIcons name="menu-book" size={40} color={ds.colors.surface.primary.main} />
+        <MaterialIcons
+          name="menu-book"
+          size={40}
+          color={ds.colors.surface.primary.main}
+        />
         <View className="w-full gap-comp-small pt-layout-small">
           <Text className="font-header text-display-5 font-emphasized leading-small text-text-default">
             Nothing&apos;s cooking yet
           </Text>
           <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
-            Save the dishes your family loves – one shared cookbook for everyone.
+            Save the dishes your family loves – one shared cookbook for
+            everyone.
           </Text>
         </View>
         <Pressable
           onPress={onAdd}
           accessibilityRole="button"
-          className="mt-layout-small w-full items-center rounded-medium border border-button-outline-border-enabled py-comp-large">
+          className="mt-layout-small w-full items-center rounded-medium border border-button-outline-border-enabled py-comp-large"
+        >
           <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
             Add your first recipe
           </Text>

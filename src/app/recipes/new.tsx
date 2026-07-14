@@ -1,31 +1,30 @@
-import { MaterialIcons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { MaterialIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   Text,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ServingsCounter } from '@/components/recipes/servings-counter';
-import { Input } from '@/components/ui/input';
-import { ds } from '@/constants/ds';
-import { BottomTabInset } from '@/constants/theme';
-import { useAuth } from '@/lib/auth';
-import { useHousehold } from '@/lib/household-context';
+import { ServingsCounter } from "@/components/recipes/servings-counter";
+import { SwipeActions } from "@/components/recipes/swipe-actions";
+import { Input } from "@/components/ui/input";
+import { ds } from "@/constants/ds";
+import { BottomTabInset } from "@/constants/theme";
+import { useAuth } from "@/lib/auth";
+import { useHousehold } from "@/lib/household-context";
 import {
   createRecipe,
   fetchRecipe,
   updateRecipeFacts,
   uploadRecipePhoto,
-} from '@/lib/recipes';
+} from "@/lib/recipes";
 
 interface DraftIngredient {
   name: string;
@@ -50,18 +49,18 @@ export default function AddRecipeScreen() {
   const router = useRouter();
   const editing = id != null && id.length > 0;
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [prep, setPrep] = useState('');
-  const [cook, setCook] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [prep, setPrep] = useState("");
+  const [cook, setCook] = useState("");
   const [servings, setServings] = useState(4);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [ingredients, setIngredients] = useState<DraftIngredient[]>([]);
-  const [ingredientName, setIngredientName] = useState('');
-  const [ingredientQuantity, setIngredientQuantity] = useState('');
+  const [ingredientName, setIngredientName] = useState("");
+  const [ingredientQuantity, setIngredientQuantity] = useState("");
   const [steps, setSteps] = useState<string[]>([]);
-  const [stepText, setStepText] = useState('');
+  const [stepText, setStepText] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(!editing);
 
@@ -70,19 +69,19 @@ export default function AddRecipeScreen() {
     fetchRecipe(id)
       .then((recipe) => {
         setTitle(recipe.title);
-        setDescription(recipe.description ?? '');
-        setPrep(recipe.prepMinutes != null ? String(recipe.prepMinutes) : '');
-        setCook(recipe.cookMinutes != null ? String(recipe.cookMinutes) : '');
+        setDescription(recipe.description ?? "");
+        setPrep(recipe.prepMinutes != null ? String(recipe.prepMinutes) : "");
+        setCook(recipe.cookMinutes != null ? String(recipe.cookMinutes) : "");
         setServings(recipe.servings);
         setExistingPhotoUrl(recipe.imageUrl);
         setLoaded(true);
       })
-      .catch((error) => console.warn('[recipes] edit fetch failed', error));
+      .catch((error) => console.warn("[recipes] edit fetch failed", error));
   }, [editing, id]);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [16, 10],
       quality: 0.8,
@@ -93,22 +92,50 @@ export default function AddRecipeScreen() {
   };
 
   const stageIngredient = () => {
-    const name = ingredientName.replace(/\s+/g, ' ').trim();
+    const name = ingredientName.replace(/\s+/g, " ").trim();
     if (!name) return;
-    setIngredients((current) => [...current, { name, quantityText: ingredientQuantity.trim() }]);
-    setIngredientName('');
-    setIngredientQuantity('');
+    setIngredients((current) => [
+      ...current,
+      { name, quantityText: ingredientQuantity.trim() },
+    ]);
+    setIngredientName("");
+    setIngredientQuantity("");
   };
 
   const stageStep = () => {
     const text = stepText.trim();
     if (!text) return;
     setSteps((current) => [...current, text]);
-    setStepText('');
+    setStepText("");
+  };
+
+  // Swipe-edit on a staged row: its values return to the entry fields
+  // (anything already typed there is staged first so nothing is lost).
+  const editStagedIngredient = (index: number) => {
+    const row = ingredients[index];
+    setIngredients((current) => {
+      const next = current.filter((_, i) => i !== index);
+      const pending = ingredientName.replace(/\s+/g, " ").trim();
+      if (pending)
+        next.push({ name: pending, quantityText: ingredientQuantity.trim() });
+      return next;
+    });
+    setIngredientName(row.name);
+    setIngredientQuantity(row.quantityText);
+  };
+
+  const editStagedStep = (index: number) => {
+    const row = steps[index];
+    setSteps((current) => {
+      const next = current.filter((_, i) => i !== index);
+      if (stepText.trim()) next.push(stepText.trim());
+      return next;
+    });
+    setStepText(row);
   };
 
   const save = async () => {
-    const trimmedTitle = title.replace(/\s+/g, ' ').trim();
+    const trimmedTitle = title.replace(/\s+/g, " ").trim();
     if (!trimmedTitle || busy) return;
     setBusy(true);
     try {
@@ -130,35 +157,46 @@ export default function AddRecipeScreen() {
         // Anything still sitting in the entry fields counts too – people
         // forget the final "Add" tap.
         const draftIngredients = [...ingredients];
-        const lastName = ingredientName.replace(/\s+/g, ' ').trim();
-        if (lastName) draftIngredients.push({ name: lastName, quantityText: ingredientQuantity.trim() });
+        const lastName = ingredientName.replace(/\s+/g, " ").trim();
+        if (lastName)
+          draftIngredients.push({
+            name: lastName,
+            quantityText: ingredientQuantity.trim(),
+          });
         const draftSteps = [...steps];
         if (stepText.trim()) draftSteps.push(stepText.trim());
 
-        const recipeId = await createRecipe(household.id, session?.user?.id ?? '', {
-          title: trimmedTitle,
-          description: description.trim() || null,
-          servings,
-          prepMinutes: parseMinutes(prep),
-          cookMinutes: parseMinutes(cook),
-          imageUrl,
-          ingredients: draftIngredients.map((ingredient) => ({
-            name: ingredient.name,
-            quantityText: ingredient.quantityText || null,
-          })),
-          steps: draftSteps,
-        });
+        const recipeId = await createRecipe(
+          household.id,
+          session?.user?.id ?? "",
+          {
+            title: trimmedTitle,
+            description: description.trim() || null,
+            servings,
+            prepMinutes: parseMinutes(prep),
+            cookMinutes: parseMinutes(cook),
+            imageUrl,
+            ingredients: draftIngredients.map((ingredient) => ({
+              name: ingredient.name,
+              quantityText: ingredient.quantityText || null,
+            })),
+            steps: draftSteps,
+          },
+        );
         router.replace(`/recipes/${recipeId}`);
       }
     } catch (error) {
-      console.warn('[recipes] save failed', error);
+      console.warn("[recipes] save failed", error);
       setBusy(false);
     }
   };
 
   if (!loaded) {
     return (
-      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-surface-neutral-lighter">
+      <SafeAreaView
+        edges={["top"]}
+        className="flex-1 items-center justify-center bg-surface-neutral-lightest"
+      >
         <ActivityIndicator color={ds.colors.surface.primary.main} />
       </SafeAreaView>
     );
@@ -167,211 +205,262 @@ export default function AddRecipeScreen() {
   const photoPreview = photoUri ?? existingPhotoUrl;
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-neutral-lighter">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <View className="w-full flex-row items-center px-layout-small py-comp-small">
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Back">
-            <MaterialIcons name="arrow-back" size={28} color={ds.colors.surface.primary.main} />
-          </Pressable>
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-surface-neutral-lightest"
+    >
+      <View className="w-full flex-row items-center px-layout-small py-comp-small">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
+          <MaterialIcons
+            name="arrow-back"
+            size={28}
+            color={ds.colors.surface.primary.main}
+          />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{ paddingBottom: BottomTabInset + 24, gap: 16 }}
+      >
+        {/* Recipe facts card */}
+        <View className="w-full px-layout-small">
+          <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+            <MaterialIcons
+              name="receipt-long"
+              size={40}
+              color={ds.colors.surface.primary.main}
+            />
+            <View className="w-full gap-comp-small">
+              <Text className="font-header text-display-5 font-emphasized leading-small text-text-default">
+                {editing ? "Edit recipe" : "Add new recipe"}
+              </Text>
+              <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+                Save the dishes your family loves – one shared cookbook for
+                everyone.
+              </Text>
+            </View>
+
+            <Field label="Recipe name">
+              <Input
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Pasta al Pomodoro"
+                accessibilityLabel="Recipe name"
+              />
+            </Field>
+            <Field label="Description">
+              <Input
+                value={description}
+                onChangeText={setDescription}
+                placeholder="A quick weeknight classic"
+                accessibilityLabel="Description"
+              />
+            </Field>
+            <Field label="Preparation time">
+              <Input
+                value={prep}
+                onChangeText={setPrep}
+                placeholder="10 min"
+                accessibilityLabel="Preparation time"
+              />
+            </Field>
+            <Field label="Cooking time">
+              <Input
+                value={cook}
+                onChangeText={setCook}
+                placeholder="20 min"
+                accessibilityLabel="Cooking time"
+              />
+            </Field>
+            <Field label="Servings">
+              <ServingsCounter value={servings} onChange={setServings} />
+            </Field>
+
+            {photoPreview != null && (
+              <View className="h-[160px] w-full overflow-hidden rounded-medium">
+                <Image
+                  source={{ uri: photoPreview }}
+                  style={{ width: "100%", height: "100%" }}
+                  contentFit="cover"
+                />
+              </View>
+            )}
+            <OutlineButton
+              icon="add-photo-alternate"
+              label={photoPreview != null ? "Change the image" : "Add an image"}
+              onPress={pickPhoto}
+            />
+          </View>
         </View>
 
-        <ScrollView
-          className="flex-1"
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: BottomTabInset + 24, gap: 16 }}>
-          {/* Recipe facts card */}
-          <View className="w-full px-layout-small">
-            <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
-              <MaterialIcons name="receipt-long" size={40} color={ds.colors.surface.primary.main} />
-              <View className="w-full gap-comp-small">
-                <Text className="font-header text-display-5 font-emphasized leading-small text-text-default">
-                  {editing ? 'Edit recipe' : 'Add new recipe'}
-                </Text>
-                <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
-                  Save the dishes your family loves – one shared cookbook for everyone.
-                </Text>
-              </View>
-
-              <Field label="Recipe name">
-                <Input value={title} onChangeText={setTitle} placeholder="Pasta al Pomodoro" accessibilityLabel="Recipe name" />
-              </Field>
-              <Field label="Description">
-                <Input
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="A quick weeknight classic"
-                  accessibilityLabel="Description"
-                />
-              </Field>
-              <Field label="Preparation time">
-                <Input value={prep} onChangeText={setPrep} placeholder="10 min" keyboardType="number-pad" accessibilityLabel="Preparation time" />
-              </Field>
-              <Field label="Cooking time">
-                <Input value={cook} onChangeText={setCook} placeholder="20 min" keyboardType="number-pad" accessibilityLabel="Cooking time" />
-              </Field>
-              <Field label="Servings">
-                <ServingsCounter value={servings} onChange={setServings} />
-              </Field>
-
-              {photoPreview != null && (
-                <View className="h-[160px] w-full overflow-hidden rounded-medium">
-                  <Image source={{ uri: photoPreview }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                </View>
-              )}
-              <OutlineButton
-                icon="add-photo-alternate"
-                label={photoPreview != null ? 'Change the image' : 'Add an image'}
-                onPress={pickPhoto}
-              />
-            </View>
-          </View>
-
-          {!editing && (
-            <>
-              {/* Ingredients builder */}
-              <View className="w-full gap-comp-xsmall px-layout-small">
-                <Text className="font-paragraph text-paragraph font-emphasized text-text-default">
-                  Ingredients
-                </Text>
-                <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
-                  {ingredients.length > 0 && (
-                    <View className="w-full overflow-hidden rounded-medium">
-                      {ingredients.map((ingredient, index) => (
-                        <View
-                          key={`${ingredient.name}-${index}`}
-                          className={
-                            'w-full flex-row items-center gap-comp-small bg-surface-neutral-lighter p-comp-large' +
-                            (index > 0 ? ' border-t border-surface-neutral-lightest' : '')
-                          }>
-                          <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
-                            {ingredient.name}
-                          </Text>
-                          {ingredient.quantityText.length > 0 && (
-                            <Text className="font-paragraph text-small font-default text-text-subtle">
-                              {ingredient.quantityText}
+        {!editing && (
+          <>
+            {/* Ingredients builder */}
+            <View className="w-full gap-comp-xsmall px-layout-small">
+              <Text className="font-paragraph text-paragraph font-emphasized text-text-default">
+                Ingredients
+              </Text>
+              <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+                {ingredients.length > 0 && (
+                  <View className="w-full overflow-hidden rounded-medium">
+                    {ingredients.map((ingredient, index) => (
+                      <View
+                        key={`${ingredient.name}-${index}`}
+                        className="border-b border-border-subtle"
+                      >
+                        <SwipeActions
+                          label={ingredient.name}
+                          onEdit={() => editStagedIngredient(index)}
+                          onDelete={() =>
+                            setIngredients((current) =>
+                              current.filter((_, i) => i !== index),
+                            )
+                          }
+                        >
+                          <View className="h-[56px] w-full flex-row items-center gap-layout-small bg-surface-neutral-white p-layout-small">
+                            <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
+                              {ingredient.name}
                             </Text>
-                          )}
-                          <Pressable
-                            onPress={() =>
-                              setIngredients((current) => current.filter((_, i) => i !== index))
-                            }
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Remove ${ingredient.name}`}>
-                            <MaterialIcons name="close" size={18} color={ds.colors.icon.default} />
-                          </Pressable>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                  <Field label="Ingredient">
-                    <Input
-                      value={ingredientName}
-                      onChangeText={setIngredientName}
-                      placeholder="Cherry tomatoes"
-                      accessibilityLabel="Ingredient name"
-                    />
-                  </Field>
-                  <Field label="Quantity">
-                    <Input
-                      value={ingredientQuantity}
-                      onChangeText={setIngredientQuantity}
-                      placeholder="e.g. 250 g"
-                      accessibilityLabel="Ingredient quantity"
-                      onSubmitEditing={stageIngredient}
-                      returnKeyType="done"
-                    />
-                  </Field>
-                  <OutlineButton icon="add" label="Add ingredient" onPress={stageIngredient} />
-                </View>
+                            {ingredient.quantityText.length > 0 && (
+                              <Text className="font-paragraph text-paragraph font-default text-text-subtle">
+                                {ingredient.quantityText}
+                              </Text>
+                            )}
+                          </View>
+                        </SwipeActions>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                <Field label="Ingredient">
+                  <Input
+                    value={ingredientName}
+                    onChangeText={setIngredientName}
+                    placeholder="Cherry tomatoes"
+                    accessibilityLabel="Ingredient name"
+                  />
+                </Field>
+                <Field label="Quantity">
+                  <Input
+                    value={ingredientQuantity}
+                    onChangeText={setIngredientQuantity}
+                    placeholder="e.g. 250 g"
+                    accessibilityLabel="Ingredient quantity"
+                    onSubmitEditing={stageIngredient}
+                    returnKeyType="done"
+                  />
+                </Field>
+                <OutlineButton
+                  icon="add"
+                  label="Add ingredient"
+                  onPress={stageIngredient}
+                />
               </View>
+            </View>
 
-              {/* Instructions builder */}
-              <View className="w-full gap-comp-xsmall px-layout-small">
-                <Text className="font-paragraph text-paragraph font-emphasized text-text-default">
-                  Instructions
-                </Text>
-                <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
-                  {steps.length > 0 && (
-                    <View className="w-full overflow-hidden rounded-medium">
-                      {steps.map((step, index) => (
-                        <View
-                          key={`${index}-${step.slice(0, 12)}`}
-                          className={
-                            'w-full flex-row items-start gap-comp-small bg-surface-neutral-lighter p-comp-large' +
-                            (index > 0 ? ' border-t border-surface-neutral-lightest' : '')
-                          }>
-                          <View className="size-[32px] items-center justify-center rounded-xlarge border border-border bg-surface-neutral-white">
-                            <Text className="font-paragraph text-small font-emphasized text-text-default">
-                              {index + 1}
+            {/* Instructions builder */}
+            <View className="w-full gap-comp-xsmall px-layout-small">
+              <Text className="font-paragraph text-paragraph font-emphasized text-text-default">
+                Instructions
+              </Text>
+              <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+                {steps.length > 0 && (
+                  <View className="w-full overflow-hidden rounded-medium">
+                    {steps.map((step, index) => (
+                      <View
+                        key={`${index}-${step.slice(0, 12)}`}
+                        className="border-b border-border-subtle"
+                      >
+                        <SwipeActions
+                          label={`step ${index + 1}`}
+                          onEdit={() => editStagedStep(index)}
+                          onDelete={() =>
+                            setSteps((current) =>
+                              current.filter((_, i) => i !== index),
+                            )
+                          }
+                        >
+                          <View className="w-full flex-row items-start gap-layout-small bg-surface-neutral-white p-layout-small">
+                            <View className="min-w-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-main px-comp-medium py-comp-small">
+                              <Text className="font-paragraph text-small font-emphasized leading-xxsmall text-text-default">
+                                {index + 1}
+                              </Text>
+                            </View>
+                            <Text className="min-w-0 flex-1 py-[4px] font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+                              {step}
                             </Text>
                           </View>
-                          <Text className="min-w-0 flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default">
-                            {step}
-                          </Text>
-                          <Pressable
-                            onPress={() => setSteps((current) => current.filter((_, i) => i !== index))}
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Remove step ${index + 1}`}>
-                            <MaterialIcons name="close" size={18} color={ds.colors.icon.default} />
-                          </Pressable>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                  <Field label="Instruction">
-                    <Input
-                      value={stepText}
-                      onChangeText={setStepText}
-                      placeholder="Add your instruction here"
-                      accessibilityLabel="Instruction"
-                      multiline
-                      numberOfLines={4}
-                      style={{ minHeight: 96, textAlignVertical: 'top' }}
-                    />
-                  </Field>
-                  <OutlineButton icon="add" label="Add instruction" onPress={stageStep} />
-                </View>
+                        </SwipeActions>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                <Field label="Instruction">
+                  <Input
+                    value={stepText}
+                    onChangeText={setStepText}
+                    placeholder="Add your instruction here"
+                    accessibilityLabel="Instruction"
+                    multiline
+                    numberOfLines={4}
+                    style={{ minHeight: 96, textAlignVertical: "top" }}
+                  />
+                </Field>
+                <OutlineButton
+                  icon="add"
+                  label="Add instruction"
+                  onPress={stageStep}
+                />
               </View>
-            </>
-          )}
-        </ScrollView>
-
-        <View className="w-full px-layout-small pb-layout-medium pt-comp-small">
+            </View>
+          </>
+        )}
+        <View className="w-full px-layout-small">
           <Pressable
             onPress={save}
             disabled={busy || title.trim().length === 0}
             accessibilityRole="button"
             className={
-              'w-full items-center rounded-medium py-comp-large ' +
+              "w-full items-center rounded-medium py-comp-large " +
               (busy || title.trim().length === 0
-                ? 'bg-surface-neutral-main'
-                : 'bg-button-solid-fill-enabled')
-            }>
+                ? "bg-surface-neutral-main"
+                : "bg-button-solid-fill-enabled")
+            }
+          >
             {busy ? (
               <ActivityIndicator color={ds.colors.text.inverse} />
             ) : (
               <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
-                {editing ? 'Save changes' : 'Save recipe'}
+                {editing ? "Save changes" : "Save recipe"}
               </Text>
             )}
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <View className="w-full gap-comp-xsmall">
-      <Text className="font-paragraph text-small font-default text-text-subtle">{label}</Text>
+      <Text className="font-paragraph text-small font-default text-text-subtle">
+        {label}
+      </Text>
       {children}
     </View>
   );
@@ -390,7 +479,8 @@ function OutlineButton({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border border-button-outline-border-enabled py-comp-large">
+      className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border border-button-outline-border-enabled py-comp-large"
+    >
       <MaterialIcons name={icon} size={20} color={ds.colors.icon.default} />
       <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
         {label}
