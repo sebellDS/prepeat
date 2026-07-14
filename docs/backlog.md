@@ -17,11 +17,21 @@ interaction is picking a recipe, the plan→shopping-list magic needs recipe
 ingredients to snapshot, and recipes are useful on their own from day one –
 the family can start collecting favourites immediately.
 
-- [ ] Design: recipes screens – list, detail, create/edit with ingredients
-      (Thomas, in Figma). The create/edit ingredient rows should carry
-      name + quantity + unit, since these snapshot to the shopping list
-- [ ] Build: recipes tables (household-owned, created_by attribution,
-      copy-on-leave per projektgrundlag) + screens from the designs
+- [x] Design: recipes screens (Thomas, 2026-07-12; reviewed, spelling and
+      copy fixed in the file the same day)
+- [x] Build: migration 0006 (recipes/ingredients/steps + shared favorite +
+      photo storage bucket) and all screens – list with search+chips,
+      detail with servings scaling and cooking check-offs, add/edit form
+      with photo picking, sheets and dialogs (built 2026-07-12)
+- [ ] Apply migration 0006 in the Supabase dashboard (Thomas; SQL goes on
+      the clipboard) – the Recipes tab needs it
+- [ ] Device build with expo-image-picker (new native module) + walk every
+      recipe flow on-device
+- [ ] Build notes to revisit: the Figma form has no save button (added a
+      solid "Save recipe" at the bottom – design one if it should differ);
+      "Add recipe to weekly plan" menu item is hidden until the Plan tab
+      exists; editing an existing recipe reuses the form for facts only
+      (ingredients/steps edit on the detail screen)
 - [ ] URL import (schema.org with manual fallback) – deliberately its own
       step after manual recipes work; the most technical piece
 

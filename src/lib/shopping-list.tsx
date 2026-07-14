@@ -320,7 +320,9 @@ const SAMPLE_BASKET: [string, string | null, Category][] = [
   ['Tape', null, 'Other'],
 ];
 
-async function getOrCreateListId(householdId: string, userId: string): Promise<string> {
+// Exported for the recipes flow: "Add ingredients to shopping list" writes
+// into the same single active list.
+export async function getOrCreateListId(householdId: string, userId: string): Promise<string> {
   const { data, error } = await supabase
     .from('shopping_lists')
     .select('id')

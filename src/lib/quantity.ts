@@ -1,8 +1,10 @@
-// The edit sheet works with one free-text quantity field ("250g", "2 pcs",
-// "a handful") while the database splits it into numeric quantity + unit
-// text (projektgrundlag data model). These helpers translate between the
-// two: a leading number becomes the quantity, the rest becomes the unit,
-// and pure text ("a handful") is stored as unit only.
+// The edit sheets work with one free-text quantity field ("250g", "2 pcs",
+// "1/2 tsp", "a handful") while the database splits it into numeric quantity
+// + unit text (projektgrundlag data model). These helpers translate between
+// the two: a leading number becomes the quantity, the rest becomes the unit,
+// and pure text ("a handful") is stored as unit only. Decimal commas ("1,5")
+// and simple or mixed fractions ("1/2", "1 1/2") all parse – real cooking
+// amounts survive (recipes decision, 2026-07-12).
 
 export function parseQuantity(text: string | null): {
   quantity: number | null;
@@ -10,14 +12,38 @@ export function parseQuantity(text: string | null): {
 } {
   const trimmed = text?.replace(/\s+/g, ' ').trim() ?? '';
   if (!trimmed) return { quantity: null, unit: null };
-  const match = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
-  if (!match) return { quantity: null, unit: trimmed };
-  const quantity = Number(match[1].replace(',', '.'));
-  return { quantity, unit: match[2] || null };
+
+  // Mixed fraction first ("1 1/2 dl"), then plain fraction ("1/2 tsp"),
+  // then decimal with dot or comma ("1,5 kg", "250g").
+  const mixed = trimmed.match(/^(\d+) (\d+)\/(\d+)\s*(.*)$/);
+  if (mixed) {
+    const [, whole, num, den, unit] = mixed;
+    if (Number(den) !== 0) {
+      return { quantity: Number(whole) + Number(num) / Number(den), unit: unit || null };
+    }
+  }
+  const fraction = trimmed.match(/^(\d+)\/(\d+)\s*(.*)$/);
+  if (fraction) {
+    const [, num, den, unit] = fraction;
+    if (Number(den) !== 0) {
+      return { quantity: Number(num) / Number(den), unit: unit || null };
+    }
+  }
+  const decimal = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+  if (decimal) {
+    return { quantity: Number(decimal[1].replace(',', '.')), unit: decimal[2] || null };
+  }
+  return { quantity: null, unit: trimmed };
+}
+
+/** Rounds a (possibly scaled) amount to at most two sensible decimals. */
+export function roundQuantity(quantity: number): number {
+  return Math.round(quantity * 100) / 100;
 }
 
 export function formatQuantity(quantity: number | null, unit: string | null): string | null {
   if (quantity == null) return unit;
-  if (unit == null) return String(quantity);
-  return `${quantity} ${unit}`;
+  const amount = String(roundQuantity(quantity));
+  if (unit == null) return amount;
+  return `${amount} ${unit}`;
 }
