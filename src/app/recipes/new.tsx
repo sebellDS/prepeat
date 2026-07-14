@@ -430,7 +430,10 @@ export default function AddRecipeScreen() {
                                 {index + 1}
                               </Text>
                             </View>
-                            <Text className="min-w-0 flex-1 py-[4px] font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+                            <Text
+                              style={{ paddingTop: 4 }}
+                              className="min-w-0 flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default"
+                            >
                               {step}
                             </Text>
                           </View>

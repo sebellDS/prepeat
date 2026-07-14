@@ -616,6 +616,7 @@ function StepRow({
             )}
           </View>
           <Text
+            style={{ paddingTop: 4 }}
             className={
               "min-w-0 flex-1 font-paragraph text-paragraph font-default leading-xsmall " +
               (done ? "text-text-subtle" : "text-text-default")
