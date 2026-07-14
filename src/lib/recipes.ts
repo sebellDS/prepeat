@@ -3,11 +3,16 @@
 // conflict problem; last write wins), so screens fetch on focus instead of
 // subscribing. Favorites are shared household favorites (decided
 // 2026-07-12): a flag on the recipe row, one heart for the whole family.
-import * as Crypto from 'expo-crypto';
+import * as Crypto from "expo-crypto";
 
-import { normalizeItemName, getOrCreateListId, CATEGORIES, type Category } from '@/lib/shopping-list';
-import { parseQuantity, formatQuantity, roundQuantity } from '@/lib/quantity';
-import { supabase } from '@/lib/supabase';
+import {
+  normalizeItemName,
+  getOrCreateListId,
+  CATEGORIES,
+  type Category,
+} from "@/lib/shopping-list";
+import { parseQuantity, formatQuantity, roundQuantity } from "@/lib/quantity";
+import { supabase } from "@/lib/supabase";
 
 export interface RecipeSummary {
   id: string;
@@ -49,29 +54,39 @@ export interface Recipe {
   steps: RecipeStep[];
 }
 
-export function totalMinutes(prep: number | null, cook: number | null): number | null {
+export function totalMinutes(
+  prep: number | null,
+  cook: number | null,
+): number | null {
   if (prep == null && cook == null) return null;
   return (prep ?? 0) + (cook ?? 0);
 }
 
 /** Scales an ingredient for a chosen serving count and formats for display. */
 export function scaledQuantityText(
-  ingredient: Pick<RecipeIngredient, 'quantity' | 'unit'>,
+  ingredient: Pick<RecipeIngredient, "quantity" | "unit">,
   recipeServings: number,
   chosenServings: number,
 ): string | null {
   if (ingredient.quantity == null) return ingredient.unit;
   const factor = recipeServings > 0 ? chosenServings / recipeServings : 1;
-  return formatQuantity(roundQuantity(ingredient.quantity * factor), ingredient.unit);
+  return formatQuantity(
+    roundQuantity(ingredient.quantity * factor),
+    ingredient.unit,
+  );
 }
 
-export async function fetchRecipes(householdId: string): Promise<RecipeSummary[]> {
+export async function fetchRecipes(
+  householdId: string,
+): Promise<RecipeSummary[]> {
   const { data, error } = await supabase
-    .from('recipes')
-    .select('id, title, image_url, prep_minutes, cook_minutes, is_favorite, recipe_ingredients(name)')
-    .eq('household_id', householdId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+    .from("recipes")
+    .select(
+      "id, title, image_url, prep_minutes, cook_minutes, is_favorite, recipe_ingredients(name)",
+    )
+    .eq("household_id", householdId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -79,7 +94,9 @@ export async function fetchRecipes(householdId: string): Promise<RecipeSummary[]
     imageUrl: row.image_url,
     totalMinutes: totalMinutes(row.prep_minutes, row.cook_minutes),
     isFavorite: row.is_favorite,
-    ingredientNames: (row.recipe_ingredients ?? []).map((i: { name: string }) => i.name),
+    ingredientNames: (row.recipe_ingredients ?? []).map(
+      (i: { name: string }) => i.name,
+    ),
   }));
 }
 
@@ -88,28 +105,43 @@ export function matchesSearch(recipe: RecipeSummary, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
   if (recipe.title.toLowerCase().includes(needle)) return true;
-  return recipe.ingredientNames.some((name) => name.toLowerCase().includes(needle));
+  return recipe.ingredientNames.some((name) =>
+    name.toLowerCase().includes(needle),
+  );
 }
 
 export async function fetchRecipe(id: string): Promise<Recipe> {
   const { data, error } = await supabase
-    .from('recipes')
+    .from("recipes")
     .select(
-      'id, title, description, servings, prep_minutes, cook_minutes, image_url, is_favorite, created_by_user_id, recipe_ingredients(id, name, quantity, unit, sort_order), recipe_steps(id, step_number, text)',
+      "id, title, description, servings, prep_minutes, cook_minutes, image_url, is_favorite, created_by_user_id, recipe_ingredients(id, name, quantity, unit, sort_order), recipe_steps(id, step_number, text)",
     )
-    .eq('id', id)
+    .eq("id", id)
     .single();
   if (error) throw error;
   const ingredients = (data.recipe_ingredients ?? [])
-    .map((row: { id: string; name: string; quantity: number | string | null; unit: string | null; sort_order: number }) => ({
-      id: row.id,
-      name: row.name,
-      quantity: row.quantity == null ? null : Number(row.quantity),
-      unit: row.unit,
-      quantityText: formatQuantity(row.quantity == null ? null : Number(row.quantity), row.unit),
-      sortOrder: row.sort_order,
-    }))
-    .sort((a: RecipeIngredient, b: RecipeIngredient) => a.sortOrder - b.sortOrder);
+    .map(
+      (row: {
+        id: string;
+        name: string;
+        quantity: number | string | null;
+        unit: string | null;
+        sort_order: number;
+      }) => ({
+        id: row.id,
+        name: row.name,
+        quantity: row.quantity == null ? null : Number(row.quantity),
+        unit: row.unit,
+        quantityText: formatQuantity(
+          row.quantity == null ? null : Number(row.quantity),
+          row.unit,
+        ),
+        sortOrder: row.sort_order,
+      }),
+    )
+    .sort(
+      (a: RecipeIngredient, b: RecipeIngredient) => a.sortOrder - b.sortOrder,
+    );
   const steps = (data.recipe_steps ?? [])
     .map((row: { id: string; step_number: number; text: string }) => ({
       id: row.id,
@@ -134,6 +166,8 @@ export async function fetchRecipe(id: string): Promise<Recipe> {
 
 export interface RecipeDraft {
   title: string;
+  /** Where the recipe was imported from, if it came from a link. */
+  sourceUrl?: string | null;
   description: string | null;
   servings: number;
   prepMinutes: number | null;
@@ -150,18 +184,19 @@ export async function createRecipe(
   draft: RecipeDraft,
 ): Promise<string> {
   const { data, error } = await supabase
-    .from('recipes')
+    .from("recipes")
     .insert({
       household_id: householdId,
       created_by_user_id: userId,
-      title: draft.title.replace(/\s+/g, ' ').trim(),
+      title: draft.title.replace(/\s+/g, " ").trim(),
       description: draft.description,
       servings: draft.servings,
       prep_minutes: draft.prepMinutes,
       cook_minutes: draft.cookMinutes,
       image_url: draft.imageUrl,
+      source_url: draft.sourceUrl ?? null,
     })
-    .select('id')
+    .select("id")
     .single();
   if (error) throw error;
   const recipeId = data.id as string;
@@ -169,9 +204,17 @@ export async function createRecipe(
   if (draft.ingredients.length > 0) {
     const rows = draft.ingredients.map((ingredient, index) => {
       const { quantity, unit } = parseQuantity(ingredient.quantityText);
-      return { recipe_id: recipeId, name: ingredient.name.trim(), quantity, unit, sort_order: index };
+      return {
+        recipe_id: recipeId,
+        name: ingredient.name.trim(),
+        quantity,
+        unit,
+        sort_order: index,
+      };
     });
-    const { error: ingredientsError } = await supabase.from('recipe_ingredients').insert(rows);
+    const { error: ingredientsError } = await supabase
+      .from("recipe_ingredients")
+      .insert(rows);
     if (ingredientsError) throw ingredientsError;
   }
   if (draft.steps.length > 0) {
@@ -180,7 +223,9 @@ export async function createRecipe(
       step_number: index + 1,
       text: text.trim(),
     }));
-    const { error: stepsError } = await supabase.from('recipe_steps').insert(rows);
+    const { error: stepsError } = await supabase
+      .from("recipe_steps")
+      .insert(rows);
     if (stepsError) throw stepsError;
   }
   return recipeId;
@@ -189,30 +234,45 @@ export async function createRecipe(
 export async function updateRecipeFacts(
   id: string,
   fields: Partial<
-    Pick<RecipeDraft, 'title' | 'description' | 'servings' | 'prepMinutes' | 'cookMinutes' | 'imageUrl'>
+    Pick<
+      RecipeDraft,
+      | "title"
+      | "description"
+      | "servings"
+      | "prepMinutes"
+      | "cookMinutes"
+      | "imageUrl"
+    >
   >,
 ): Promise<void> {
   const patch: Record<string, unknown> = {};
-  if (fields.title !== undefined) patch.title = fields.title.replace(/\s+/g, ' ').trim();
+  if (fields.title !== undefined)
+    patch.title = fields.title.replace(/\s+/g, " ").trim();
   if (fields.description !== undefined) patch.description = fields.description;
   if (fields.servings !== undefined) patch.servings = fields.servings;
   if (fields.prepMinutes !== undefined) patch.prep_minutes = fields.prepMinutes;
   if (fields.cookMinutes !== undefined) patch.cook_minutes = fields.cookMinutes;
   if (fields.imageUrl !== undefined) patch.image_url = fields.imageUrl;
-  const { error } = await supabase.from('recipes').update(patch).eq('id', id);
+  const { error } = await supabase.from("recipes").update(patch).eq("id", id);
   if (error) throw error;
 }
 
-export async function setFavorite(id: string, isFavorite: boolean): Promise<void> {
-  const { error } = await supabase.from('recipes').update({ is_favorite: isFavorite }).eq('id', id);
+export async function setFavorite(
+  id: string,
+  isFavorite: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("recipes")
+    .update({ is_favorite: isFavorite })
+    .eq("id", id);
   if (error) throw error;
 }
 
 export async function softDeleteRecipe(id: string): Promise<void> {
   const { error } = await supabase
-    .from('recipes')
+    .from("recipes")
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -226,8 +286,14 @@ export async function addIngredient(
 ): Promise<void> {
   const { quantity, unit } = parseQuantity(quantityText);
   const { error } = await supabase
-    .from('recipe_ingredients')
-    .insert({ recipe_id: recipeId, name: name.trim(), quantity, unit, sort_order: sortOrder });
+    .from("recipe_ingredients")
+    .insert({
+      recipe_id: recipeId,
+      name: name.trim(),
+      quantity,
+      unit,
+      sort_order: sortOrder,
+    });
   if (error) throw error;
 }
 
@@ -238,14 +304,17 @@ export async function updateIngredient(
 ): Promise<void> {
   const { quantity, unit } = parseQuantity(quantityText);
   const { error } = await supabase
-    .from('recipe_ingredients')
+    .from("recipe_ingredients")
     .update({ name: name.trim(), quantity, unit })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteIngredient(id: string): Promise<void> {
-  const { error } = await supabase.from('recipe_ingredients').delete().eq('id', id);
+  const { error } = await supabase
+    .from("recipe_ingredients")
+    .delete()
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -253,9 +322,9 @@ export async function deleteIngredient(id: string): Promise<void> {
 export async function reorderIngredients(orderedIds: string[]): Promise<void> {
   for (const [index, id] of orderedIds.entries()) {
     const { error } = await supabase
-      .from('recipe_ingredients')
+      .from("recipe_ingredients")
       .update({ sort_order: index })
-      .eq('id', id);
+      .eq("id", id);
     if (error) throw error;
   }
 }
@@ -264,9 +333,9 @@ export async function reorderIngredients(orderedIds: string[]): Promise<void> {
 export async function reorderSteps(orderedIds: string[]): Promise<void> {
   for (const [index, id] of orderedIds.entries()) {
     const { error } = await supabase
-      .from('recipe_steps')
+      .from("recipe_steps")
       .update({ step_number: index + 1 })
-      .eq('id', id);
+      .eq("id", id);
     if (error) throw error;
   }
 }
@@ -275,50 +344,57 @@ export async function reorderSteps(orderedIds: string[]): Promise<void> {
 // The design's step-number picker lets a step land at any position; numbers
 // are renumbered densely (1..n) around it.
 
-export async function addStep(recipeId: string, position: number, text: string): Promise<void> {
+export async function addStep(
+  recipeId: string,
+  position: number,
+  text: string,
+): Promise<void> {
   const { data, error } = await supabase
-    .from('recipe_steps')
-    .select('id, step_number')
-    .eq('recipe_id', recipeId)
-    .order('step_number');
+    .from("recipe_steps")
+    .select("id, step_number")
+    .eq("recipe_id", recipeId)
+    .order("step_number");
   if (error) throw error;
   const steps = data ?? [];
   const clamped = Math.max(1, Math.min(position, steps.length + 1));
   // Shift everything at/after the chosen slot down by one.
   for (const step of steps.filter((s) => s.step_number >= clamped).reverse()) {
     const { error: shiftError } = await supabase
-      .from('recipe_steps')
+      .from("recipe_steps")
       .update({ step_number: step.step_number + 1 })
-      .eq('id', step.id);
+      .eq("id", step.id);
     if (shiftError) throw shiftError;
   }
   const { error: insertError } = await supabase
-    .from('recipe_steps')
+    .from("recipe_steps")
     .insert({ recipe_id: recipeId, step_number: clamped, text: text.trim() });
   if (insertError) throw insertError;
 }
 
 export async function updateStep(id: string, text: string): Promise<void> {
-  const { error } = await supabase.from('recipe_steps').update({ text: text.trim() }).eq('id', id);
+  const { error } = await supabase
+    .from("recipe_steps")
+    .update({ text: text.trim() })
+    .eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteStep(recipeId: string, id: string): Promise<void> {
-  const { error } = await supabase.from('recipe_steps').delete().eq('id', id);
+  const { error } = await supabase.from("recipe_steps").delete().eq("id", id);
   if (error) throw error;
   // Close the gap so numbering stays dense.
   const { data, error: fetchError } = await supabase
-    .from('recipe_steps')
-    .select('id, step_number')
-    .eq('recipe_id', recipeId)
-    .order('step_number');
+    .from("recipe_steps")
+    .select("id, step_number")
+    .eq("recipe_id", recipeId)
+    .order("step_number");
   if (fetchError) throw fetchError;
   for (const [index, step] of (data ?? []).entries()) {
     if (step.step_number !== index + 1) {
       const { error: renumberError } = await supabase
-        .from('recipe_steps')
+        .from("recipe_steps")
         .update({ step_number: index + 1 })
-        .eq('id', step.id);
+        .eq("id", step.id);
       if (renumberError) throw renumberError;
     }
   }
@@ -341,26 +417,31 @@ export async function addIngredientsToShoppingList(
   if (recipe.ingredients.length === 0) return 0;
   const listId = await getOrCreateListId(householdId, userId);
   const { data: memoryRows, error: memoryError } = await supabase
-    .from('item_category_memory')
-    .select('name, aisle')
-    .eq('household_id', householdId);
+    .from("item_category_memory")
+    .select("name, aisle")
+    .eq("household_id", householdId);
   if (memoryError) throw memoryError;
   const memory = new Map<string, string>();
   for (const row of memoryRows ?? []) {
-    if ((CATEGORIES as readonly string[]).includes(row.aisle)) memory.set(row.name, row.aisle);
+    if ((CATEGORIES as readonly string[]).includes(row.aisle))
+      memory.set(row.name, row.aisle);
   }
   const factor = recipe.servings > 0 ? chosenServings / recipe.servings : 1;
   const rows = recipe.ingredients.map((ingredient) => ({
     id: Crypto.randomUUID(),
     list_id: listId,
     name: ingredient.name,
-    quantity: ingredient.quantity == null ? null : roundQuantity(ingredient.quantity * factor),
+    quantity:
+      ingredient.quantity == null
+        ? null
+        : roundQuantity(ingredient.quantity * factor),
     unit: ingredient.unit,
-    aisle: (memory.get(normalizeItemName(ingredient.name)) ?? null) as Category | null,
+    aisle: (memory.get(normalizeItemName(ingredient.name)) ??
+      null) as Category | null,
     added_manually: false,
     created_by_user_id: userId,
   }));
-  const { error } = await supabase.from('shopping_list_items').insert(rows);
+  const { error } = await supabase.from("shopping_list_items").insert(rows);
   if (error) throw error;
   return rows.length;
 }
@@ -376,8 +457,9 @@ export async function uploadRecipePhoto(
   const body = await response.arrayBuffer();
   const path = `${householdId}/${Crypto.randomUUID()}.jpg`;
   const { error } = await supabase.storage
-    .from('recipe-photos')
-    .upload(path, body, { contentType: 'image/jpeg' });
+    .from("recipe-photos")
+    .upload(path, body, { contentType: "image/jpeg" });
   if (error) throw error;
-  return supabase.storage.from('recipe-photos').getPublicUrl(path).data.publicUrl;
+  return supabase.storage.from("recipe-photos").getPublicUrl(path).data
+    .publicUrl;
 }

@@ -32,8 +32,17 @@ the family can start collecting favourites immediately.
       "Add recipe to weekly plan" menu item is hidden until the Plan tab
       exists; editing an existing recipe reuses the form for facts only
       (ingredients/steps edit on the detail screen)
-- [ ] URL import (schema.org with manual fallback) – deliberately its own
-      step after manual recipes work; the most technical piece
+- [x] URL import – built 2026-07-12: paste a link on the Add-recipe screen,
+      the app reads the page's embedded recipe data (JSON-LD and microdata
+      flavors) and prefills the whole form for review; source link stored
+      on the recipe. Verified live against valdemarsro.dk (Danish
+      microdata, 14 ingredients + 5 steps + times parsed)
+- [ ] Import fallback for bot-blocking sites (madensverden.dk, allrecipes
+      refused non-browser fetches in testing): hidden-WebView fetch is the
+      known fix if the family's sites need it – test the family's real
+      sites first
+- [ ] "Add from a link" sheet is improvised in code – design it if it
+      should look different (2026-07-12)
 
 ## Then: the weekly plan
 

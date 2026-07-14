@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ServingsCounter } from "@/components/recipes/servings-counter";
+import { ImportRecipeSheet } from "@/components/recipes/import-recipe-sheet";
+import type { ImportedRecipe } from "@/lib/recipe-import";
 import { ReorderSheet } from "@/components/recipes/reorder-sheet";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { Input } from "@/components/ui/input";
@@ -67,6 +69,8 @@ export default function AddRecipeScreen() {
   const [reordering, setReordering] = useState<"ingredients" | "steps" | null>(
     null,
   );
+  const [importing, setImporting] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editing) return;
@@ -93,6 +97,26 @@ export default function AddRecipeScreen() {
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
     }
+  };
+
+  // Everything found on the page lands in the form for review – the
+  // external photo URL goes through the normal upload on save.
+  const applyImport = (imported: ImportedRecipe) => {
+    setImporting(false);
+    setTitle(imported.title);
+    setDescription(imported.description ?? "");
+    setPrep(imported.prepMinutes != null ? String(imported.prepMinutes) : "");
+    setCook(imported.cookMinutes != null ? String(imported.cookMinutes) : "");
+    if (imported.servings != null) setServings(imported.servings);
+    if (imported.imageUrl != null) setPhotoUri(imported.imageUrl);
+    setIngredients(
+      imported.ingredients.map((ingredient) => ({
+        name: ingredient.name,
+        quantityText: ingredient.quantityText ?? "",
+      })),
+    );
+    setSteps(imported.steps);
+    setSourceUrl(imported.sourceUrl);
   };
 
   const stageIngredient = () => {
@@ -175,6 +199,7 @@ export default function AddRecipeScreen() {
           session?.user?.id ?? "",
           {
             title: trimmedTitle,
+            sourceUrl,
             description: description.trim() || null,
             servings,
             prepMinutes: parseMinutes(prep),
@@ -484,6 +509,12 @@ export default function AddRecipeScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <ImportRecipeSheet
+        visible={importing}
+        onClose={() => setImporting(false)}
+        onImported={applyImport}
+      />
 
       <ReorderSheet
         visible={reordering != null}
