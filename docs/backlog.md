@@ -23,9 +23,9 @@ the family can start collecting favourites immediately.
       photo storage bucket) and all screens – list with search+chips,
       detail with servings scaling and cooking check-offs, add/edit form
       with photo picking, sheets and dialogs (built 2026-07-12)
-- [ ] Apply migration 0006 in the Supabase dashboard (Thomas; SQL goes on
+- [x] Apply migration 0006 in the Supabase dashboard (Thomas; SQL goes on
       the clipboard) – the Recipes tab needs it
-- [ ] Device build with expo-image-picker (new native module) + walk every
+- [x] Device build with expo-image-picker (new native module) + walk every
       recipe flow on-device
 - [ ] Build notes to revisit: the Figma form has no save button (added a
       solid "Save recipe" at the bottom – design one if it should differ);
