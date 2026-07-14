@@ -51,6 +51,15 @@ the family can start collecting favourites immediately.
 
 ## Decisions log (recent)
 
+- Recipe ingredient quantities are one free-text field per ingredient
+  (decided 2026-07-12): parsed into amount + unit like the shopping list;
+  unparseable text ("a pinch") passes through and never scales. Servings
+  is its own stepper on the recipe (default 4, the scaling anchor);
+  scaling happens in the planner as planned ÷ recipe servings, with
+  sensible display rounding. Parser to handle "1,5" and "1/2".
+- Recipes list gets one search field matching names AND ingredients – no
+  manual tags/filters in v1 (2026-07-12); tags parked on the ideas list.
+
 - DS 7-step colour ramps adopted (2026-07-11): tokens re-synced, existing
   screens remapped one step (old "lighter" tints are now "lightest" etc.)
   so backgrounds/badges kept their look; the brand green retuned
