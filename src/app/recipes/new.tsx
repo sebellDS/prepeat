@@ -83,6 +83,13 @@ export default function AddRecipeScreen() {
         setCook(recipe.cookMinutes != null ? String(recipe.cookMinutes) : "");
         setServings(recipe.servings);
         setExistingPhotoUrl(recipe.imageUrl);
+        setIngredients(
+          recipe.ingredients.map((ingredient) => ({
+            name: ingredient.name,
+            quantityText: ingredient.quantityText ?? "",
+          })),
+        );
+        setSteps(recipe.steps.map((step) => step.text));
         setLoaded(true);
       })
       .catch((error) => console.warn("[recipes] edit fetch failed", error));
