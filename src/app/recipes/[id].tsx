@@ -209,7 +209,7 @@ export default function RecipeDetailScreen() {
             accessibilityLabel={
               recipe.isFavorite ? "Remove from favorites" : "Add to favorites"
             }
-            className="absolute right-layout-small top-layout-small"
+            style={{ position: "absolute", top: 16, right: 16 }}
           >
             <MaterialIcons
               name={recipe.isFavorite ? "favorite" : "favorite-border"}
