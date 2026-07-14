@@ -342,6 +342,23 @@ export default function RecipeDetailScreen() {
               )}
             </View>
           </View>
+
+          {/* Edit the recipe's facts (name, photo, times, servings) –
+              requested back after the menu item was removed (2026-07-12). */}
+          <Pressable
+            onPress={() => router.push(`/recipes/new?id=${recipe.id}`)}
+            accessibilityRole="button"
+            className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border border-button-outline-border-enabled py-comp-large"
+          >
+            <MaterialIcons
+              name="edit-note"
+              size={24}
+              color={ds.colors.icon.default}
+            />
+            <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
+              Edit recipe
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
 
