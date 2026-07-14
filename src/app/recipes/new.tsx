@@ -25,6 +25,7 @@ import { useHousehold } from "@/lib/household-context";
 import {
   createRecipe,
   fetchRecipe,
+  replaceIngredientsAndSteps,
   updateRecipeFacts,
   uploadRecipePhoto,
 } from "@/lib/recipes";
@@ -180,6 +181,23 @@ export default function AddRecipeScreen() {
           cookMinutes: parseMinutes(cook),
           imageUrl,
         });
+        const draftIngredients = [...ingredients];
+        const pendingName = ingredientName.replace(/\s+/g, " ").trim();
+        if (pendingName)
+          draftIngredients.push({
+            name: pendingName,
+            quantityText: ingredientQuantity.trim(),
+          });
+        const draftSteps = [...steps];
+        if (stepText.trim()) draftSteps.push(stepText.trim());
+        await replaceIngredientsAndSteps(
+          id,
+          draftIngredients.map((ingredient) => ({
+            name: ingredient.name,
+            quantityText: ingredient.quantityText || null,
+          })),
+          draftSteps,
+        );
         router.back();
       } else {
         // Anything still sitting in the entry fields counts too – people
@@ -338,163 +356,161 @@ export default function AddRecipeScreen() {
           </View>
         </View>
 
-        {!editing && (
-          <>
-            {/* Ingredients builder */}
-            <View className="w-full gap-comp-xsmall px-layout-small">
-              <View className="w-full flex-row items-center">
-                <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
-                  Ingredients
-                </Text>
-                {ingredients.length > 1 && (
-                  <Pressable
-                    onPress={() => setReordering("ingredients")}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Reorder ingredients"
-                  >
-                    <MaterialIcons
-                      name="drag-handle"
-                      size={24}
-                      color={ds.colors.text.accent}
-                    />
-                  </Pressable>
-                )}
-              </View>
-              <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
-                {ingredients.length > 0 && (
-                  <View className="w-full overflow-hidden rounded-medium">
-                    {ingredients.map((ingredient, index) => (
-                      <View
-                        key={`${ingredient.name}-${index}`}
-                        className="border-b border-border-subtle"
-                      >
-                        <SwipeActions
-                          label={ingredient.name}
-                          onEdit={() => editStagedIngredient(index)}
-                          onDelete={() =>
-                            setIngredients((current) =>
-                              current.filter((_, i) => i !== index),
-                            )
-                          }
-                        >
-                          <View className="h-[56px] w-full flex-row items-center gap-layout-small bg-surface-neutral-white p-layout-small">
-                            <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
-                              {ingredient.name}
-                            </Text>
-                            {ingredient.quantityText.length > 0 && (
-                              <Text className="font-paragraph text-paragraph font-default text-text-subtle">
-                                {ingredient.quantityText}
-                              </Text>
-                            )}
-                          </View>
-                        </SwipeActions>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                <Field label="Ingredient">
-                  <Input
-                    value={ingredientName}
-                    onChangeText={setIngredientName}
-                    placeholder="Cherry tomatoes"
-                    accessibilityLabel="Ingredient name"
+        <>
+          {/* Ingredients builder */}
+          <View className="w-full gap-comp-xsmall px-layout-small">
+            <View className="w-full flex-row items-center">
+              <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
+                Ingredients
+              </Text>
+              {ingredients.length > 1 && (
+                <Pressable
+                  onPress={() => setReordering("ingredients")}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reorder ingredients"
+                >
+                  <MaterialIcons
+                    name="drag-handle"
+                    size={24}
+                    color={ds.colors.text.accent}
                   />
-                </Field>
-                <Field label="Quantity">
-                  <Input
-                    value={ingredientQuantity}
-                    onChangeText={setIngredientQuantity}
-                    placeholder="e.g. 250 g"
-                    accessibilityLabel="Ingredient quantity"
-                    onSubmitEditing={stageIngredient}
-                    returnKeyType="done"
-                  />
-                </Field>
-                <OutlineButton
-                  icon="add"
-                  label="Add ingredient"
-                  onPress={stageIngredient}
-                />
-              </View>
+                </Pressable>
+              )}
             </View>
+            <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+              {ingredients.length > 0 && (
+                <View className="w-full overflow-hidden rounded-medium">
+                  {ingredients.map((ingredient, index) => (
+                    <View
+                      key={`${ingredient.name}-${index}`}
+                      className="border-b border-border-subtle"
+                    >
+                      <SwipeActions
+                        label={ingredient.name}
+                        onEdit={() => editStagedIngredient(index)}
+                        onDelete={() =>
+                          setIngredients((current) =>
+                            current.filter((_, i) => i !== index),
+                          )
+                        }
+                      >
+                        <View className="h-[56px] w-full flex-row items-center gap-layout-small bg-surface-neutral-white p-layout-small">
+                          <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
+                            {ingredient.name}
+                          </Text>
+                          {ingredient.quantityText.length > 0 && (
+                            <Text className="font-paragraph text-paragraph font-default text-text-subtle">
+                              {ingredient.quantityText}
+                            </Text>
+                          )}
+                        </View>
+                      </SwipeActions>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Field label="Ingredient">
+                <Input
+                  value={ingredientName}
+                  onChangeText={setIngredientName}
+                  placeholder="Cherry tomatoes"
+                  accessibilityLabel="Ingredient name"
+                />
+              </Field>
+              <Field label="Quantity">
+                <Input
+                  value={ingredientQuantity}
+                  onChangeText={setIngredientQuantity}
+                  placeholder="e.g. 250 g"
+                  accessibilityLabel="Ingredient quantity"
+                  onSubmitEditing={stageIngredient}
+                  returnKeyType="done"
+                />
+              </Field>
+              <OutlineButton
+                icon="add"
+                label="Add ingredient"
+                onPress={stageIngredient}
+              />
+            </View>
+          </View>
 
-            {/* Instructions builder */}
-            <View className="w-full gap-comp-xsmall px-layout-small">
-              <View className="w-full flex-row items-center">
-                <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
-                  Instructions
-                </Text>
-                {steps.length > 1 && (
-                  <Pressable
-                    onPress={() => setReordering("steps")}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Reorder instructions"
-                  >
-                    <MaterialIcons
-                      name="drag-handle"
-                      size={24}
-                      color={ds.colors.text.accent}
-                    />
-                  </Pressable>
-                )}
-              </View>
-              <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
-                {steps.length > 0 && (
-                  <View className="w-full overflow-hidden rounded-medium">
-                    {steps.map((step, index) => (
-                      <View
-                        key={`${index}-${step.slice(0, 12)}`}
-                        className="border-b border-border-subtle"
+          {/* Instructions builder */}
+          <View className="w-full gap-comp-xsmall px-layout-small">
+            <View className="w-full flex-row items-center">
+              <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
+                Instructions
+              </Text>
+              {steps.length > 1 && (
+                <Pressable
+                  onPress={() => setReordering("steps")}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reorder instructions"
+                >
+                  <MaterialIcons
+                    name="drag-handle"
+                    size={24}
+                    color={ds.colors.text.accent}
+                  />
+                </Pressable>
+              )}
+            </View>
+            <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+              {steps.length > 0 && (
+                <View className="w-full overflow-hidden rounded-medium">
+                  {steps.map((step, index) => (
+                    <View
+                      key={`${index}-${step.slice(0, 12)}`}
+                      className="border-b border-border-subtle"
+                    >
+                      <SwipeActions
+                        label={`step ${index + 1}`}
+                        onEdit={() => editStagedStep(index)}
+                        onDelete={() =>
+                          setSteps((current) =>
+                            current.filter((_, i) => i !== index),
+                          )
+                        }
                       >
-                        <SwipeActions
-                          label={`step ${index + 1}`}
-                          onEdit={() => editStagedStep(index)}
-                          onDelete={() =>
-                            setSteps((current) =>
-                              current.filter((_, i) => i !== index),
-                            )
-                          }
-                        >
-                          <View className="w-full flex-row items-start gap-layout-small bg-surface-neutral-white p-layout-small">
-                            <View className="min-w-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-main px-comp-medium py-comp-small">
-                              <Text className="font-paragraph text-small font-emphasized leading-xxsmall text-text-default">
-                                {index + 1}
-                              </Text>
-                            </View>
-                            <Text
-                              style={{ paddingTop: 4 }}
-                              className="min-w-0 flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default"
-                            >
-                              {step}
+                        <View className="w-full flex-row items-start gap-layout-small bg-surface-neutral-white p-layout-small">
+                          <View className="min-w-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-main px-comp-medium py-comp-small">
+                            <Text className="font-paragraph text-small font-emphasized leading-xxsmall text-text-default">
+                              {index + 1}
                             </Text>
                           </View>
-                        </SwipeActions>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                <Field label="Instruction">
-                  <Input
-                    value={stepText}
-                    onChangeText={setStepText}
-                    placeholder="Add your instruction here"
-                    accessibilityLabel="Instruction"
-                    multiline
-                    numberOfLines={4}
-                    style={{ minHeight: 96, textAlignVertical: "top" }}
-                  />
-                </Field>
-                <OutlineButton
-                  icon="add"
-                  label="Add instruction"
-                  onPress={stageStep}
+                          <Text
+                            style={{ paddingTop: 4 }}
+                            className="min-w-0 flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default"
+                          >
+                            {step}
+                          </Text>
+                        </View>
+                      </SwipeActions>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Field label="Instruction">
+                <Input
+                  value={stepText}
+                  onChangeText={setStepText}
+                  placeholder="Add your instruction here"
+                  accessibilityLabel="Instruction"
+                  multiline
+                  numberOfLines={4}
+                  style={{ minHeight: 96, textAlignVertical: "top" }}
                 />
-              </View>
+              </Field>
+              <OutlineButton
+                icon="add"
+                label="Add instruction"
+                onPress={stageStep}
+              />
             </View>
-          </>
-        )}
+          </View>
+        </>
         <View className="w-full px-layout-small">
           <Pressable
             onPress={save}

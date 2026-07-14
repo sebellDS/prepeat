@@ -276,6 +276,52 @@ export async function softDeleteRecipe(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * Replaces a recipe's ingredients and steps wholesale – the edit form
+ * treats them as one editable document. Safe because nothing references
+ * the child rows by id (the shopping list works on snapshots).
+ */
+export async function replaceIngredientsAndSteps(
+  recipeId: string,
+  ingredients: { name: string; quantityText: string | null }[],
+  steps: string[],
+): Promise<void> {
+  const { error: clearIngredientsError } = await supabase
+    .from("recipe_ingredients")
+    .delete()
+    .eq("recipe_id", recipeId);
+  if (clearIngredientsError) throw clearIngredientsError;
+  const { error: clearStepsError } = await supabase
+    .from("recipe_steps")
+    .delete()
+    .eq("recipe_id", recipeId);
+  if (clearStepsError) throw clearStepsError;
+
+  if (ingredients.length > 0) {
+    const rows = ingredients.map((ingredient, index) => {
+      const { quantity, unit } = parseQuantity(ingredient.quantityText);
+      return {
+        recipe_id: recipeId,
+        name: ingredient.name.trim(),
+        quantity,
+        unit,
+        sort_order: index,
+      };
+    });
+    const { error } = await supabase.from("recipe_ingredients").insert(rows);
+    if (error) throw error;
+  }
+  if (steps.length > 0) {
+    const rows = steps.map((text, index) => ({
+      recipe_id: recipeId,
+      step_number: index + 1,
+      text: text.trim(),
+    }));
+    const { error } = await supabase.from("recipe_steps").insert(rows);
+    if (error) throw error;
+  }
+}
+
 // ── Ingredients ──────────────────────────────────────────────────────────
 
 export async function addIngredient(
@@ -285,15 +331,13 @@ export async function addIngredient(
   sortOrder: number,
 ): Promise<void> {
   const { quantity, unit } = parseQuantity(quantityText);
-  const { error } = await supabase
-    .from("recipe_ingredients")
-    .insert({
-      recipe_id: recipeId,
-      name: name.trim(),
-      quantity,
-      unit,
-      sort_order: sortOrder,
-    });
+  const { error } = await supabase.from("recipe_ingredients").insert({
+    recipe_id: recipeId,
+    name: name.trim(),
+    quantity,
+    unit,
+    sort_order: sortOrder,
+  });
   if (error) throw error;
 }
 
