@@ -10,10 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EditIngredientSheet } from "@/components/recipes/edit-ingredient-sheet";
 import { EditStepSheet } from "@/components/recipes/edit-step-sheet";
@@ -47,7 +44,6 @@ export default function RecipeDetailScreen() {
   const household = useHousehold();
   const { session } = useAuth();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [servings, setServings] = useState<number | null>(null);
@@ -162,7 +158,36 @@ export default function RecipeDetailScreen() {
   ];
 
   return (
-    <SafeAreaView edges={[]} className="flex-1 bg-surface-neutral-lightest">
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-surface-neutral-lightest"
+    >
+      <View className="w-full flex-row items-center justify-between px-layout-small py-comp-small">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
+          <MaterialIcons
+            name="arrow-back"
+            size={32}
+            color={ds.colors.surface.primary.main}
+          />
+        </Pressable>
+        <Pressable
+          onPress={() => setMenuOpen((open) => !open)}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Recipe actions"
+        >
+          <MaterialIcons
+            name="more-horiz"
+            size={28}
+            color={ds.colors.icon.default}
+          />
+        </Pressable>
+      </View>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: BottomTabInset + 24 }}
@@ -177,35 +202,6 @@ export default function RecipeDetailScreen() {
               contentFit="cover"
             />
           )}
-          <View
-            style={{ paddingTop: insets.top + 8 }}
-            className="absolute left-0 right-0 top-0 w-full flex-row items-center justify-between px-layout-small"
-          >
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-            >
-              <MaterialIcons
-                name="arrow-back"
-                size={32}
-                color={ds.colors.surface.primary.main}
-              />
-            </Pressable>
-            <Pressable
-              onPress={() => setMenuOpen((open) => !open)}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Recipe actions"
-            >
-              <MaterialIcons
-                name="more-horiz"
-                size={28}
-                color={ds.colors.icon.default}
-              />
-            </Pressable>
-          </View>
           <Pressable
             onPress={toggleFavorite}
             hitSlop={8}
@@ -213,8 +209,7 @@ export default function RecipeDetailScreen() {
             accessibilityLabel={
               recipe.isFavorite ? "Remove from favorites" : "Add to favorites"
             }
-            style={{ top: insets.top + 52 }}
-            className="absolute right-layout-small"
+            className="absolute right-layout-small top-layout-small"
           >
             <MaterialIcons
               name={recipe.isFavorite ? "favorite" : "favorite-border"}
@@ -351,10 +346,7 @@ export default function RecipeDetailScreen() {
       </ScrollView>
 
       {menuOpen && (
-        <View
-          style={{ top: insets.top + 44 }}
-          className="absolute right-layout-small w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg"
-        >
+        <View className="absolute right-layout-small top-[52px] w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg">
           {menuItems.map((item, index) => (
             <Pressable
               key={item.label}
