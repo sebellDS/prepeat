@@ -277,6 +277,14 @@ export default function AddRecipeScreen() {
               </Text>
             </View>
 
+            {!editing && (
+              <OutlineButton
+                icon="link"
+                label="Add from a link"
+                onPress={() => setImporting(true)}
+              />
+            )}
+
             <Field label="Recipe name">
               <Input
                 value={title}
