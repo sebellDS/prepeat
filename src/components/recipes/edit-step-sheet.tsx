@@ -1,5 +1,5 @@
 import { SymbolView } from "expo-symbols";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
@@ -57,6 +58,12 @@ function SheetContent({
   );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const textRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => textRef.current?.focus(), 450);
+    return () => clearTimeout(timer);
+  }, []);
 
   const positions = Array.from(
     { length: stepCount + (editing ? 0 : 1) },
@@ -173,6 +180,7 @@ function SheetContent({
             Instruction
           </Text>
           <Input
+            ref={textRef}
             value={text}
             onChangeText={setText}
             placeholder="Add your instruction here"
@@ -180,7 +188,6 @@ function SheetContent({
             multiline
             numberOfLines={4}
             style={{ minHeight: 96, textAlignVertical: "top" }}
-            autoFocus
           />
         </View>
 

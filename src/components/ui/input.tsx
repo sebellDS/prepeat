@@ -13,11 +13,16 @@ export function Input({
   hasError,
   onFocus,
   onBlur,
+  ref,
   ...props
-}: React.ComponentProps<typeof TextInput> & { hasError?: boolean }) {
+}: React.ComponentProps<typeof TextInput> & {
+  hasError?: boolean;
+  ref?: React.Ref<TextInput>;
+}) {
   const [focused, setFocused] = useState(false);
   return (
     <TextInput
+      ref={ref}
       placeholderTextColor={ds.colors.text.disabled}
       {...props}
       onFocus={(event) => {

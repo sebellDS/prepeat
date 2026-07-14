@@ -249,6 +249,28 @@ export async function deleteIngredient(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Persists a drag-reorder of ingredients (sort_order follows the array). */
+export async function reorderIngredients(orderedIds: string[]): Promise<void> {
+  for (const [index, id] of orderedIds.entries()) {
+    const { error } = await supabase
+      .from('recipe_ingredients')
+      .update({ sort_order: index })
+      .eq('id', id);
+    if (error) throw error;
+  }
+}
+
+/** Persists a drag-reorder of steps (step_number follows the array). */
+export async function reorderSteps(orderedIds: string[]): Promise<void> {
+  for (const [index, id] of orderedIds.entries()) {
+    const { error } = await supabase
+      .from('recipe_steps')
+      .update({ step_number: index + 1 })
+      .eq('id', id);
+    if (error) throw error;
+  }
+}
+
 // ── Steps ────────────────────────────────────────────────────────────────
 // The design's step-number picker lets a step land at any position; numbers
 // are renumbered densely (1..n) around it.

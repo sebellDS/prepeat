@@ -10,10 +10,14 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { EditIngredientSheet } from "@/components/recipes/edit-ingredient-sheet";
 import { EditStepSheet } from "@/components/recipes/edit-step-sheet";
+import { ReorderSheet } from "@/components/recipes/reorder-sheet";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { ds } from "@/constants/ds";
@@ -25,6 +29,8 @@ import {
   deleteIngredient,
   deleteStep,
   fetchRecipe,
+  reorderIngredients,
+  reorderSteps,
   scaledQuantityText,
   setFavorite,
   softDeleteRecipe,
@@ -41,6 +47,7 @@ export default function RecipeDetailScreen() {
   const household = useHousehold();
   const { session } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [servings, setServings] = useState<number | null>(null);
@@ -56,6 +63,9 @@ export default function RecipeDetailScreen() {
     RecipeIngredient | "new" | null
   >(null);
   const [editingStep, setEditingStep] = useState<RecipeStep | "new" | null>(
+    null,
+  );
+  const [reordering, setReordering] = useState<"ingredients" | "steps" | null>(
     null,
   );
 
@@ -152,10 +162,7 @@ export default function RecipeDetailScreen() {
   ];
 
   return (
-    <SafeAreaView
-      edges={["top"]}
-      className="flex-1 bg-surface-neutral-lightest"
-    >
+    <SafeAreaView edges={[]} className="flex-1 bg-surface-neutral-lightest">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: BottomTabInset + 24 }}
@@ -170,20 +177,19 @@ export default function RecipeDetailScreen() {
               contentFit="cover"
             />
           )}
-          <SafeAreaView
-            edges={[]}
-            className="absolute left-0 right-0 top-0 w-full flex-row items-center justify-between p-layout-small"
+          <View
+            style={{ paddingTop: insets.top + 8 }}
+            className="absolute left-0 right-0 top-0 w-full flex-row items-center justify-between px-layout-small"
           >
             <Pressable
               onPress={() => router.back()}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Back"
-              className="size-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-white/80"
             >
               <MaterialIcons
                 name="arrow-back"
-                size={22}
+                size={32}
                 color={ds.colors.surface.primary.main}
               />
             </Pressable>
@@ -192,15 +198,14 @@ export default function RecipeDetailScreen() {
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Recipe actions"
-              className="size-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-white/80"
             >
               <MaterialIcons
                 name="more-horiz"
-                size={22}
+                size={28}
                 color={ds.colors.icon.default}
               />
             </Pressable>
-          </SafeAreaView>
+          </View>
           <Pressable
             onPress={toggleFavorite}
             hitSlop={8}
@@ -208,16 +213,13 @@ export default function RecipeDetailScreen() {
             accessibilityLabel={
               recipe.isFavorite ? "Remove from favorites" : "Add to favorites"
             }
-            className="absolute right-layout-small top-[60px]"
+            style={{ top: insets.top + 52 }}
+            className="absolute right-layout-small"
           >
             <MaterialIcons
               name={recipe.isFavorite ? "favorite" : "favorite-border"}
               size={40}
-              color={
-                recipe.isFavorite
-                  ? ds.colors.surface.primary.main
-                  : ds.colors.text.inverse
-              }
+              color={ds.colors.text.inverse}
             />
           </Pressable>
         </View>
@@ -250,10 +252,26 @@ export default function RecipeDetailScreen() {
           <ServingsCounter value={chosenServings} onChange={setServings} />
 
           <View className="w-full gap-comp-xsmall">
-            <Text className="font-header text-display-6 font-emphasized leading-xsmall text-text-default">
-              Ingredients
-            </Text>
-            <View className="w-full overflow-hidden">
+            <View className="w-full flex-row items-center">
+              <Text className="flex-1 font-header text-display-6 font-emphasized leading-xsmall text-text-default">
+                Ingredients
+              </Text>
+              {recipe.ingredients.length > 1 && (
+                <Pressable
+                  onPress={() => setReordering("ingredients")}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reorder ingredients"
+                >
+                  <MaterialIcons
+                    name="drag-handle"
+                    size={24}
+                    color={ds.colors.text.accent}
+                  />
+                </Pressable>
+              )}
+            </View>
+            <View className="w-full overflow-hidden rounded-large">
               {recipe.ingredients.map((ingredient, index) => (
                 <IngredientRow
                   key={ingredient.id}
@@ -286,10 +304,26 @@ export default function RecipeDetailScreen() {
           </View>
 
           <View className="w-full gap-comp-xsmall">
-            <Text className="font-header text-display-6 font-emphasized leading-xsmall text-text-default">
-              Instructions
-            </Text>
-            <View className="w-full overflow-hidden">
+            <View className="w-full flex-row items-center">
+              <Text className="flex-1 font-header text-display-6 font-emphasized leading-xsmall text-text-default">
+                Instructions
+              </Text>
+              {recipe.steps.length > 1 && (
+                <Pressable
+                  onPress={() => setReordering("steps")}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reorder instructions"
+                >
+                  <MaterialIcons
+                    name="drag-handle"
+                    size={24}
+                    color={ds.colors.text.accent}
+                  />
+                </Pressable>
+              )}
+            </View>
+            <View className="w-full overflow-hidden rounded-large">
               {recipe.steps.map((step, index) => (
                 <StepRow
                   key={step.id}
@@ -317,7 +351,10 @@ export default function RecipeDetailScreen() {
       </ScrollView>
 
       {menuOpen && (
-        <View className="absolute right-layout-small top-[60px] w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg">
+        <View
+          style={{ top: insets.top + 44 }}
+          className="absolute right-layout-small w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg"
+        >
           {menuItems.map((item, index) => (
             <Pressable
               key={item.label}
@@ -360,6 +397,63 @@ export default function RecipeDetailScreen() {
         destructive={dialog === "delete"}
         onCancel={() => setDialog(null)}
         onConfirm={confirmDialog}
+      />
+
+      <ReorderSheet
+        visible={reordering != null}
+        title={
+          reordering === "steps"
+            ? "Reorder instructions"
+            : "Reorder ingredients"
+        }
+        hint="Drag to change the order."
+        items={
+          reordering === "steps"
+            ? recipe.steps.map((step) => ({
+                key: step.id,
+                label: `${step.stepNumber}. ${step.text}`,
+              }))
+            : recipe.ingredients.map((ingredient) => ({
+                key: ingredient.id,
+                label: ingredient.name,
+              }))
+        }
+        onClose={() => setReordering(null)}
+        onChange={(orderedKeys) => {
+          // Optimistic local reorder, then persist.
+          if (reordering === "steps") {
+            const byId = new Map(recipe.steps.map((step) => [step.id, step]));
+            setRecipe({
+              ...recipe,
+              steps: orderedKeys.map((key, index) => ({
+                ...byId.get(key)!,
+                stepNumber: index + 1,
+              })),
+            });
+            reorderSteps(orderedKeys).catch((error) => {
+              console.warn("[recipes] reorder steps failed", error);
+              reload();
+            });
+          } else {
+            const byId = new Map(
+              recipe.ingredients.map((ingredient) => [
+                ingredient.id,
+                ingredient,
+              ]),
+            );
+            setRecipe({
+              ...recipe,
+              ingredients: orderedKeys.map((key, index) => ({
+                ...byId.get(key)!,
+                sortOrder: index,
+              })),
+            });
+            reorderIngredients(orderedKeys).catch((error) => {
+              console.warn("[recipes] reorder ingredients failed", error);
+              reload();
+            });
+          }
+        }}
       />
 
       <EditIngredientSheet

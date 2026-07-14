@@ -6,13 +6,13 @@ import {
   FlatList,
   Pressable,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Chip } from "@/components/ui/chip";
-import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
 import { useHousehold } from "@/lib/household-context";
@@ -81,25 +81,18 @@ export default function RecipesListScreen() {
           onPress={() => router.push("/recipes/new")}
           accessibilityRole="button"
           accessibilityLabel="Add a recipe"
-          className="size-[40px] items-center justify-center rounded-xlarge bg-button-solid-fill-enabled"
+          hitSlop={8}
         >
           <MaterialIcons
             name="add"
-            size={24}
-            color={ds.colors.button.solid.label.enabled}
+            size={40}
+            color={ds.colors.surface.primary.main}
           />
         </Pressable>
       </View>
 
       <View className="w-full gap-layout-small px-layout-small pb-layout-small">
-        <Input
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search recipes or ingredients"
-          accessibilityLabel="Search recipes"
-          autoCorrect={false}
-          returnKeyType="search"
-        />
+        <SearchField value={query} onChangeText={setQuery} />
         <View className="w-full flex-row gap-comp-small">
           <Chip
             label="All"
@@ -108,7 +101,6 @@ export default function RecipesListScreen() {
           />
           <Chip
             label="Favorites"
-            startIcon="favorite"
             active={favoritesOnly}
             onPress={() => setFavoritesOnly(true)}
           />
@@ -150,6 +142,41 @@ export default function RecipesListScreen() {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+/** The design's search input (78:4184): leading icon inside the field. */
+function SearchField({
+  value,
+  onChangeText,
+}: {
+  value: string;
+  onChangeText: (text: string) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View
+      className={
+        "w-full flex-row items-center gap-comp-small rounded-medium p-comp-large " +
+        (focused
+          ? "border-2 border-forms-border-focused bg-forms-background-active"
+          : "border border-forms-border-enabled bg-forms-background-default")
+      }
+    >
+      <MaterialIcons name="search" size={24} color={ds.colors.icon.default} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder="Search"
+        placeholderTextColor={ds.colors.text.disabled}
+        accessibilityLabel="Search recipes"
+        autoCorrect={false}
+        returnKeyType="search"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className="flex-1 p-0 font-paragraph text-paragraph text-text-default"
+      />
+    </View>
   );
 }
 

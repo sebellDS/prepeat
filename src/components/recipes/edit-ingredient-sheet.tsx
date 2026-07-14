@@ -1,11 +1,12 @@
 import { SymbolView } from "expo-symbols";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
@@ -58,6 +59,12 @@ function SheetContent({
   const [name, setName] = useState(editing?.name ?? "");
   const [quantity, setQuantity] = useState(editing?.quantityText ?? "");
   const [busy, setBusy] = useState(false);
+  const nameRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => nameRef.current?.focus(), 450);
+    return () => clearTimeout(timer);
+  }, []);
 
   const save = async () => {
     const trimmed = name.replace(/\s+/g, " ").trim();
@@ -116,10 +123,10 @@ function SheetContent({
             Name
           </Text>
           <Input
+            ref={nameRef}
             value={name}
             onChangeText={setName}
             placeholder="Cherry tomatoes"
-            autoFocus
             accessibilityLabel="Name"
           />
         </View>

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ServingsCounter } from "@/components/recipes/servings-counter";
+import { ReorderSheet } from "@/components/recipes/reorder-sheet";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
@@ -63,6 +64,9 @@ export default function AddRecipeScreen() {
   const [stepText, setStepText] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(!editing);
+  const [reordering, setReordering] = useState<"ingredients" | "steps" | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!editing) return;
@@ -305,9 +309,25 @@ export default function AddRecipeScreen() {
           <>
             {/* Ingredients builder */}
             <View className="w-full gap-comp-xsmall px-layout-small">
-              <Text className="font-paragraph text-paragraph font-emphasized text-text-default">
-                Ingredients
-              </Text>
+              <View className="w-full flex-row items-center">
+                <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
+                  Ingredients
+                </Text>
+                {ingredients.length > 1 && (
+                  <Pressable
+                    onPress={() => setReordering("ingredients")}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Reorder ingredients"
+                  >
+                    <MaterialIcons
+                      name="drag-handle"
+                      size={24}
+                      color={ds.colors.text.accent}
+                    />
+                  </Pressable>
+                )}
+              </View>
               <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
                 {ingredients.length > 0 && (
                   <View className="w-full overflow-hidden rounded-medium">
@@ -368,9 +388,25 @@ export default function AddRecipeScreen() {
 
             {/* Instructions builder */}
             <View className="w-full gap-comp-xsmall px-layout-small">
-              <Text className="font-paragraph text-paragraph font-emphasized text-text-default">
-                Instructions
-              </Text>
+              <View className="w-full flex-row items-center">
+                <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
+                  Instructions
+                </Text>
+                {steps.length > 1 && (
+                  <Pressable
+                    onPress={() => setReordering("steps")}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Reorder instructions"
+                  >
+                    <MaterialIcons
+                      name="drag-handle"
+                      size={24}
+                      color={ds.colors.text.accent}
+                    />
+                  </Pressable>
+                )}
+              </View>
               <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
                 {steps.length > 0 && (
                   <View className="w-full overflow-hidden rounded-medium">
@@ -445,6 +481,39 @@ export default function AddRecipeScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <ReorderSheet
+        visible={reordering != null}
+        title={
+          reordering === "steps"
+            ? "Reorder instructions"
+            : "Reorder ingredients"
+        }
+        hint="Drag to change the order."
+        items={
+          reordering === "steps"
+            ? steps.map((step, index) => ({
+                key: String(index),
+                label: `${index + 1}. ${step}`,
+              }))
+            : ingredients.map((ingredient, index) => ({
+                key: String(index),
+                label: ingredient.name,
+              }))
+        }
+        onClose={() => setReordering(null)}
+        onChange={(orderedKeys) => {
+          if (reordering === "steps") {
+            setSteps((current) =>
+              orderedKeys.map((key) => current[Number(key)]),
+            );
+          } else {
+            setIngredients((current) =>
+              orderedKeys.map((key) => current[Number(key)]),
+            );
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
