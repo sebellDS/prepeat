@@ -10,7 +10,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { EditIngredientSheet } from "@/components/recipes/edit-ingredient-sheet";
 import { EditStepSheet } from "@/components/recipes/edit-step-sheet";
@@ -44,6 +47,7 @@ export default function RecipeDetailScreen() {
   const household = useHousehold();
   const { session } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [servings, setServings] = useState<number | null>(null);
@@ -190,7 +194,9 @@ export default function RecipeDetailScreen() {
       </View>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: BottomTabInset + 24 }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + BottomTabInset + 32,
+        }}
         onScrollBeginDrag={() => setMenuOpen(false)}
       >
         {/* Photo header with back, overflow menu and the favorite heart. */}

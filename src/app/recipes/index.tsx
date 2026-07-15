@@ -9,7 +9,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Chip } from "@/components/ui/chip";
@@ -26,6 +29,7 @@ import {
 export default function RecipesListScreen() {
   const household = useHousehold();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [recipes, setRecipes] = useState<RecipeSummary[] | null>(null);
   const [query, setQuery] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -123,7 +127,7 @@ export default function RecipesListScreen() {
           columnWrapperStyle={{ gap: 16, paddingHorizontal: 16 }}
           contentContainerStyle={{
             gap: 16,
-            paddingBottom: BottomTabInset + 24,
+            paddingBottom: insets.bottom + BottomTabInset + 24,
           }}
           renderItem={({ item }) => (
             <RecipeCard

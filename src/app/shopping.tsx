@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddItemInput } from '@/components/shopping/add-item-input';
 import { CategoryGroup } from '@/components/shopping/category-group';
@@ -37,6 +37,7 @@ function ShoppingListScreen() {
     fillFromWeeklyPlan,
     setCategoryOrder,
   } = useShoppingList();
+  const insets = useSafeAreaInsets();
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [reordering, setReordering] = useState(false);
   // Inline category drag: hold a group's handle, the list collapses to
@@ -130,7 +131,10 @@ function ShoppingListScreen() {
           // shopping" signal, so it puts the keyboard away (in-store
           // feedback, 2026-07-09).
           keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: BottomTabInset + 56, gap: 16 }}>
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + BottomTabInset + 56,
+            gap: 16,
+          }}>
           {items.length === 0 ? (
             // While the first fetch is in flight the list area stays blank –
             // flashing the empty state at a household with items would lie.
