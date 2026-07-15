@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -387,9 +387,14 @@ export default function AddRecipeScreen() {
             </View>
             <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
               {ingredients.length > 0 && (
-                <View className="w-full overflow-hidden rounded-medium">
+                <View style={{ marginHorizontal: -16 }}>
                   {ingredients.map((ingredient, index) => (
-                    <View key={`${ingredient.name}-${index}`}>
+                    <Fragment key={`${ingredient.name}-${index}`}>
+                      {index > 0 && (
+                        <View
+                          style={{ height: 1, backgroundColor: "#E7E6E4" }}
+                        />
+                      )}
                       <SwipeActions
                         label={ingredient.name}
                         onEdit={() => editStagedIngredient(index)}
@@ -399,7 +404,7 @@ export default function AddRecipeScreen() {
                           )
                         }
                       >
-                        <View className="h-[56px] w-full flex-row items-center gap-layout-small border-b border-border-subtle bg-surface-neutral-white p-layout-small">
+                        <View className="h-[56px] w-full flex-row items-center gap-layout-small bg-surface-neutral-white px-layout-small">
                           <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
                             {ingredient.name}
                           </Text>
@@ -410,7 +415,7 @@ export default function AddRecipeScreen() {
                           )}
                         </View>
                       </SwipeActions>
-                    </View>
+                    </Fragment>
                   ))}
                 </View>
               )}
@@ -463,9 +468,14 @@ export default function AddRecipeScreen() {
             </View>
             <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
               {steps.length > 0 && (
-                <View className="w-full overflow-hidden rounded-medium">
+                <View style={{ marginHorizontal: -16 }}>
                   {steps.map((step, index) => (
-                    <View key={`${index}-${step.slice(0, 12)}`}>
+                    <Fragment key={`${index}-${step.slice(0, 12)}`}>
+                      {index > 0 && (
+                        <View
+                          style={{ height: 1, backgroundColor: "#E7E6E4" }}
+                        />
+                      )}
                       <SwipeActions
                         label={`step ${index + 1}`}
                         onEdit={() => editStagedStep(index)}
@@ -475,7 +485,7 @@ export default function AddRecipeScreen() {
                           )
                         }
                       >
-                        <View className="w-full flex-row items-start gap-layout-small border-b border-border-subtle bg-surface-neutral-white p-layout-small">
+                        <View className="w-full flex-row items-start gap-layout-small bg-surface-neutral-white px-layout-small py-layout-small">
                           <View className="min-w-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-main px-comp-medium py-comp-small">
                             <Text className="font-paragraph text-small font-emphasized leading-xxsmall text-text-default">
                               {index + 1}
@@ -489,7 +499,7 @@ export default function AddRecipeScreen() {
                           </Text>
                         </View>
                       </SwipeActions>
-                    </View>
+                    </Fragment>
                   ))}
                 </View>
               )}

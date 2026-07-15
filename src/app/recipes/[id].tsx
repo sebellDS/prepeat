@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -268,10 +268,10 @@ export default function RecipeDetailScreen() {
             </View>
             <View className="w-full overflow-hidden rounded-large">
               {recipe.ingredients.map((ingredient, index) => (
-                <IngredientRow
-                  key={ingredient.id}
+                <Fragment key={ingredient.id}>
+                  {index > 0 && <RowDivider />}
+                  <IngredientRow
                   ingredient={ingredient}
-                  divider={index > 0}
                   quantityText={scaledQuantityText(
                     ingredient,
                     recipe.servings,
@@ -290,7 +290,8 @@ export default function RecipeDetailScreen() {
                     );
                     reload();
                   }}
-                />
+                  />
+                </Fragment>
               ))}
               {recipe.ingredients.length === 0 && (
                 <EmptyRowHint text="No ingredients yet – add the first one below." />
@@ -320,10 +321,10 @@ export default function RecipeDetailScreen() {
             </View>
             <View className="w-full overflow-hidden rounded-large">
               {recipe.steps.map((step, index) => (
-                <StepRow
-                  key={step.id}
+                <Fragment key={step.id}>
+                  {index > 0 && <RowDivider />}
+                  <StepRow
                   step={step}
-                  divider={index > 0}
                   done={doneSteps.has(step.id)}
                   onToggle={() =>
                     setDoneSteps((current) => toggleInSet(current, step.id))
@@ -335,7 +336,8 @@ export default function RecipeDetailScreen() {
                     );
                     reload();
                   }}
-                />
+                  />
+                </Fragment>
               ))}
               {recipe.steps.length === 0 && (
                 <EmptyRowHint text="No instructions yet – add the first step below." />
@@ -530,10 +532,16 @@ function EmptyRowHint({ text }: { text: string }) {
   );
 }
 
+// A full-width hairline between rows, drawn directly in the card (outside
+// the swipe wrapper) with an explicit style so neither the swipeable's
+// layout nor NativeWind class compilation can inset or drop it.
+export function RowDivider() {
+  return <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />;
+}
+
 function IngredientRow({
   ingredient,
   quantityText,
-  divider,
   done,
   onToggle,
   onEdit,
@@ -541,7 +549,6 @@ function IngredientRow({
 }: {
   ingredient: RecipeIngredient;
   quantityText: string | null;
-  divider: boolean;
   done: boolean;
   onToggle: () => void;
   onEdit: () => void;
@@ -555,7 +562,7 @@ function IngredientRow({
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
           accessibilityLabel={ingredient.name}
-          className="w-full flex-row items-center gap-comp-small border-b border-border-subtle bg-surface-neutral-white p-layout-small"
+          className="w-full flex-row items-center gap-comp-small bg-surface-neutral-white p-layout-small"
         >
           {done && (
             <MaterialIcons
@@ -585,14 +592,12 @@ function IngredientRow({
 
 function StepRow({
   step,
-  divider,
   done,
   onToggle,
   onEdit,
   onDelete,
 }: {
   step: RecipeStep;
-  divider: boolean;
   done: boolean;
   onToggle: () => void;
   onEdit: () => void;
@@ -610,7 +615,7 @@ function StepRow({
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
           accessibilityLabel={`Step ${step.stepNumber}`}
-          className="w-full flex-row items-start gap-comp-small border-b border-border-subtle bg-surface-neutral-white p-layout-small"
+          className="w-full flex-row items-start gap-comp-small bg-surface-neutral-white p-layout-small"
         >
           <View
             className={
