@@ -67,20 +67,21 @@ export default function AddRecipeScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [ingredients, setIngredients] = useState<DraftIngredient[]>([]);
-  const [ingredientName, setIngredientName] = useState("");
-  const [ingredientQuantity, setIngredientQuantity] = useState("");
   const [steps, setSteps] = useState<string[]>([]);
-  const [stepText, setStepText] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(!editing);
   const [reordering, setReordering] = useState<"ingredients" | "steps" | null>(
     null,
   );
   const [importing, setImporting] = useState(false);
-  const [editingIngredientIndex, setEditingIngredientIndex] = useState<
-    number | null
+  // Add and edit both go through the focused sheet: "add" opens it empty,
+  // { index } opens it on an existing draft row (Pia's feedback, 2026-07-15).
+  const [ingredientSheet, setIngredientSheet] = useState<
+    { index: number } | "add" | null
   >(null);
-  const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
+  const [stepSheet, setStepSheet] = useState<{ index: number } | "add" | null>(
+    null,
+  );
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -137,26 +138,8 @@ export default function AddRecipeScreen() {
     setSourceUrl(imported.sourceUrl);
   };
 
-  const stageIngredient = () => {
-    const name = ingredientName.replace(/\s+/g, " ").trim();
-    if (!name) return;
-    setIngredients((current) => [
-      ...current,
-      { name, quantityText: ingredientQuantity.trim() },
-    ]);
-    setIngredientName("");
-    setIngredientQuantity("");
-  };
-
-  const stageStep = () => {
-    const text = stepText.trim();
-    if (!text) return;
-    setSteps((current) => [...current, text]);
-    setStepText("");
-  };
-
-  // Swipe-edit on a staged row opens the focused sheet (Pia's feedback,
-  // 2026-07-15) – clearer than pulling values back into the entry fields.
+  // Ingredients and instructions are added and edited entirely through the
+  // focused sheets (Pia's feedback, 2026-07-15).
 
   const save = async () => {
     const trimmedTitle = title.replace(/\s+/g, " ").trim();
@@ -176,37 +159,16 @@ export default function AddRecipeScreen() {
           cookMinutes: parseMinutes(cook),
           imageUrl,
         });
-        const draftIngredients = [...ingredients];
-        const pendingName = ingredientName.replace(/\s+/g, " ").trim();
-        if (pendingName)
-          draftIngredients.push({
-            name: pendingName,
-            quantityText: ingredientQuantity.trim(),
-          });
-        const draftSteps = [...steps];
-        if (stepText.trim()) draftSteps.push(stepText.trim());
         await replaceIngredientsAndSteps(
           id,
-          draftIngredients.map((ingredient) => ({
+          ingredients.map((ingredient) => ({
             name: ingredient.name,
             quantityText: ingredient.quantityText || null,
           })),
-          draftSteps,
+          steps,
         );
         router.back();
       } else {
-        // Anything still sitting in the entry fields counts too – people
-        // forget the final "Add" tap.
-        const draftIngredients = [...ingredients];
-        const lastName = ingredientName.replace(/\s+/g, " ").trim();
-        if (lastName)
-          draftIngredients.push({
-            name: lastName,
-            quantityText: ingredientQuantity.trim(),
-          });
-        const draftSteps = [...steps];
-        if (stepText.trim()) draftSteps.push(stepText.trim());
-
         const recipeId = await createRecipe(
           household.id,
           session?.user?.id ?? "",
@@ -218,11 +180,11 @@ export default function AddRecipeScreen() {
             prepMinutes: parseMinutes(prep),
             cookMinutes: parseMinutes(cook),
             imageUrl,
-            ingredients: draftIngredients.map((ingredient) => ({
+            ingredients: ingredients.map((ingredient) => ({
               name: ingredient.name,
               quantityText: ingredient.quantityText || null,
             })),
-            steps: draftSteps,
+            steps,
           },
         );
         router.replace(`/recipes/${recipeId}`);
@@ -388,7 +350,7 @@ export default function AddRecipeScreen() {
                       )}
                       <SwipeActions
                         label={ingredient.name}
-                        onEdit={() => setEditingIngredientIndex(index)}
+                        onEdit={() => setIngredientSheet({ index })}
                         onDelete={() =>
                           setIngredients((current) =>
                             current.filter((_, i) => i !== index),
@@ -408,32 +370,14 @@ export default function AddRecipeScreen() {
                       </SwipeActions>
                     </Fragment>
                   ))}
-                  {/* Close off the list with a line before the entry field. */}
+                  {/* Close off the list with a line before the add button. */}
                   <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />
                 </View>
               )}
-              <Field label="Ingredient">
-                <Input
-                  value={ingredientName}
-                  onChangeText={setIngredientName}
-                  placeholder="Cherry tomatoes"
-                  accessibilityLabel="Ingredient name"
-                />
-              </Field>
-              <Field label="Quantity">
-                <Input
-                  value={ingredientQuantity}
-                  onChangeText={setIngredientQuantity}
-                  placeholder="e.g. 250 g"
-                  accessibilityLabel="Ingredient quantity"
-                  onSubmitEditing={stageIngredient}
-                  returnKeyType="done"
-                />
-              </Field>
               <OutlineButton
                 icon="add"
                 label="Add ingredient"
-                onPress={stageIngredient}
+                onPress={() => setIngredientSheet("add")}
               />
             </View>
           </View>
@@ -471,7 +415,7 @@ export default function AddRecipeScreen() {
                       )}
                       <SwipeActions
                         label={`step ${index + 1}`}
-                        onEdit={() => setEditingStepIndex(index)}
+                        onEdit={() => setStepSheet({ index })}
                         onDelete={() =>
                           setSteps((current) =>
                             current.filter((_, i) => i !== index),
@@ -494,25 +438,14 @@ export default function AddRecipeScreen() {
                       </SwipeActions>
                     </Fragment>
                   ))}
-                  {/* Close off the list with a line before the entry field. */}
+                  {/* Close off the list with a line before the add button. */}
                   <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />
                 </View>
               )}
-              <Field label="Instruction">
-                <Input
-                  value={stepText}
-                  onChangeText={setStepText}
-                  placeholder="Add your instruction here"
-                  accessibilityLabel="Instruction"
-                  multiline
-                  numberOfLines={4}
-                  style={{ minHeight: 96, textAlignVertical: "top" }}
-                />
-              </Field>
               <OutlineButton
                 icon="add"
                 label="Add instruction"
-                onPress={stageStep}
+                onPress={() => setStepSheet("add")}
               />
             </View>
           </View>
@@ -547,45 +480,67 @@ export default function AddRecipeScreen() {
       />
 
       <IngredientSheet
-        visible={editingIngredientIndex != null}
-        editing
+        visible={ingredientSheet != null}
+        editing={ingredientSheet !== null && ingredientSheet !== "add"}
         initialName={
-          editingIngredientIndex != null
-            ? (ingredients[editingIngredientIndex]?.name ?? "")
+          ingredientSheet !== null && ingredientSheet !== "add"
+            ? (ingredients[ingredientSheet.index]?.name ?? "")
             : ""
         }
         initialQuantity={
-          editingIngredientIndex != null
-            ? (ingredients[editingIngredientIndex]?.quantityText ?? "")
+          ingredientSheet !== null && ingredientSheet !== "add"
+            ? (ingredients[ingredientSheet.index]?.quantityText ?? "")
             : ""
         }
-        onClose={() => setEditingIngredientIndex(null)}
+        onClose={() => setIngredientSheet(null)}
         onSubmit={(name, quantityText) => {
-          const index = editingIngredientIndex;
-          setEditingIngredientIndex(null);
-          if (index == null) return;
-          setIngredients((current) =>
-            current.map((row, i) =>
-              i === index ? { name, quantityText: quantityText ?? "" } : row,
-            ),
-          );
+          const target = ingredientSheet;
+          setIngredientSheet(null);
+          const row = { name, quantityText: quantityText ?? "" };
+          if (target === "add") {
+            setIngredients((current) => [...current, row]);
+          } else if (target != null) {
+            setIngredients((current) =>
+              current.map((existing, i) =>
+                i === target.index ? row : existing,
+              ),
+            );
+          }
         }}
       />
 
       <StepSheet
-        visible={editingStepIndex != null}
-        editing
+        visible={stepSheet != null}
+        editing={stepSheet !== null && stepSheet !== "add"}
         initialText={
-          editingStepIndex != null ? (steps[editingStepIndex] ?? "") : ""
+          stepSheet !== null && stepSheet !== "add"
+            ? (steps[stepSheet.index] ?? "")
+            : ""
         }
-        positionCount={steps.length}
-        initialPosition={editingStepIndex != null ? editingStepIndex + 1 : 1}
-        onClose={() => setEditingStepIndex(null)}
-        onSubmit={(text) => {
-          const index = editingStepIndex;
-          setEditingStepIndex(null);
-          if (index == null) return;
-          setSteps((current) => current.map((row, i) => (i === index ? text : row)));
+        positionCount={
+          stepSheet === "add" ? steps.length + 1 : steps.length
+        }
+        initialPosition={
+          stepSheet !== null && stepSheet !== "add"
+            ? stepSheet.index + 1
+            : steps.length + 1
+        }
+        onClose={() => setStepSheet(null)}
+        onSubmit={(text, position) => {
+          const target = stepSheet;
+          setStepSheet(null);
+          if (target === "add") {
+            // Insert at the chosen position (1-based).
+            setSteps((current) => [
+              ...current.slice(0, position - 1),
+              text,
+              ...current.slice(position - 1),
+            ]);
+          } else if (target != null) {
+            setSteps((current) =>
+              current.map((existing, i) => (i === target.index ? text : existing)),
+            );
+          }
         }}
       />
 
