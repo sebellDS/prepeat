@@ -104,8 +104,8 @@ function SheetContent({
         accessibilityLabel="Close"
       />
       <View
-        style={{ maxHeight: "90%" }}
-        className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-white p-layout-small pb-layout-large"
+        style={{ maxHeight: "90%", marginBottom: -80, paddingBottom: 120 }}
+        className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-white p-layout-small"
       >
         <View className="w-full flex-row items-center">
           <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">

@@ -94,7 +94,10 @@ function SheetContent({
         onPress={onClose}
         accessibilityLabel="Close"
       />
-      <View className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-white p-layout-small pb-layout-large">
+      <View
+        style={{ marginBottom: -80, paddingBottom: 120 }}
+        className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-white p-layout-small"
+      >
         <View className="w-full flex-row items-center">
           <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">
             {editing ? "Edit ingredient" : "Add ingredient"}
