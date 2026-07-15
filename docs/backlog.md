@@ -112,6 +112,11 @@ the family can start collecting favourites immediately.
       (migration 0005), so a "Deleted · Undo" toast just needs to clear
       deleted_at
 - [ ] "Fill from weekly plan" loads sample data until the Plan tab exists
+- [ ] Bottom sheets duplicate the KAV + backdrop + white-bleed shell
+      (4 sheets: recipe ingredient/step/import, shopping edit-item). Extract
+      a shared BottomSheet component (carries the keyboard-bleed fix:
+      marginBottom -80 / paddingBottom 120) so new sheets inherit it and it
+      can't drift (2026-07-15)
 
 ## Design QA – sign-in + shopping vs Figma (found + fixed 2026-07-12)
 
