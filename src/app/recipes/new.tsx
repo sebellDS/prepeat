@@ -10,7 +10,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { ImportRecipeSheet } from "@/components/recipes/import-recipe-sheet";
@@ -51,6 +54,7 @@ export default function AddRecipeScreen() {
   const household = useHousehold();
   const { session } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const editing = id != null && id.length > 0;
 
   const [title, setTitle] = useState("");
@@ -282,7 +286,10 @@ export default function AddRecipeScreen() {
         className="flex-1"
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
-        contentContainerStyle={{ paddingBottom: BottomTabInset + 24, gap: 16 }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + BottomTabInset + 32,
+          gap: 16,
+        }}
       >
         {/* Recipe facts card */}
         <View className="w-full px-layout-small">
