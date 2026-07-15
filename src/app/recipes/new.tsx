@@ -417,6 +417,8 @@ export default function AddRecipeScreen() {
                       </SwipeActions>
                     </Fragment>
                   ))}
+                  {/* Close off the list with a line before the entry field. */}
+                  <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />
                 </View>
               )}
               <Field label="Ingredient">
@@ -501,6 +503,8 @@ export default function AddRecipeScreen() {
                       </SwipeActions>
                     </Fragment>
                   ))}
+                  {/* Close off the list with a line before the entry field. */}
+                  <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />
                 </View>
               )}
               <Field label="Instruction">
