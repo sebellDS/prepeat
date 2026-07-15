@@ -162,8 +162,14 @@ pre-retune published value).
 
 ## Recurring
 
-- [ ] Rebuild the app on both family iPhones every ~7 days (free-signing
-      expiry, both clocks reset 2026-07-08) until TestFlight takes over
+- [ ] Renew the free signing on both iPhones every ~7 days until TestFlight
+      takes over. IMPORTANT (learned 2026-07-15, both phones died mid-day):
+      a plain `expo run:ios` rebuild REUSES the expiring profile and does
+      NOT reset the clock – renew with `xcodebuild … -allowProvisioningUpdates
+      -allowProvisioningDeviceRegistration` per device, install the .app via
+      `devicectl`, then the user re-trusts on each phone. Fresh window from
+      2026-07-15 → expires 2026-07-22. Fold the flag into build-iphone.sh so
+      the routine rebuild actually renews.
 - [ ] After every DS publish/retune (Thomas says "DS published"): rebuild
       tokens in the DS repo, `npm run sync-ds-tokens` here, diff
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12)
