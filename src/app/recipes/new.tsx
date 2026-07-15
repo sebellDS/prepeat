@@ -293,7 +293,7 @@ export default function AddRecipeScreen() {
       >
         {/* Recipe facts card */}
         <View className="w-full px-layout-small">
-          <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+          <View className="w-full gap-layout-small overflow-hidden rounded-large bg-surface-neutral-white p-layout-small">
             <MaterialIcons
               name="receipt-long"
               size={40}
@@ -392,9 +392,9 @@ export default function AddRecipeScreen() {
                 </Pressable>
               )}
             </View>
-            <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+            <View className="w-full gap-layout-small overflow-hidden rounded-large bg-surface-neutral-white p-layout-small">
               {ingredients.length > 0 && (
-                <View style={{ marginHorizontal: -16 }}>
+                <View style={{ marginHorizontal: -16, marginTop: -16 }}>
                   {ingredients.map((ingredient, index) => (
                     <Fragment key={`${ingredient.name}-${index}`}>
                       {index > 0 && (
@@ -475,9 +475,9 @@ export default function AddRecipeScreen() {
                 </Pressable>
               )}
             </View>
-            <View className="w-full gap-layout-small rounded-large bg-surface-neutral-white p-layout-small">
+            <View className="w-full gap-layout-small overflow-hidden rounded-large bg-surface-neutral-white p-layout-small">
               {steps.length > 0 && (
-                <View style={{ marginHorizontal: -16 }}>
+                <View style={{ marginHorizontal: -16, marginTop: -16 }}>
                   {steps.map((step, index) => (
                     <Fragment key={`${index}-${step.slice(0, 12)}`}>
                       {index > 0 && (
