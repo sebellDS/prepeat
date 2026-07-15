@@ -548,14 +548,14 @@ function IngredientRow({
   onDelete: () => void;
 }) {
   return (
-    <View className="border-b border-border-subtle">
+    <View>
       <SwipeActions label={ingredient.name} onEdit={onEdit} onDelete={onDelete}>
         <Pressable
           onPress={onToggle}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
           accessibilityLabel={ingredient.name}
-          className="w-full flex-row items-center gap-comp-small bg-surface-neutral-white p-layout-small"
+          className="w-full flex-row items-center gap-comp-small border-b border-border-subtle bg-surface-neutral-white p-layout-small"
         >
           {done && (
             <MaterialIcons
@@ -599,7 +599,7 @@ function StepRow({
   onDelete: () => void;
 }) {
   return (
-    <View className="border-b border-border-subtle">
+    <View>
       <SwipeActions
         label={`step ${step.stepNumber}`}
         onEdit={onEdit}
@@ -610,7 +610,7 @@ function StepRow({
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
           accessibilityLabel={`Step ${step.stepNumber}`}
-          className="w-full flex-row items-start gap-comp-small bg-surface-neutral-white p-layout-small"
+          className="w-full flex-row items-start gap-comp-small border-b border-border-subtle bg-surface-neutral-white p-layout-small"
         >
           <View
             className={

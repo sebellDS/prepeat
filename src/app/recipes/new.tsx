@@ -389,10 +389,7 @@ export default function AddRecipeScreen() {
               {ingredients.length > 0 && (
                 <View className="w-full overflow-hidden rounded-medium">
                   {ingredients.map((ingredient, index) => (
-                    <View
-                      key={`${ingredient.name}-${index}`}
-                      className="border-b border-border-subtle"
-                    >
+                    <View key={`${ingredient.name}-${index}`}>
                       <SwipeActions
                         label={ingredient.name}
                         onEdit={() => editStagedIngredient(index)}
@@ -402,7 +399,7 @@ export default function AddRecipeScreen() {
                           )
                         }
                       >
-                        <View className="h-[56px] w-full flex-row items-center gap-layout-small bg-surface-neutral-white p-layout-small">
+                        <View className="h-[56px] w-full flex-row items-center gap-layout-small border-b border-border-subtle bg-surface-neutral-white p-layout-small">
                           <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
                             {ingredient.name}
                           </Text>
@@ -468,10 +465,7 @@ export default function AddRecipeScreen() {
               {steps.length > 0 && (
                 <View className="w-full overflow-hidden rounded-medium">
                   {steps.map((step, index) => (
-                    <View
-                      key={`${index}-${step.slice(0, 12)}`}
-                      className="border-b border-border-subtle"
-                    >
+                    <View key={`${index}-${step.slice(0, 12)}`}>
                       <SwipeActions
                         label={`step ${index + 1}`}
                         onEdit={() => editStagedStep(index)}
@@ -481,7 +475,7 @@ export default function AddRecipeScreen() {
                           )
                         }
                       >
-                        <View className="w-full flex-row items-start gap-layout-small bg-surface-neutral-white p-layout-small">
+                        <View className="w-full flex-row items-start gap-layout-small border-b border-border-subtle bg-surface-neutral-white p-layout-small">
                           <View className="min-w-[32px] items-center justify-center rounded-xlarge bg-surface-neutral-main px-comp-medium py-comp-small">
                             <Text className="font-paragraph text-small font-emphasized leading-xxsmall text-text-default">
                               {index + 1}
