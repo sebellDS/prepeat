@@ -17,6 +17,8 @@ import {
 
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { ImportRecipeSheet } from "@/components/recipes/import-recipe-sheet";
+import { IngredientSheet } from "@/components/recipes/ingredient-sheet";
+import { StepSheet } from "@/components/recipes/step-sheet";
 import type { ImportedRecipe } from "@/lib/recipe-import";
 import { ReorderSheet } from "@/components/recipes/reorder-sheet";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
@@ -75,6 +77,10 @@ export default function AddRecipeScreen() {
     null,
   );
   const [importing, setImporting] = useState(false);
+  const [editingIngredientIndex, setEditingIngredientIndex] = useState<
+    number | null
+  >(null);
+  const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -149,30 +155,8 @@ export default function AddRecipeScreen() {
     setStepText("");
   };
 
-  // Swipe-edit on a staged row: its values return to the entry fields
-  // (anything already typed there is staged first so nothing is lost).
-  const editStagedIngredient = (index: number) => {
-    const row = ingredients[index];
-    setIngredients((current) => {
-      const next = current.filter((_, i) => i !== index);
-      const pending = ingredientName.replace(/\s+/g, " ").trim();
-      if (pending)
-        next.push({ name: pending, quantityText: ingredientQuantity.trim() });
-      return next;
-    });
-    setIngredientName(row.name);
-    setIngredientQuantity(row.quantityText);
-  };
-
-  const editStagedStep = (index: number) => {
-    const row = steps[index];
-    setSteps((current) => {
-      const next = current.filter((_, i) => i !== index);
-      if (stepText.trim()) next.push(stepText.trim());
-      return next;
-    });
-    setStepText(row);
-  };
+  // Swipe-edit on a staged row opens the focused sheet (Pia's feedback,
+  // 2026-07-15) – clearer than pulling values back into the entry fields.
 
   const save = async () => {
     const trimmedTitle = title.replace(/\s+/g, " ").trim();
@@ -404,7 +388,7 @@ export default function AddRecipeScreen() {
                       )}
                       <SwipeActions
                         label={ingredient.name}
-                        onEdit={() => editStagedIngredient(index)}
+                        onEdit={() => setEditingIngredientIndex(index)}
                         onDelete={() =>
                           setIngredients((current) =>
                             current.filter((_, i) => i !== index),
@@ -487,7 +471,7 @@ export default function AddRecipeScreen() {
                       )}
                       <SwipeActions
                         label={`step ${index + 1}`}
-                        onEdit={() => editStagedStep(index)}
+                        onEdit={() => setEditingStepIndex(index)}
                         onDelete={() =>
                           setSteps((current) =>
                             current.filter((_, i) => i !== index),
@@ -560,6 +544,49 @@ export default function AddRecipeScreen() {
         visible={importing}
         onClose={() => setImporting(false)}
         onImported={applyImport}
+      />
+
+      <IngredientSheet
+        visible={editingIngredientIndex != null}
+        editing
+        initialName={
+          editingIngredientIndex != null
+            ? (ingredients[editingIngredientIndex]?.name ?? "")
+            : ""
+        }
+        initialQuantity={
+          editingIngredientIndex != null
+            ? (ingredients[editingIngredientIndex]?.quantityText ?? "")
+            : ""
+        }
+        onClose={() => setEditingIngredientIndex(null)}
+        onSubmit={(name, quantityText) => {
+          const index = editingIngredientIndex;
+          setEditingIngredientIndex(null);
+          if (index == null) return;
+          setIngredients((current) =>
+            current.map((row, i) =>
+              i === index ? { name, quantityText: quantityText ?? "" } : row,
+            ),
+          );
+        }}
+      />
+
+      <StepSheet
+        visible={editingStepIndex != null}
+        editing
+        initialText={
+          editingStepIndex != null ? (steps[editingStepIndex] ?? "") : ""
+        }
+        positionCount={steps.length}
+        initialPosition={editingStepIndex != null ? editingStepIndex + 1 : 1}
+        onClose={() => setEditingStepIndex(null)}
+        onSubmit={(text) => {
+          const index = editingStepIndex;
+          setEditingStepIndex(null);
+          if (index == null) return;
+          setSteps((current) => current.map((row, i) => (i === index ? text : row)));
+        }}
       />
 
       <ReorderSheet

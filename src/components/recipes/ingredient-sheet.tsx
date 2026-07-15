@@ -12,53 +12,64 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
-import {
-  addIngredient,
-  updateIngredient,
-  type RecipeIngredient,
-} from "@/lib/recipes";
-
-interface EditIngredientSheetProps {
-  state: RecipeIngredient | "new" | null;
-  recipeId: string;
-  nextSortOrder: number;
-  onClose: () => void;
-  onSaved: () => void;
-}
 
 /**
- * Add/edit one ingredient (Figma "recipe – add ingredient"): name plus one
- * free-text quantity field, parsed into amount + unit at the database
- * boundary (recipes decision, 2026-07-12). The keyed inner component
- * re-initialises its fields per opened ingredient.
+ * Focused add/edit of one ingredient (Figma "recipe – add ingredient"):
+ * name + one free-text quantity field. Presentational – it emits the edited
+ * values via onSubmit; the caller persists them (to the database on the
+ * recipe detail, or to the draft in the add/edit form). This keeps a single
+ * focused editing experience everywhere (Pia's feedback, 2026-07-15).
  */
-export function EditIngredientSheet(props: EditIngredientSheetProps) {
-  const { state, onClose } = props;
+export function IngredientSheet({
+  visible,
+  editing,
+  initialName,
+  initialQuantity,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  editing: boolean;
+  initialName: string;
+  initialQuantity: string;
+  onClose: () => void;
+  onSubmit: (name: string, quantityText: string | null) => void;
+}) {
   return (
     <Modal
-      visible={state != null}
+      visible={visible}
       transparent
       animationType="slide"
       onRequestClose={onClose}
     >
-      {state != null && (
-        <SheetContent key={state === "new" ? "new" : state.id} {...props} />
+      {visible && (
+        <SheetContent
+          editing={editing}
+          initialName={initialName}
+          initialQuantity={initialQuantity}
+          onClose={onClose}
+          onSubmit={onSubmit}
+        />
       )}
     </Modal>
   );
 }
 
 function SheetContent({
-  state,
-  recipeId,
-  nextSortOrder,
+  editing,
+  initialName,
+  initialQuantity,
   onClose,
-  onSaved,
-}: EditIngredientSheetProps) {
-  const editing = state !== null && state !== "new" ? state : null;
-  const [name, setName] = useState(editing?.name ?? "");
-  const [quantity, setQuantity] = useState(editing?.quantityText ?? "");
-  const [busy, setBusy] = useState(false);
+  onSubmit,
+}: {
+  editing: boolean;
+  initialName: string;
+  initialQuantity: string;
+  onClose: () => void;
+  onSubmit: (name: string, quantityText: string | null) => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [quantity, setQuantity] = useState(initialQuantity);
   const nameRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -66,27 +77,10 @@ function SheetContent({
     return () => clearTimeout(timer);
   }, []);
 
-  const save = async () => {
+  const submit = () => {
     const trimmed = name.replace(/\s+/g, " ").trim();
-    if (!trimmed || busy) return;
-    setBusy(true);
-    try {
-      if (editing) {
-        await updateIngredient(editing.id, trimmed, quantity.trim() || null);
-      } else {
-        await addIngredient(
-          recipeId,
-          trimmed,
-          quantity.trim() || null,
-          nextSortOrder,
-        );
-      }
-      onSaved();
-    } catch (error) {
-      console.warn("[recipes] save ingredient failed", error);
-    } finally {
-      setBusy(false);
-    }
+    if (!trimmed) return;
+    onSubmit(trimmed, quantity.trim() || null);
   };
 
   return (
@@ -111,11 +105,7 @@ function SheetContent({
             accessibilityRole="button"
             accessibilityLabel="Close"
           >
-            <SymbolView
-              name="xmark"
-              size={20}
-              tintColor={ds.colors.icon.default}
-            />
+            <SymbolView name="xmark" size={20} tintColor={ds.colors.icon.default} />
           </Pressable>
         </View>
         <View className="w-full gap-comp-xsmall">
@@ -139,13 +129,12 @@ function SheetContent({
             onChangeText={setQuantity}
             placeholder="e.g. 250 g"
             accessibilityLabel="Quantity"
-            onSubmitEditing={save}
+            onSubmitEditing={submit}
             returnKeyType="done"
           />
         </View>
         <Pressable
-          onPress={save}
-          disabled={busy}
+          onPress={submit}
           accessibilityRole="button"
           className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
         >

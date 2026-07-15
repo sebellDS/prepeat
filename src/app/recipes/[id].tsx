@@ -15,8 +15,8 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import { EditIngredientSheet } from "@/components/recipes/edit-ingredient-sheet";
-import { EditStepSheet } from "@/components/recipes/edit-step-sheet";
+import { IngredientSheet } from "@/components/recipes/ingredient-sheet";
+import { StepSheet } from "@/components/recipes/step-sheet";
 import { ReorderSheet } from "@/components/recipes/reorder-sheet";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
@@ -25,7 +25,9 @@ import { BottomTabInset } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household-context";
 import {
+  addIngredient,
   addIngredientsToShoppingList,
+  addStep,
   deleteIngredient,
   deleteStep,
   fetchRecipe,
@@ -35,6 +37,8 @@ import {
   setFavorite,
   softDeleteRecipe,
   totalMinutes,
+  updateIngredient,
+  updateStep,
   type Recipe,
   type RecipeIngredient,
   type RecipeStep,
@@ -473,24 +477,66 @@ export default function RecipeDetailScreen() {
         }}
       />
 
-      <EditIngredientSheet
-        state={editingIngredient}
-        recipeId={recipe.id}
-        nextSortOrder={recipe.ingredients.length}
+      <IngredientSheet
+        visible={editingIngredient != null}
+        editing={editingIngredient !== null && editingIngredient !== "new"}
+        initialName={
+          editingIngredient !== null && editingIngredient !== "new"
+            ? editingIngredient.name
+            : ""
+        }
+        initialQuantity={
+          editingIngredient !== null && editingIngredient !== "new"
+            ? (editingIngredient.quantityText ?? "")
+            : ""
+        }
         onClose={() => setEditingIngredient(null)}
-        onSaved={() => {
+        onSubmit={async (name, quantityText) => {
+          const target = editingIngredient;
           setEditingIngredient(null);
+          try {
+            if (target !== null && target !== "new") {
+              await updateIngredient(target.id, name, quantityText);
+            } else {
+              await addIngredient(
+                recipe.id,
+                name,
+                quantityText,
+                recipe.ingredients.length,
+              );
+            }
+          } catch (error) {
+            console.warn("[recipes] save ingredient failed", error);
+          }
           reload();
         }}
       />
 
-      <EditStepSheet
-        state={editingStep}
-        recipeId={recipe.id}
-        stepCount={recipe.steps.length}
+      <StepSheet
+        visible={editingStep != null}
+        editing={editingStep !== null && editingStep !== "new"}
+        initialText={
+          editingStep !== null && editingStep !== "new" ? editingStep.text : ""
+        }
+        positionCount={recipe.steps.length + 1}
+        initialPosition={
+          editingStep !== null && editingStep !== "new"
+            ? editingStep.stepNumber
+            : recipe.steps.length + 1
+        }
         onClose={() => setEditingStep(null)}
-        onSaved={() => {
+        onSubmit={async (text, position) => {
+          const target = editingStep;
           setEditingStep(null);
+          try {
+            if (target !== null && target !== "new") {
+              await updateStep(target.id, text);
+            } else {
+              await addStep(recipe.id, position, text);
+            }
+          } catch (error) {
+            console.warn("[recipes] save step failed", error);
+          }
           reload();
         }}
       />

@@ -13,51 +13,70 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
-import { addStep, updateStep, type RecipeStep } from "@/lib/recipes";
 
 /**
- * Add/edit one instruction (Figma "recipe – add instruction"): a step
- * position picker (new steps land anywhere; following steps renumber) and
- * the instruction text.
+ * Focused add/edit of one instruction. Presentational – emits the text (and,
+ * when adding, the chosen position) via onSubmit; the caller persists. The
+ * position picker only shows when adding, since editing keeps the step where
+ * it is (reordering is a separate gesture).
  */
-interface EditStepSheetProps {
-  state: RecipeStep | "new" | null;
-  recipeId: string;
-  stepCount: number;
+export function StepSheet({
+  visible,
+  editing,
+  initialText,
+  positionCount,
+  initialPosition,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  editing: boolean;
+  initialText: string;
+  /** Number of positions offered when adding (existing steps + 1). */
+  positionCount: number;
+  initialPosition: number;
   onClose: () => void;
-  onSaved: () => void;
-}
-
-export function EditStepSheet(props: EditStepSheetProps) {
-  const { state, onClose } = props;
+  onSubmit: (text: string, position: number) => void;
+}) {
   return (
     <Modal
-      visible={state != null}
+      visible={visible}
       transparent
       animationType="slide"
       onRequestClose={onClose}
     >
-      {state != null && (
-        <SheetContent key={state === "new" ? "new" : state.id} {...props} />
+      {visible && (
+        <SheetContent
+          editing={editing}
+          initialText={initialText}
+          positionCount={positionCount}
+          initialPosition={initialPosition}
+          onClose={onClose}
+          onSubmit={onSubmit}
+        />
       )}
     </Modal>
   );
 }
 
 function SheetContent({
-  state,
-  recipeId,
-  stepCount,
+  editing,
+  initialText,
+  positionCount,
+  initialPosition,
   onClose,
-  onSaved,
-}: EditStepSheetProps) {
-  const editing = state !== null && state !== "new" ? state : null;
-  const [text, setText] = useState(editing?.text ?? "");
-  const [position, setPosition] = useState(
-    editing?.stepNumber ?? stepCount + 1,
-  );
+  onSubmit,
+}: {
+  editing: boolean;
+  initialText: string;
+  positionCount: number;
+  initialPosition: number;
+  onClose: () => void;
+  onSubmit: (text: string, position: number) => void;
+}) {
+  const [text, setText] = useState(initialText);
+  const [position, setPosition] = useState(initialPosition);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
   const textRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -65,27 +84,12 @@ function SheetContent({
     return () => clearTimeout(timer);
   }, []);
 
-  const positions = Array.from(
-    { length: stepCount + (editing ? 0 : 1) },
-    (_, i) => i + 1,
-  );
+  const positions = Array.from({ length: positionCount }, (_, i) => i + 1);
 
-  const save = async () => {
+  const submit = () => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
-    setBusy(true);
-    try {
-      if (editing) {
-        await updateStep(editing.id, trimmed);
-      } else {
-        await addStep(recipeId, position, trimmed);
-      }
-      onSaved();
-    } catch (error) {
-      console.warn("[recipes] save step failed", error);
-    } finally {
-      setBusy(false);
-    }
+    if (!trimmed) return;
+    onSubmit(trimmed, position);
   };
 
   return (
@@ -113,11 +117,7 @@ function SheetContent({
             accessibilityRole="button"
             accessibilityLabel="Close"
           >
-            <SymbolView
-              name="xmark"
-              size={20}
-              tintColor={ds.colors.icon.default}
-            />
+            <SymbolView name="xmark" size={20} tintColor={ds.colors.icon.default} />
           </Pressable>
         </View>
 
@@ -192,8 +192,7 @@ function SheetContent({
         </View>
 
         <Pressable
-          onPress={save}
-          disabled={busy}
+          onPress={submit}
           accessibilityRole="button"
           className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
         >
