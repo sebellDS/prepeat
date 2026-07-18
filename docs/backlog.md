@@ -458,12 +458,14 @@ same day – see the checked items below.
       ([src/lib/meal-plan.tsx:627](../src/lib/meal-plan.tsx)); if one recipe
       fetch fails, the already-shown meals were never saved and vanish on
       refresh.
-- [ ] **Imported recipes double-count prep time.** When a page has prep +
-      total but no separate cook time, the importer stores total as cook
-      ([src/lib/recipe-import.ts:124](../src/lib/recipe-import.ts) and :277),
-      and the app shows Total = prep + cook
-      ([src/lib/recipes.ts:58](../src/lib/recipes.ts)), so prep 15 / total
-      45 displays Total 60.
+- [x] **Imported recipes double-count prep time.** Fixed 2026-07-18: a
+      shared `resolveCookMinutes` helper
+      ([src/lib/recipe-import.ts](../src/lib/recipe-import.ts), used by both
+      the JSON-LD and microdata paths) derives cook = total − prep when a
+      page gives a total but no explicit cook, so Total = prep + cook renders
+      as the real total (prep 15 / total 45 now shows 45, not 60). Pure
+      logic, verified against all prep/cook/total combinations. Client-only,
+      no migration – rides the next device build.
 - [x] **"Onions 0" on the list.** Fixed in code 2026-07-18: when the last
       plan share is pulled out of a user-owned line whose amount came only
       from the plan, the quantity returns to "no amount" (null) instead of a

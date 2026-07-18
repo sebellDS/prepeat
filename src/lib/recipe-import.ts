@@ -121,9 +121,11 @@ function normalizeJsonLd(node: JsonObject): Omit<ImportedRecipe, "sourceUrl"> {
     description: cleanText(asString(node.description) ?? "") || null,
     servings: parseYield(node.recipeYield),
     prepMinutes: parseIsoDuration(asString(node.prepTime)),
-    cookMinutes:
-      parseIsoDuration(asString(node.cookTime)) ??
+    cookMinutes: resolveCookMinutes(
+      parseIsoDuration(asString(node.prepTime)),
+      parseIsoDuration(asString(node.cookTime)),
       parseIsoDuration(asString(node.totalTime)),
+    ),
     imageUrl: extractImage(node.image),
     ingredients,
     steps: extractInstructions(node.recipeInstructions),
@@ -203,6 +205,25 @@ export function parseIsoDuration(value: string | null): number | null {
   );
 }
 
+/**
+ * Reconcile the three time fields a page may publish (prep / cook / total)
+ * into the app's two (prep + cook, where the recipe screen shows
+ * Total = prep + cook). When a page gives a total but no explicit cook,
+ * derive cook so prep + cook = total, rather than storing the whole total AS
+ * the cook – which made Total count prep twice (review #9). With only a total
+ * and no prep, the total goes to cook so Total still renders correctly.
+ */
+export function resolveCookMinutes(
+  prep: number | null,
+  cook: number | null,
+  total: number | null,
+): number | null {
+  if (cook != null) return cook;
+  if (total == null) return null;
+  if (prep != null) return Math.max(0, total - prep);
+  return total;
+}
+
 // ── Microdata (the older flavor – e.g. valdemarsro.dk) ───────────────────
 
 function extractMicrodataRecipe(
@@ -274,7 +295,11 @@ function extractMicrodataRecipe(
       ) || null,
     servings: parseYield(matchAllTexts(scope, "recipeYield")[0] ?? null),
     prepMinutes: timeOf("prepTime"),
-    cookMinutes: timeOf("cookTime") ?? timeOf("totalTime"),
+    cookMinutes: resolveCookMinutes(
+      timeOf("prepTime"),
+      timeOf("cookTime"),
+      timeOf("totalTime"),
+    ),
     imageUrl: image,
     ingredients,
     steps,
