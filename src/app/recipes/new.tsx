@@ -616,7 +616,7 @@ function OutlineButton({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border border-button-outline-border-enabled py-comp-large"
+      className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
     >
       <MaterialIcons name={icon} size={20} color={ds.colors.icon.default} />
       <Text className="font-paragraph text-components-button-label font-default text-text-subtle">

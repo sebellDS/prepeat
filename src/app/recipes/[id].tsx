@@ -375,7 +375,7 @@ export default function RecipeDetailScreen() {
               )
             }
             accessibilityRole="button"
-            className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border border-button-outline-border-enabled py-comp-large"
+            className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
           >
             <MaterialIcons
               name="edit-note"
@@ -786,7 +786,7 @@ function ConfirmSheet({
         <Pressable
           onPress={onCancel}
           accessibilityRole="button"
-          className="w-full items-center rounded-medium border border-button-outline-border-enabled py-comp-large"
+          className="w-full items-center rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
         >
           <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
             Cancel

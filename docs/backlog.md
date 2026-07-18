@@ -268,16 +268,12 @@ the family can start collecting favourites immediately.
         draw them enabled) – same convention as the other sheets.
       - Copy feedback: the copy icon flips to a green checkmark for 2s
         (plan pre-approved by Thomas 2026-07-18).
-      - DS question: the design's outline buttons (Sign out, Add an
-        image) draw a 2px border; every older outline button in the app
-        is 1px. Household follows the frames (2px) – decide which is the
-        DS recipe and align the rest.
-- [ ] Apply migration 0010 in the Supabase dashboard (Thomas; SQL goes on
-      the clipboard) – MUST be applied BEFORE installing the new build:
-      the app now reads households.image_url and profiles at boot, so an
-      old database sends the new app back to onboarding. Ends with a
-      verifying SELECT (expect profile_count 2, image_column_exists
-      true).
+      - DS decision (Thomas, 2026-07-18): outline buttons ARE 2px per
+        the DS – every older 1px outline button in the app aligned the
+        same day (recipes detail/form/list, shopping empty state,
+        remove-meal Cancel, add-meal "Add recipe").
+- [x] Apply migration 0010 in the Supabase dashboard (done 2026-07-18,
+      verifying SELECT returned 2 / true).
 - [ ] Walk the Household flows on-device after 0010 (rename, image pick,
       profile rename, copy + share code, sign out/in again)
 

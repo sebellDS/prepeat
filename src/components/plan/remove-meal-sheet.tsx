@@ -33,7 +33,7 @@ export function RemoveMealSheet({
         <Pressable
           accessibilityRole="button"
           onPress={onClose}
-          className="w-full items-center rounded-medium border border-button-outline-border-enabled py-comp-large"
+          className="w-full items-center rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
         >
           <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
             Cancel

@@ -21,7 +21,7 @@ export function EmptyState({ onFillFromPlan }: EmptyStateProps) {
         <Pressable
           onPress={onFillFromPlan}
           accessibilityRole="button"
-          className="mt-comp-small w-full items-center rounded-medium border border-button-outline-border-enabled py-comp-large">
+          className="mt-comp-small w-full items-center rounded-medium border-2 border-button-outline-border-enabled py-comp-large">
           <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
             Fill from weekly plan
           </Text>
