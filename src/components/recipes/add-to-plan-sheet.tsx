@@ -61,11 +61,15 @@ function SheetContent({
       <View className="w-full gap-comp-small">
         {dates.map((date, index) => {
           const selected = date === selectedDate;
+          // Planning never goes backward: past days keep their cell but are
+          // disabled, same rule as the plan's WeekBar/DayRow (2026-07-17).
+          const past = date < today;
           return (
             <Pressable
               key={date}
               accessibilityRole="radio"
-              accessibilityState={{ selected }}
+              accessibilityState={{ selected, disabled: past }}
+              disabled={past}
               onPress={() => setSelectedDate(date)}
               className={
                 "w-full flex-row items-center gap-comp-small overflow-hidden rounded-medium bg-surface-neutral-white " +
@@ -73,11 +77,21 @@ function SheetContent({
               }
             >
               <View className="w-[64px] items-center justify-center bg-surface-neutral-lighter p-comp-large">
-                <Text className="font-paragraph text-small font-emphasized leading-xxsmall text-text-default">
+                <Text
+                  className={
+                    "font-paragraph text-small font-emphasized leading-xxsmall " +
+                    (past ? "text-text-disabled" : "text-text-default")
+                  }
+                >
                   {DAY_LABELS[index]}
                 </Text>
               </View>
-              <Text className="flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+              <Text
+                className={
+                  "flex-1 font-paragraph text-paragraph font-default leading-xsmall " +
+                  (past ? "text-text-disabled" : "text-text-default")
+                }
+              >
                 {DAY_NAMES[index]}
                 {date === today ? " · today" : ""}
               </Text>

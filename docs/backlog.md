@@ -484,10 +484,11 @@ same day – see the checked items below.
       also finishes moving withdraw/rescale server-side (the atomicity
       follow-up flagged under #4), so the whole reconciler is now atomic and
       per-list locked.
-- [ ] **Add-to-plan from a recipe allows past days**
-      ([src/components/recipes/add-to-plan-sheet.tsx:56](../src/components/recipes/add-to-plan-sheet.tsx)),
-      even though the plan screen deliberately locks past days as read-only
-      history ([src/components/plan/week-bar.tsx:36](../src/components/plan/week-bar.tsx)).
+- [x] **Add-to-plan from a recipe allows past days.** Fixed 2026-07-18: the
+      recipe "Add to weekly plan" sheet now disables past days with dimmed
+      text ([src/components/recipes/add-to-plan-sheet.tsx](../src/components/recipes/add-to-plan-sheet.tsx)),
+      the same `date < today` rule the plan's WeekBar/DayRow already use.
+      Client-only, rides the next device build.
 
 ### Speed & tech debt (from the same review)
 
