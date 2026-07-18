@@ -627,7 +627,7 @@ function EmptyRowHint({ text }: { text: string }) {
 // the swipe wrapper) with an explicit style so neither the swipeable's
 // layout nor NativeWind class compilation can inset or drop it.
 export function RowDivider() {
-  return <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />;
+  return <View className="h-px bg-border-subtle" />;
 }
 
 function IngredientRow({

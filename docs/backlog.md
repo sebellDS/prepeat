@@ -518,10 +518,17 @@ same day – see the checked items below.
       and shopping's `reorder-categories-sheet` is now a thin wrapper over it
       (categories map to `{key,label}` items), removing the copied
       DraggableRow + gesture code (~130 lines).
-- [ ] **Hardcoded DS values** instead of tokens: `#E7E6E4` dividers in
-      recipes `[id].tsx` and `new.tsx`, white `tintColor` in
-      [src/components/shopping/item-row.tsx](../src/components/shopping/item-row.tsx).
-      Will drift on the next DS retune (against the CLAUDE.md token rule).
+- [x] **Hardcoded DS values** instead of tokens. Fixed 2026-07-19: the five
+      `#E7E6E4` dividers in recipes `[id].tsx` and `new.tsx` now use
+      `bg-border-subtle` (the border token IS #E7E6E4, and it matches how
+      meal-row/household do row dividers), and the two white `tintColor`
+      hexes in [src/components/shopping/item-row.tsx](../src/components/shopping/item-row.tsx)
+      use `ds.colors.surface.neutral.white` (ds.ts exists for exactly these
+      native-prop cases). Token values are byte-identical to the old hexes,
+      so no visual change – they now follow the DS on the next retune.
+      (Spotted in passing, NOT fixed: themed-text.tsx hardcodes a #3c87f7
+      link blue – template-derived component with its own colour system,
+      out of scope here; a DS `text.link` token exists if we want it later.)
 - [ ] **Layout pinned with magic numbers**: per-screen tab-bar clearance
       hand-computed with a different tail in six screens, the done-section
       paints 1000px of overdraw to reach the screen bottom, and the recipe

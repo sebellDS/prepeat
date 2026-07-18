@@ -30,7 +30,12 @@ function Checkbox({ checked }: { checked: boolean }) {
           : 'size-[18px] rounded-xsmall border border-border bg-surface-neutral-lightest'
       }>
       {checked && (
-        <SymbolView name="checkmark" size={12} tintColor="#FFFFFF" weight="bold" />
+        <SymbolView
+          name="checkmark"
+          size={12}
+          tintColor={ds.colors.surface.neutral.white}
+          weight="bold"
+        />
       )}
     </View>
   );
@@ -141,7 +146,11 @@ export function ItemRow({
               onDelete();
             }}
             className="w-[56px] items-center justify-center bg-error">
-            <SymbolView name="trash" size={20} tintColor="#FFFFFF" />
+            <SymbolView
+              name="trash"
+              size={20}
+              tintColor={ds.colors.surface.neutral.white}
+            />
           </Pressable>
         </View>
       )}>

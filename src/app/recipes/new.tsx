@@ -351,7 +351,7 @@ export default function AddRecipeScreen() {
                     <Fragment key={`${ingredient.name}-${index}`}>
                       {index > 0 && (
                         <View
-                          style={{ height: 1, backgroundColor: "#E7E6E4" }}
+                          className="h-px bg-border-subtle"
                         />
                       )}
                       <SwipeActions
@@ -377,7 +377,7 @@ export default function AddRecipeScreen() {
                     </Fragment>
                   ))}
                   {/* Close off the list with a line before the add button. */}
-                  <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />
+                  <View className="h-px bg-border-subtle" />
                 </View>
               )}
               <OutlineButton
@@ -416,7 +416,7 @@ export default function AddRecipeScreen() {
                     <Fragment key={`${index}-${step.slice(0, 12)}`}>
                       {index > 0 && (
                         <View
-                          style={{ height: 1, backgroundColor: "#E7E6E4" }}
+                          className="h-px bg-border-subtle"
                         />
                       )}
                       <SwipeActions
@@ -445,7 +445,7 @@ export default function AddRecipeScreen() {
                     </Fragment>
                   ))}
                   {/* Close off the list with a line before the add button. */}
-                  <View style={{ height: 1, backgroundColor: "#E7E6E4" }} />
+                  <View className="h-px bg-border-subtle" />
                 </View>
               )}
               <OutlineButton
