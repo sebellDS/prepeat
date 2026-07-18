@@ -28,7 +28,8 @@ import {
 } from "@/lib/meal-plan";
 import { DAY_LABELS, DAY_NAMES, toDateKey, weekDates } from "@/lib/week";
 
-// The Plan tab (route name "index" so the app opens here): the weekly meal
+// The Plan tab (the (plan) group's index keeps it at "/", so the app
+// opens here): the weekly meal
 // plan (Figma "Plan" page, reviewed 2026-07-16). Days hold a flat list of
 // meals; the week switcher moves between existing weeks; "+" adds the next
 // week; "Add all to shopping list" links the week to the list, after which
@@ -146,9 +147,11 @@ function PlanContent() {
               entries={entriesByDate.get(date) ?? []}
               onAddMeal={() => setSheet({ kind: "add-meal", date })}
               onPressMeal={(entry) => {
-                // Manual meals ("Leftovers") have no recipe to open.
+                // Manual meals ("Leftovers") have no recipe to open. The
+                // detail opens in THIS tab's stack (/recipe/…), so back
+                // returns to the plan (2026-07-18).
                 if (entry.recipeId != null)
-                  router.push(`/recipes/${entry.recipeId}`);
+                  router.push(`/recipe/${entry.recipeId}`);
               }}
               onMove={(entry) => setSheet({ kind: "move", entry })}
               onSwap={(entry) => setSheet({ kind: "swap", entry })}

@@ -225,6 +225,18 @@ the family can start collecting favourites immediately.
         "Fx Pasta al Pomodoro" is Danish and a recipe-name example;
         Thomas approved the reword 2026-07-18). Figma copy still says the
         old text – update the frame when convenient.
+- [x] Back from a plan-opened recipe returns to the plan (Thomas found the
+      inconvenience 2026-07-18, decided for the native fix): the Plan tab
+      is now its own stack – src/app/(plan)/ with the plan at "/", plus
+      /recipe/[id] and /recipe/new re-exporting the Recipes tab's screens.
+      Tapping a meal opens the recipe INSIDE the Plan tab (tab bar keeps
+      Plan active), back pops to the plan, and the Recipes tab's own
+      browsing state is untouched. "Edit recipe" stays in whichever stack
+      the detail is rendered in (pathname check in recipes/[id].tsx).
+      Unchanged, deliberately: "Add recipe" from the add-meal picker's
+      empty state still jumps to the Recipes tab's form – creating a
+      recipe is Recipes-tab work; revisit if the same back-complaint
+      comes up there.
 - [x] Week picker restyled on Shopping (Thomas, 2026-07-18, Figma weekNav
       163:38970 in the shopping frames): the quiet grey pill retired –
       Shopping now shows the exact Plan-tab switcher (40px green chevrons,

@@ -1,6 +1,11 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  usePathname,
+  useRouter,
+} from "expo-router";
 import { Fragment, useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -53,6 +58,9 @@ export default function RecipeDetailScreen() {
   const household = useHousehold();
   const { session } = useAuth();
   const router = useRouter();
+  // This screen is mounted in two stacks (2026-07-18): /recipes/[id] on
+  // the Recipes tab and /recipe/[id] inside the Plan tab.
+  const inPlanTab = usePathname().startsWith("/recipe/");
   const insets = useSafeAreaInsets();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -358,7 +366,14 @@ export default function RecipeDetailScreen() {
           {/* Edit the recipe's facts (name, photo, times, servings) –
               requested back after the menu item was removed (2026-07-12). */}
           <Pressable
-            onPress={() => router.push(`/recipes/new?id=${recipe.id}`)}
+            // Edit stays in the stack we're rendered in: /recipes/[id] on
+            // the Recipes tab, /recipe/[id] when opened from the Plan tab
+            // (2026-07-18) – so saving lands back on this detail via back().
+            onPress={() =>
+              router.push(
+                `${inPlanTab ? "/recipe" : "/recipes"}/new?id=${recipe.id}`,
+              )
+            }
             accessibilityRole="button"
             className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border border-button-outline-border-enabled py-comp-large"
           >

@@ -8,7 +8,7 @@ export default function AppTabs() {
       backgroundColor={ds.colors.surface.neutral.white}
       tintColor={ds.colors.surface.primary.main}
       labelStyle={{ selected: { color: ds.colors.surface.primary.main } }}>
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="(plan)">
         <NativeTabs.Trigger.Label>Plan</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'calendar', selected: 'calendar' }} />
       </NativeTabs.Trigger>
