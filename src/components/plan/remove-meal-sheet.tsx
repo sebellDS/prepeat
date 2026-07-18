@@ -28,7 +28,8 @@ export function RemoveMealSheet({
         You are about to remove a meal from your weekly plan. This action
         cannot be undone, but you can just add it again.
       </Text>
-      <View className="w-full gap-comp-small">
+      {/* 16 between the buttons (Thomas, 2026-07-18 – was 8). */}
+      <View className="w-full gap-layout-small">
         <Pressable
           accessibilityRole="button"
           onPress={onClose}
