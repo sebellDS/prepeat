@@ -247,6 +247,13 @@ the family can start collecting favourites immediately.
       verifying SELECT returned true/true)
 - [x] Walk the manual-meal flow on-device after 0009 is applied (Thomas,
       2026-07-18: works, design blessed)
+- [ ] Household screen redesign – Thomas is designing (announced
+      2026-07-18), Figma frames to come. Decided up front: renaming the
+      household IS in; every member stays equal – NO creator privileges
+      (Thomas reaffirmed the projektgrundlag "no roles in v1" decision
+      after weighing it). Backend note: rename needs no migration – the
+      households update policy already lets any member rename; the app
+      just has no UI for it yet.
 
 ## In parallel – when it fits
 
