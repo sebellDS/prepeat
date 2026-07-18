@@ -87,10 +87,14 @@ export function Chip({
         const tint = ds.colors.chip[variant].label[state];
         return (
           <View
-            className={`flex-row items-center justify-center gap-comp-xsmall rounded-xlarge px-comp-large py-comp-small ${BOX[variant][state]} ${disabled ? 'opacity-50' : ''}`}>
+            // The DS Chip recipe (aligned DS↔Figma 2026-07-17, verified in
+            // packages/react Chip.module.css): components/small +
+            // components/medium padding, small emphasized 12/16 label.
+            className={`flex-row items-center justify-center gap-comp-xsmall rounded-xlarge px-comp-medium py-comp-small ${BOX[variant][state]} ${disabled ? 'opacity-50' : ''}`}>
             {startIcon ? <MaterialIcons name={startIcon} size={16} color={tint} /> : null}
             <Text
-              className={`font-paragraph text-components-label font-default leading-xxsmall ${LABEL[variant][state]}`}>
+              numberOfLines={1}
+              className={`font-paragraph text-small font-emphasized leading-xxsmall ${LABEL[variant][state]}`}>
               {label}
             </Text>
             {endIcon ? <MaterialIcons name={endIcon} size={16} color={tint} /> : null}

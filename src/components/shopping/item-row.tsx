@@ -45,12 +45,24 @@ export function ItemRow({
   checkedByMe,
 }: ItemRowProps) {
   const swipeable = useRef<SwipeableMethods>(null);
+  // A far swipe used to fire the row press on release and check the item
+  // off (found on-device 2026-07-16). While the swipe is engaged, a row tap
+  // only closes the actions again.
+  const swipeEngaged = useRef(false);
+
+  const handlePress = () => {
+    if (swipeEngaged.current) {
+      swipeable.current?.close();
+      return;
+    }
+    onToggle();
+  };
 
   // The whole row toggles (a checkbox alone is a small target in a store
   // aisle, Thomas 2026-07-08); edit and delete live behind the swipe.
   const row = (
     <Pressable
-      onPress={onToggle}
+      onPress={handlePress}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: item.isChecked }}
       accessibilityLabel={item.name}
@@ -100,6 +112,15 @@ export function ItemRow({
       friction={2}
       rightThreshold={40}
       overshootRight={false}
+      onSwipeableOpenStartDrag={() => {
+        swipeEngaged.current = true;
+      }}
+      onSwipeableWillOpen={() => {
+        swipeEngaged.current = true;
+      }}
+      onSwipeableClose={() => {
+        swipeEngaged.current = false;
+      }}
       renderRightActions={() => (
         <View className="flex-row">
           <Pressable

@@ -32,7 +32,7 @@ export function ReorderCategoriesSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <GestureHandlerRootView className="flex-1">
         <Pressable className="flex-1 bg-black/30" onPress={onClose} accessibilityLabel="Close" />
-        <View className="w-full gap-layout-xsmall rounded-t-xlarge bg-surface-neutral-white p-layout-small pb-layout-large">
+        <View className="w-full gap-layout-xsmall rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large">
           <View className="w-full flex-row items-center">
             <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">
               Reorder categories

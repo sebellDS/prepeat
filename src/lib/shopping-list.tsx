@@ -26,23 +26,25 @@ import { AppState } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
 import { useHousehold } from '@/lib/household-context';
+import { pushPlanToList } from '@/lib/plan-shopping';
 import { formatQuantity, parseQuantity } from '@/lib/quantity';
+import {
+  CATEGORIES,
+  getOrCreateListId,
+  normalizeItemName,
+  type Category,
+} from '@/lib/shopping-core';
 import { supabase } from '@/lib/supabase';
+import { addWeeksKey, weekStartOf } from '@/lib/week';
 
-// v1 category set (projektgrundlag decision #7): fixed constants in app code.
-// Order here is the default display order until the household reorders.
-export const CATEGORIES = [
-  'Produce',
-  'Dairy',
-  'Meat & Fish',
-  'Bakery',
-  'Frozen',
-  'Pantry',
-  'Drinks',
-  'Household',
-  'Other',
-] as const;
-export type Category = (typeof CATEGORIES)[number];
+// Moved to shopping-core.ts (2026-07-16, plan milestone) – re-exported so
+// existing imports keep working.
+export {
+  CATEGORIES,
+  getOrCreateListId,
+  normalizeItemName,
+  type Category,
+} from '@/lib/shopping-core';
 
 export interface ShoppingItem {
   id: string;
@@ -73,12 +75,6 @@ export type LiveStatus = 'connecting' | 'live' | 'offline';
 // Short – the move itself is animated, so the linger only needs to absorb
 // an immediate "oops" re-tap (1.5s → 0.6s → 0.4s → 0.2s, Thomas 2026-07-08).
 export const LINGER_MS = 200;
-
-export function normalizeItemName(name: string): string {
-  // Same rule as ingredient merging: trimmed, lowercased. Also collapse
-  // whitespace (incl. non-breaking spaces) so near-identical entries match.
-  return name.replace(/\s+/g, ' ').trim().toLowerCase();
-}
 
 // A shopping_list_items row as PostgREST returns it.
 interface ItemRow {
@@ -150,8 +146,10 @@ type Action =
       aisle: Category | null;
     }
   | { type: 'remove'; id: string }
-  | { type: 'fill'; items: ShoppingItem[] }
-  | { type: 'set-order'; order: Category[] };
+  | { type: 'set-order'; order: Category[] }
+  // Week switch in flight: blank the list so the old week's items never
+  // show under the new week's label.
+  | { type: 'begin-load' };
 
 function mergeRows(prevItems: ShoppingItem[], rows: ItemRow[]): ShoppingItem[] {
   const prevById = new Map(prevItems.map((item) => [item.id, item]));
@@ -265,10 +263,10 @@ function reducer(state: State, action: Action): State {
     }
     case 'remove':
       return { ...state, items: state.items.filter((item) => item.id !== action.id) };
-    case 'fill':
-      return { ...state, items: [...state.items, ...action.items] };
     case 'set-order':
       return { ...state, categoryOrder: action.order };
+    case 'begin-load':
+      return { ...state, loading: true, listId: null, items: [] };
   }
 }
 
@@ -294,63 +292,6 @@ function sanitizeMemory(value: unknown): Record<string, Category> {
     }
   }
   return memory;
-}
-
-// Placeholder until the weekly plan exists: the sample basket from the Figma
-// flows, complete with aisles as if snapshotted from recipes.
-const SAMPLE_BASKET: [string, string | null, Category][] = [
-  ['Fresh basil', '1 bunch', 'Produce'],
-  ['Cherry tomatoes', '250g', 'Produce'],
-  ['Zucchini', '2 pcs', 'Produce'],
-  ['Parmesan', null, 'Dairy'],
-  ['Whole milk', '4 Liters', 'Dairy'],
-  ['Mozzarella', '2 balls', 'Dairy'],
-  ['Chicken breast', '500 g', 'Meat & Fish'],
-  ['Rye bread', null, 'Bakery'],
-  ['Toast bread', null, 'Bakery'],
-  ['Spinach', null, 'Frozen'],
-  ['Ice cream', null, 'Frozen'],
-  ['Smoothie mix', null, 'Frozen'],
-  ['Pasta penne', '500 g', 'Pantry'],
-  ['Olive oil', '1 bottle', 'Pantry'],
-  ['Canned tomatoes', '2 cans', 'Pantry'],
-  ['Beer', null, 'Drinks'],
-  ['Dishwashing soap', null, 'Household'],
-  ['Plastic bags', null, 'Household'],
-  ['Tape', null, 'Other'],
-];
-
-// Exported for the recipes flow: "Add ingredients to shopping list" writes
-// into the same single active list.
-export async function getOrCreateListId(householdId: string, userId: string): Promise<string> {
-  const { data, error } = await supabase
-    .from('shopping_lists')
-    .select('id')
-    .eq('household_id', householdId)
-    .is('deleted_at', null)
-    .limit(1);
-  if (error) throw error;
-  if (data?.[0]) return data[0].id;
-
-  const { data: created, error: insertError } = await supabase
-    .from('shopping_lists')
-    .insert({ household_id: householdId, created_by_user_id: userId })
-    .select('id')
-    .single();
-  if (!insertError) return created.id;
-  // Unique index: another phone created the list first – use theirs.
-  if (insertError.code === '23505') {
-    const { data: existing, error: retryError } = await supabase
-      .from('shopping_lists')
-      .select('id')
-      .eq('household_id', householdId)
-      .is('deleted_at', null)
-      .limit(1)
-      .single();
-    if (retryError) throw retryError;
-    return existing.id;
-  }
-  throw insertError;
 }
 
 async function fetchItems(listId: string): Promise<ItemRow[]> {
@@ -434,6 +375,12 @@ interface ShoppingListApi {
   categoryOrder: Category[];
   /** The signed-in member – done-section initials style "you" differently. */
   userId: string;
+  /** Week navigation: every week has its own list (designed 2026-07-16). */
+  viewedWeekStart: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  goBack: () => void;
+  goForward: () => void;
   addItem: (name: string) => void;
   toggleItem: (id: string) => void;
   updateItem: (
@@ -443,7 +390,7 @@ interface ShoppingListApi {
   removeItem: (id: string) => void;
   /** Soft-deletes every checked item (the manual "Clear" in the done section). */
   clearCompleted: () => void;
-  fillFromWeeklyPlan: () => void;
+  fillFromWeeklyPlan: () => Promise<number>;
   setCategoryOrder: (order: Category[]) => void;
 }
 
@@ -464,6 +411,41 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     categoryOrder: [...CATEGORIES],
   });
   const [live, setLive] = useState<LiveStatus>('connecting');
+  // Week navigation (designed 2026-07-16): every week has its own list.
+  // Reachable weeks mirror the plan's rule – existing lists, weeks with a
+  // plan, and the current week; two weeks back at most.
+  const currentWeekStart = useMemo(() => weekStartOf(new Date()), []);
+  const [viewedWeekStart, setViewedWeekStart] = useState(currentWeekStart);
+  const [weekOptions, setWeekOptions] = useState<string[]>([currentWeekStart]);
+  const viewedWeekRef = useRef(viewedWeekStart);
+  useEffect(() => {
+    viewedWeekRef.current = viewedWeekStart;
+  }, [viewedWeekStart]);
+
+  const fetchWeekOptions = useCallback(async (): Promise<string[]> => {
+    const minWeek = addWeeksKey(currentWeekStart, -2);
+    const [lists, plans] = await Promise.all([
+      supabase
+        .from('shopping_lists')
+        .select('week_start_date')
+        .eq('household_id', household.id)
+        .is('deleted_at', null)
+        .not('week_start_date', 'is', null)
+        .gte('week_start_date', minWeek),
+      supabase
+        .from('meal_plans')
+        .select('week_start_date')
+        .eq('household_id', household.id)
+        .is('deleted_at', null)
+        .gte('week_start_date', minWeek),
+    ]);
+    if (lists.error) throw lists.error;
+    if (plans.error) throw plans.error;
+    const weeks = new Set<string>([currentWeekStart]);
+    for (const row of lists.data ?? []) weeks.add(row.week_start_date);
+    for (const row of plans.data ?? []) weeks.add(row.week_start_date);
+    return [...weeks].sort();
+  }, [household.id, currentWeekStart]);
 
   // Callbacks read the latest state through a ref so they can stay stable.
   const stateRef = useRef(state);
@@ -475,9 +457,10 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   // Used on reconnect and app foreground – it also picks up learned
   // categories and category order, which deliberately have no realtime.
   const refresh = useCallback(async () => {
-    const listId = stateRef.current.listId;
-    if (!listId) return;
     try {
+      fetchWeekOptions().then(setWeekOptions, () => {});
+      const listId = stateRef.current.listId;
+      if (!listId) return;
       const [rows, prefs] = await Promise.all([fetchItems(listId), fetchPrefs(household.id)]);
       dispatch({
         type: 'refresh',
@@ -488,7 +471,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.warn('[shopping] refresh failed', error);
     }
-  }, [household.id]);
+  }, [household.id, fetchWeekOptions]);
 
   // Fire-and-forget write: local state is already updated optimistically;
   // if the server disagrees, refetch so the phones converge on its truth.
@@ -510,16 +493,17 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
-  // Boot: resolve the household's single active list (creating it on first
-  // run), load everything, and migrate legacy device prefs up.
+  // Boot: resolve the current week's list (creating it on first run), load
+  // everything, and migrate legacy device prefs up.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const listId = await getOrCreateListId(household.id, userId);
+      const listId = await getOrCreateListId(household.id, userId, currentWeekStart);
       const serverPrefs = await fetchPrefs(household.id);
       const prefs = await migrateDevicePrefs(household.id, serverPrefs);
-      const rows = await fetchItems(listId);
+      const [rows, weeks] = await Promise.all([fetchItems(listId), fetchWeekOptions()]);
       if (cancelled) return;
+      setWeekOptions(weeks);
       dispatch({
         type: 'ready',
         listId,
@@ -534,7 +518,29 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [household.id, userId]);
+  }, [household.id, userId, currentWeekStart, fetchWeekOptions]);
+
+  // Switching weeks swaps the whole list: resolve that week's list row and
+  // load its items. The realtime channel follows listId automatically.
+  const viewWeek = useCallback(
+    (weekStart: string) => {
+      setViewedWeekStart(weekStart);
+      dispatch({ type: 'begin-load' });
+      (async () => {
+        const listId = await getOrCreateListId(household.id, userId, weekStart);
+        const rows = await fetchItems(listId);
+        if (viewedWeekRef.current !== weekStart) return; // navigated on
+        dispatch({
+          type: 'ready',
+          listId,
+          rows,
+          memory: stateRef.current.memory,
+          categoryOrder: stateRef.current.categoryOrder,
+        });
+      })().catch((error) => console.warn('[shopping] week load failed', error));
+    },
+    [household.id, userId],
+  );
 
   // Realtime: stream the other phones' item changes into local state. The
   // subscribe status doubles as the Live badge; every (re)subscribe refetches
@@ -655,7 +661,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
         'update',
         supabase
           .from('shopping_list_items')
-          .update({ name, quantity, unit, aisle: fields.aisle })
+          // edited_manually is the A+rails guard: a line the family touched
+          // by hand is never overwritten by the plan reconciler again.
+          .update({ name, quantity, unit, aisle: fields.aisle, edited_manually: true })
           .eq('id', id),
       );
       if (fields.aisle != null && fields.aisle !== prev.aisle) {
@@ -718,44 +726,51 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     [guard, household.id],
   );
 
-  const fillFromWeeklyPlan = useCallback(() => {
+  const fillFromWeeklyPlan = useCallback(async (): Promise<number> => {
     const listId = stateRef.current.listId;
-    if (!listId) return;
+    if (!listId) return 0;
     // A new week starts clean: last week's checked-off items leave the list
     // when the plan fills it (decided 2026-07-07, together with the manual
     // Clear button).
     clearCompleted();
-    const now = Date.now();
-    const rows = SAMPLE_BASKET.map(([name, quantityText, aisle]) => {
-      const { quantity, unit } = parseQuantity(quantityText);
-      return {
-        id: Crypto.randomUUID(),
-        list_id: listId,
-        name,
-        quantity,
-        unit,
-        aisle,
-        added_manually: false,
-        created_by_user_id: userId,
-      };
-    });
-    dispatch({
-      type: 'fill',
-      items: rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        quantity: formatQuantity(row.quantity, row.unit),
-        aisle: row.aisle,
-        isChecked: false,
-        checkedByInitial: null,
-        checkedByUserId: null,
-        checkedAt: null,
-        settled: false,
-        updatedAt: now,
-      })),
-    });
-    guard('fill from plan', supabase.from('shopping_list_items').insert(rows));
-  }, [guard, userId, clearCompleted]);
+    // The real thing since 2026-07-16: sweep the VIEWED week's plan into
+    // its list (idempotent – already-contributed meals are skipped).
+    const { data, error } = await supabase
+      .from('meal_plans')
+      .select('id')
+      .eq('household_id', household.id)
+      .eq('week_start_date', viewedWeekRef.current)
+      .is('deleted_at', null)
+      .limit(1);
+    if (error) {
+      console.warn('[shopping] fill from plan failed', error);
+      return 0;
+    }
+    const planId = data?.[0]?.id;
+    if (!planId) return 0;
+    try {
+      const touched = await pushPlanToList(household.id, userId, planId);
+      await refresh();
+      return touched;
+    } catch (pushError) {
+      console.warn('[shopping] fill from plan failed', pushError);
+      refresh();
+      return 0;
+    }
+  }, [household.id, userId, clearCompleted, refresh]);
+
+  // Week navigation derived state: chevrons disable at the edges.
+  const viewedIndex = weekOptions.indexOf(viewedWeekStart);
+  const canGoBack = viewedIndex > 0;
+  const canGoForward = viewedIndex >= 0 && viewedIndex < weekOptions.length - 1;
+  const goBack = useCallback(() => {
+    const index = weekOptions.indexOf(viewedWeekRef.current);
+    if (index > 0) viewWeek(weekOptions[index - 1]);
+  }, [weekOptions, viewWeek]);
+  const goForward = useCallback(() => {
+    const index = weekOptions.indexOf(viewedWeekRef.current);
+    if (index >= 0 && index < weekOptions.length - 1) viewWeek(weekOptions[index + 1]);
+  }, [weekOptions, viewWeek]);
 
   const api = useMemo(
     () => ({
@@ -764,6 +779,11 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       items: state.items,
       categoryOrder: state.categoryOrder,
       userId,
+      viewedWeekStart,
+      canGoBack,
+      canGoForward,
+      goBack,
+      goForward,
       addItem,
       toggleItem,
       updateItem,
@@ -778,6 +798,11 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       state.items,
       state.categoryOrder,
       userId,
+      viewedWeekStart,
+      canGoBack,
+      canGoForward,
+      goBack,
+      goForward,
       addItem,
       toggleItem,
       updateItem,

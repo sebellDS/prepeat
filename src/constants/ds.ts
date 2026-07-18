@@ -57,7 +57,14 @@ interface DsTheme {
       DEFAULT: string;
     };
     border: { default: string; DEFAULT: string };
-    icon: { default: string; DEFAULT: string };
+    icon: {
+      default: string;
+      subtle: string;
+      brand: string;
+      accent: string;
+      disabled: string;
+      DEFAULT: string;
+    };
     button: {
       solid: { fill: ButtonStates; label: ButtonStates };
       outline: {

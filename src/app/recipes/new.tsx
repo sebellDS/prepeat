@@ -52,14 +52,19 @@ function parseMinutes(text: string): number | null {
  * same form reopens filled to edit an existing recipe's facts.
  */
 export default function AddRecipeScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  // ?title= prefills the name – the plan's recipe picker sends its search
+  // term here when the meal is not in the library yet (2026-07-16).
+  const { id, title: titleParam } = useLocalSearchParams<{
+    id?: string;
+    title?: string;
+  }>();
   const household = useHousehold();
   const { session } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const editing = id != null && id.length > 0;
 
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(editing ? "" : (titleParam ?? ""));
   const [description, setDescription] = useState("");
   const [prep, setPrep] = useState("");
   const [cook, setCook] = useState("");
@@ -263,6 +268,22 @@ export default function AddRecipeScreen() {
               />
             )}
 
+            {/* Image sits at the top of the inputs (feedback 2026-07-16). */}
+            {photoPreview != null && (
+              <View className="h-[160px] w-full overflow-hidden rounded-medium">
+                <Image
+                  source={{ uri: photoPreview }}
+                  style={{ width: "100%", height: "100%" }}
+                  contentFit="cover"
+                />
+              </View>
+            )}
+            <OutlineButton
+              icon="add-photo-alternate"
+              label={photoPreview != null ? "Change the image" : "Add an image"}
+              onPress={pickPhoto}
+            />
+
             <Field label="Recipe name">
               <Input
                 value={title}
@@ -298,21 +319,6 @@ export default function AddRecipeScreen() {
             <Field label="Servings">
               <ServingsCounter value={servings} onChange={setServings} />
             </Field>
-
-            {photoPreview != null && (
-              <View className="h-[160px] w-full overflow-hidden rounded-medium">
-                <Image
-                  source={{ uri: photoPreview }}
-                  style={{ width: "100%", height: "100%" }}
-                  contentFit="cover"
-                />
-              </View>
-            )}
-            <OutlineButton
-              icon="add-photo-alternate"
-              label={photoPreview != null ? "Change the image" : "Add an image"}
-              onPress={pickPhoto}
-            />
           </View>
         </View>
 

@@ -22,8 +22,10 @@ import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
+import { AddToPlanSheet } from "@/components/recipes/add-to-plan-sheet";
 import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household-context";
+import { addRecipeToPlan } from "@/lib/meal-plan";
 import {
   addIngredient,
   addIngredientsToShoppingList,
@@ -66,6 +68,7 @@ export default function RecipeDetailScreen() {
   const [editingIngredient, setEditingIngredient] = useState<
     RecipeIngredient | "new" | null
   >(null);
+  const [planSheetOpen, setPlanSheetOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<RecipeStep | "new" | null>(
     null,
   );
@@ -142,22 +145,18 @@ export default function RecipeDetailScreen() {
       label: recipe.isFavorite ? "Remove from favorites" : "Add to favorites",
       onPress: toggleFavorite,
     },
-    // "Add recipe to weekly plan" joins this menu when the Plan tab exists.
+    {
+      icon: "date-range",
+      label: "Add to weekly plan",
+      onPress: () => setPlanSheetOpen(true),
+    },
     {
       icon: "shopping-bag",
       label: "Add ingredients to shopping list",
       onPress: () => setDialog("shopping"),
     },
-    {
-      icon: "add",
-      label: "Add ingredient to this recipe",
-      onPress: () => setEditingIngredient("new"),
-    },
-    {
-      icon: "add",
-      label: "Add instruction to this recipe",
-      onPress: () => setEditingStep("new"),
-    },
+    // "Add ingredient/instruction" left this menu 2026-07-16 (feedback):
+    // ingredients and steps are edited inline on the lists below.
     {
       icon: "delete",
       label: "Delete recipe",
@@ -230,7 +229,8 @@ export default function RecipeDetailScreen() {
         </View>
 
         <View className="w-full gap-layout-small px-layout-small py-layout-small">
-          <View className="w-full gap-comp-small">
+          {/* Title, description and times sit 16px apart (feedback 2026-07-16). */}
+          <View className="w-full gap-layout-small">
             <Text className="font-header text-display-5 font-emphasized leading-small text-text-subtle">
               {recipe.title}
             </Text>
@@ -375,6 +375,13 @@ export default function RecipeDetailScreen() {
       </ScrollView>
 
       {menuOpen && (
+        <Pressable
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          onPress={() => setMenuOpen(false)}
+          accessibilityLabel="Close menu"
+        />
+      )}
+      {menuOpen && (
         <View className="absolute right-layout-small top-[52px] w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg">
           {menuItems.map((item, index) => (
             <Pressable
@@ -412,7 +419,7 @@ export default function RecipeDetailScreen() {
         body={
           dialog === "delete"
             ? "You are about to delete a recipe from your household. This action cannot be undone."
-            : `Add this recipe's ingredients for ${chosenServings} people to the shopping list? You can also do this from your weekly plan.`
+            : `Add this recipe's ingredients for ${chosenServings} servings to the shopping list? You can also do this from your weekly plan.`
         }
         confirmLabel={dialog === "delete" ? "Delete recipe" : "Add ingredients"}
         destructive={dialog === "delete"}
@@ -509,6 +516,23 @@ export default function RecipeDetailScreen() {
             console.warn("[recipes] save ingredient failed", error);
           }
           reload();
+        }}
+      />
+
+      <AddToPlanSheet
+        visible={planSheetOpen}
+        initialServings={chosenServings}
+        onClose={() => setPlanSheetOpen(false)}
+        onSubmit={(date, chosen) => {
+          addRecipeToPlan(
+            household.id,
+            session?.user?.id ?? "",
+            date,
+            recipe.id,
+            chosen,
+          ).catch((error) =>
+            console.warn("[recipes] add to plan failed", error),
+          );
         }}
       />
 
@@ -736,7 +760,7 @@ function ConfirmSheet({
         onPress={onCancel}
         accessibilityLabel="Cancel"
       />
-      <View className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-white p-layout-small pb-layout-large">
+      <View className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large">
         <Text className="font-header text-display-5 font-emphasized text-text-default">
           {title}
         </Text>

@@ -15,6 +15,7 @@ import {
 } from '@/components/shopping/inline-reorder-overlay';
 import { LiveBadge } from '@/components/shopping/live-badge';
 import { ReorderCategoriesSheet } from '@/components/shopping/reorder-categories-sheet';
+import { WeekPicker } from '@/components/ui/week-picker';
 import {
   ShoppingListProvider,
   useShoppingList,
@@ -29,6 +30,11 @@ function ShoppingListScreen() {
     items,
     categoryOrder,
     userId,
+    viewedWeekStart,
+    canGoBack,
+    canGoForward,
+    goBack,
+    goForward,
     addItem,
     toggleItem,
     updateItem,
@@ -111,6 +117,18 @@ function ShoppingListScreen() {
           Shopping list
         </Text>
         <LiveBadge />
+      </View>
+
+      {/* Every week has its own list (designed 2026-07-16) – the quiet
+          picker variant per the shopping Figma frames. */}
+      <View className="w-full px-layout-small pb-layout-small">
+        <WeekPicker
+          weekStart={viewedWeekStart}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
+          onBack={goBack}
+          onForward={goForward}
+        />
       </View>
 
       <AddItemInput onSubmit={addItem} />

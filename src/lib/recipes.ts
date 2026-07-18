@@ -13,6 +13,7 @@ import {
 } from "@/lib/shopping-list";
 import { parseQuantity, formatQuantity, roundQuantity } from "@/lib/quantity";
 import { supabase } from "@/lib/supabase";
+import { weekStartOf } from "@/lib/week";
 
 export interface RecipeSummary {
   id: string;
@@ -459,7 +460,12 @@ export async function addIngredientsToShoppingList(
   userId: string,
 ): Promise<number> {
   if (recipe.ingredients.length === 0) return 0;
-  const listId = await getOrCreateListId(householdId, userId);
+  // Weekly lists (0008): ingredients from a recipe go on this week's list.
+  const listId = await getOrCreateListId(
+    householdId,
+    userId,
+    weekStartOf(new Date()),
+  );
   const { data: memoryRows, error: memoryError } = await supabase
     .from("item_category_memory")
     .select("name, aisle")

@@ -13,7 +13,8 @@ export function ServingsCounter({
   onChange,
   min = 1,
   max = 99,
-  formatLabel = (count: number) => `${count} people`,
+  // "Servings" everywhere, not "people" (Plan design decision, 2026-07-16).
+  formatLabel = (count: number) => `${count} servings`,
 }: {
   value: number;
   onChange: (next: number) => void;

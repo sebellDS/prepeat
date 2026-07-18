@@ -93,6 +93,17 @@ values in Figma lag behind the DS repo).
    all states (default/active/error/disabled) and map web-ish token names
    (`hover`) to their touch meaning (focused/pressed). Text inputs share
    `src/components/ui/input.tsx` so the active state cannot drift apart.
+4. **Build the design, never an approximation of it** (Thomas, 2026-07-17,
+   after the multi-day sheets shipped with an invented switch, header and
+   row style). The on-device app is the instrument Thomas judges his
+   design with – an improvised implementation makes design flaws
+   invisible and reviews meaningless, on top of the wasted correction
+   rounds. Concretely: before writing UI code, fetch `get_design_context`
+   for EVERY sheet/screen/state being implemented (screenshots and
+   metadata are for review conversations, not specs). Where a design
+   genuinely has a gap (a state not drawn, a flow not designed), say so
+   and mark the improvisation in the backlog – never quietly fill the gap
+   and let it read as Thomas's design.
 
 ## Writing style
 
