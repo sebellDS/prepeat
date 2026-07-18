@@ -247,15 +247,39 @@ the family can start collecting favourites immediately.
       verifying SELECT returned true/true)
 - [x] Walk the manual-meal flow on-device after 0009 is applied (Thomas,
       2026-07-18: works, design blessed)
-- [ ] Household screen redesign – Thomas is designing (announced
-      2026-07-18), Figma frames to come. Decided up front: renaming the
-      household IS in; every member stays equal – NO creator privileges
-      (Thomas reaffirmed the projektgrundlag "no roles in v1" decision
-      after weighing it). A rename reaches other members at next app
-      open, NOT live (Thomas, 2026-07-18 – keeps realtime limited to the
-      shopping list and plan per projektgrundlag). Backend note: rename
-      needs no migration – the households update policy already lets any
-      member rename; the app just has no UI for it yet.
+- [x] Household screen redesign (designed + built 2026-07-18, Figma
+      section 213:65932; reviewed same day – review outcomes: email
+      read-only + sign out added to the design, avatar rule = phone owner
+      outlined / others solid with colors as drawn, invite code behavior
+      unchanged). Decided up front: renaming IS in; every member equal –
+      NO creator privileges; renames reach other phones at next app open,
+      not live. Built: household card (image or primary-gradient home
+      tile, name, member count, edit pencil), member directory with
+      per-member name/email (NEW profiles table, migration 0010, synced
+      from auth by trigger – app never writes it), Edit household sheet
+      (rename + image via the recipe-photos bucket), Edit profile sheet
+      (first name; email read-only), invite code with copy + share, sign
+      out. New shared ClearableInput variant in ui/input.tsx. New native
+      modules: expo-clipboard + expo-linear-gradient (pods refreshed).
+      Improvisations to bless or redesign:
+      - Picked household image previews in the sheet (recipe-form
+        pattern) – the frame draws no picked state.
+      - Save buttons disable until the name field is non-empty (frames
+        draw them enabled) – same convention as the other sheets.
+      - Copy feedback: the copy icon flips to a green checkmark for 2s
+        (plan pre-approved by Thomas 2026-07-18).
+      - DS question: the design's outline buttons (Sign out, Add an
+        image) draw a 2px border; every older outline button in the app
+        is 1px. Household follows the frames (2px) – decide which is the
+        DS recipe and align the rest.
+- [ ] Apply migration 0010 in the Supabase dashboard (Thomas; SQL goes on
+      the clipboard) – MUST be applied BEFORE installing the new build:
+      the app now reads households.image_url and profiles at boot, so an
+      old database sends the new app back to onboarding. Ends with a
+      verifying SELECT (expect profile_count 2, image_column_exists
+      true).
+- [ ] Walk the Household flows on-device after 0010 (rename, image pick,
+      profile rename, copy + share code, sign out/in again)
 
 ## In parallel – when it fits
 
