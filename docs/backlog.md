@@ -428,13 +428,15 @@ same day – see the checked items below.
       verified on-device (fresh week: quantities and the shared-ingredient
       merge correct). withdraw/rescale stay on the client for now – fold
       them into the same RPC pattern when #5/#10 land.
-- [ ] **Recipe "add ingredients to list" lines can be wiped by removing a
-      meal.** Those lines look plan-owned (no marker,
-      [src/lib/recipes.ts:491](../src/lib/recipes.ts)); withdrawing a
-      later planned meal that merged into them soft-deletes the whole line
-      ([src/lib/plan-shopping.ts:226](../src/lib/plan-shopping.ts)), losing
-      the hand-off quantity. Needs an origin marker so withdraw shrinks
-      instead of deleting.
+- [x] **Recipe "add ingredients to list" lines can be wiped by removing a
+      meal.** Fixed in code 2026-07-18: recipe hand-off lines are now
+      inserted as `added_manually = true`
+      ([src/lib/recipes.ts](../src/lib/recipes.ts)), so the reconciler treats
+      them as user-owned and shrinks instead of deleting when a later meal's
+      share is withdrawn. Migration 0014 applied to the live database
+      2026-07-18; the shared withdraw-shrink path is verified on-device (see
+      #10). Forward-only: hand-off lines created before this keep the old
+      flag (no safe way to tell them apart from plan lines in situ).
 
 ### High – correctness bugs a user will hit
 
@@ -462,9 +464,16 @@ same day – see the checked items below.
       and the app shows Total = prep + cook
       ([src/lib/recipes.ts:58](../src/lib/recipes.ts)), so prep 15 / total
       45 displays Total 60.
-- [ ] **"Onions 0" on the list.** Removing a plan's contribution to a
-      hand-added item subtracts the quantity down to 0 instead of back to
-      blank ([src/lib/plan-shopping.ts:232](../src/lib/plan-shopping.ts)).
+- [x] **"Onions 0" on the list.** Fixed in code 2026-07-18: when the last
+      plan share is pulled out of a user-owned line whose amount came only
+      from the plan, the quantity returns to "no amount" (null) instead of a
+      bare 0. Baked into the atomic `withdraw_entry` (and `rescale_entry`) in
+      migration 0014. Applied to the live database 2026-07-18 and verified
+      on-device (manual unitless "æg" + a "2 æg" recipe: merged to "æg 2",
+      then removing the meal returned it to "æg", not "æg 0"). This migration
+      also finishes moving withdraw/rescale server-side (the atomicity
+      follow-up flagged under #4), so the whole reconciler is now atomic and
+      per-list locked.
 - [ ] **Add-to-plan from a recipe allows past days**
       ([src/components/recipes/add-to-plan-sheet.tsx:56](../src/components/recipes/add-to-plan-sheet.tsx)),
       even though the plan screen deliberately locks past days as read-only

@@ -13,13 +13,11 @@
 // meal's change rescales only its own share. The marker itself is computed
 // where the list renders: is_checked && sum(contributions) ≠ quantity.
 //
-// The push and single-entry contribute paths run server-side as atomic,
-// advisory-locked Postgres functions (migration 0013): all-or-nothing per
-// entry, no lost updates between phones, no duplicate lines, and one round
-// trip for a whole push. withdraw and rescale still run here on the device
-// (their own review findings, #5/#10) and reach the other phones through the
-// realtime channel on shopping_list_items.
-import { roundQuantity } from "@/lib/quantity";
+// The whole reconciler runs server-side as atomic, advisory-locked Postgres
+// functions (contribute/push in migration 0013, withdraw/rescale in 0014):
+// all-or-nothing per entry, no lost updates or duplicate lines between phones,
+// and one round trip per operation. The results reach the other phones through
+// the realtime channel on shopping_list_items.
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -38,112 +36,33 @@ export async function contributeEntry(entryId: string): Promise<number> {
 
 /**
  * Pulls an entry's share back out of the list (meal removed or swapped).
- * Clean lines shrink – and disappear when nothing else feeds them; checked
- * or hand-edited lines keep their value (the marker tells the shopper).
+ * Clean lines shrink – and disappear when nothing else feeds them and they
+ * are not user-owned; checked or hand-edited lines keep their value (the
+ * marker tells the shopper). A user-owned line fed only by the plan returns
+ * to "no amount" rather than 0 (#10). Atomic + locked server-side.
  */
 export async function withdrawEntry(entryId: string): Promise<void> {
-  const { data: contributions, error } = await supabase
-    .from("shopping_list_item_contributions")
-    .select("id, item_id, quantity")
-    .eq("entry_id", entryId);
+  const { error } = await supabase.rpc("withdraw_entry", {
+    p_entry_id: entryId,
+  });
   if (error) throw error;
-
-  for (const contribution of contributions ?? []) {
-    const { data: item, error: itemError } = await supabase
-      .from("shopping_list_items")
-      .select(
-        "id, quantity, is_checked, edited_manually, added_manually, deleted_at",
-      )
-      .eq("id", contribution.item_id)
-      .single();
-    if (itemError) throw itemError;
-
-    const { count, error: countError } = await supabase
-      .from("shopping_list_item_contributions")
-      .select("id", { count: "exact", head: true })
-      .eq("item_id", contribution.item_id)
-      .neq("id", contribution.id);
-    if (countError) throw countError;
-    const othersRemain = (count ?? 0) > 0;
-
-    if (item.deleted_at == null && !item.is_checked && !item.edited_manually) {
-      if (!othersRemain && !item.added_manually) {
-        const { error: deleteError } = await supabase
-          .from("shopping_list_items")
-          .update({ deleted_at: new Date().toISOString() })
-          .eq("id", item.id);
-        if (deleteError) throw deleteError;
-      } else if (contribution.quantity != null && item.quantity != null) {
-        const next = roundQuantity(
-          Math.max(0, Number(item.quantity) - Number(contribution.quantity)),
-        );
-        const { error: updateError } = await supabase
-          .from("shopping_list_items")
-          .update({ quantity: next })
-          .eq("id", item.id);
-        if (updateError) throw updateError;
-      }
-    }
-
-    const { error: dropError } = await supabase
-      .from("shopping_list_item_contributions")
-      .delete()
-      .eq("id", contribution.id);
-    if (dropError) throw dropError;
-  }
 }
 
 /**
  * Servings changed: contributions scale linearly (scaled = base × s/anchor),
- * so each share becomes share × new/old – no re-read of the snapshot needed.
+ * so each share becomes share × new/old. Atomic + locked server-side.
  */
 export async function rescaleEntry(
   entryId: string,
   oldServings: number,
   newServings: number,
 ): Promise<void> {
-  if (oldServings === newServings || oldServings <= 0) return;
-  const factor = newServings / oldServings;
-
-  const { data: contributions, error } = await supabase
-    .from("shopping_list_item_contributions")
-    .select("id, item_id, quantity")
-    .eq("entry_id", entryId);
+  const { error } = await supabase.rpc("rescale_entry", {
+    p_entry_id: entryId,
+    p_old_servings: oldServings,
+    p_new_servings: newServings,
+  });
   if (error) throw error;
-
-  for (const contribution of contributions ?? []) {
-    if (contribution.quantity == null) continue;
-    const oldQuantity = Number(contribution.quantity);
-    const newQuantity = roundQuantity(oldQuantity * factor);
-
-    const { error: updateError } = await supabase
-      .from("shopping_list_item_contributions")
-      .update({ quantity: newQuantity })
-      .eq("id", contribution.id);
-    if (updateError) throw updateError;
-
-    const { data: item, error: itemError } = await supabase
-      .from("shopping_list_items")
-      .select("id, quantity, is_checked, edited_manually, deleted_at")
-      .eq("id", contribution.item_id)
-      .single();
-    if (itemError) throw itemError;
-    if (
-      item.deleted_at == null &&
-      !item.is_checked &&
-      !item.edited_manually &&
-      item.quantity != null
-    ) {
-      const next = roundQuantity(
-        Math.max(0, Number(item.quantity) - oldQuantity + newQuantity),
-      );
-      const { error: itemUpdateError } = await supabase
-        .from("shopping_list_items")
-        .update({ quantity: next })
-        .eq("id", item.id);
-      if (itemUpdateError) throw itemUpdateError;
-    }
-  }
 }
 
 /**

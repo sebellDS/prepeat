@@ -488,7 +488,9 @@ export async function addIngredientsToShoppingList(
     unit: ingredient.unit,
     aisle: (memory.get(normalizeItemName(ingredient.name)) ??
       null) as Category | null,
-    added_manually: false,
+    // User-owned, not plan-generated: the plan reconciler must shrink these
+    // rather than delete them when a later meal's share is withdrawn (#5).
+    added_manually: true,
     created_by_user_id: userId,
   }));
   const { error } = await supabase.from("shopping_list_items").insert(rows);
