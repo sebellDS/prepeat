@@ -2,13 +2,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
 import { ds } from "@/constants/ds";
-import { weekPickerLabel } from "@/lib/week";
+import { isoWeekNumber, weekRangeLabel } from "@/lib/week";
 
 /**
- * The week switcher: ‹ July 13-19 · Week 29 ›. One unified style on both
- * tabs since 2026-07-16 (Figma weekPicker component 164:2508): quiet grey
- * fill, no border. Chevrons disable at the edges – it only moves between
- * weeks that exist.
+ * The week switcher, identical on the Plan and Shopping tabs (Figma
+ * weekNav 163:38970; the quiet grey pill retired 2026-07-18): ‹ dates +
+ * week number ›, 40px green chevrons that grey out when a direction is
+ * closed. The Plan tab keeps "›" always enabled – past the last week it
+ * creates the next one.
  */
 export function WeekPicker({
   weekStart,
@@ -24,38 +25,47 @@ export function WeekPicker({
   onForward: () => void;
 }) {
   return (
-    <View className="w-full flex-row items-center gap-comp-large overflow-hidden rounded-medium bg-surface-neutral-lighter p-layout-small">
+    <View className="w-full flex-row items-center">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Previous week"
         disabled={!canGoBack}
-        hitSlop={12}
+        hitSlop={8}
         onPress={onBack}
       >
         <MaterialIcons
           name="chevron-left"
-          size={24}
-          color={canGoBack ? ds.colors.icon.default : ds.colors.text.disabled}
+          size={40}
+          color={
+            canGoBack ? ds.colors.surface.primary.main : ds.colors.text.disabled
+          }
         />
       </Pressable>
-      <Text
-        numberOfLines={1}
-        className="flex-1 text-center font-paragraph text-paragraph font-default leading-xsmall text-text-default"
-      >
-        {weekPickerLabel(weekStart)}
-      </Text>
+      <View className="min-w-0 flex-1 flex-row items-center justify-center gap-comp-xsmall">
+        <Text
+          numberOfLines={1}
+          className="font-header text-display-6 font-emphasized leading-xsmall text-text-default"
+        >
+          {weekRangeLabel(weekStart)}
+        </Text>
+        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+          Week {isoWeekNumber(weekStart)}
+        </Text>
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Next week"
         disabled={!canGoForward}
-        hitSlop={12}
+        hitSlop={8}
         onPress={onForward}
       >
         <MaterialIcons
           name="chevron-right"
-          size={24}
+          size={40}
           color={
-            canGoForward ? ds.colors.icon.default : ds.colors.text.disabled
+            canGoForward
+              ? ds.colors.surface.primary.main
+              : ds.colors.text.disabled
           }
         />
       </Pressable>

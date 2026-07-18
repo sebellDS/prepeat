@@ -97,10 +97,5 @@ export function weekRangeLabel(weekStart: string): string {
   return `${short(start)} – ${short(end)}`;
 }
 
-/** "July 13-19 · Week 29" – the picker label. */
-export function weekPickerLabel(weekStart: string): string {
-  return `${weekRangeLabel(weekStart)} · Week ${isoWeekNumber(weekStart)}`;
-}
-
 // (relativeWeekTitle retired 2026-07-17: the header IS the week switcher
 // now – dates + week number are the anchor, no relative title.)

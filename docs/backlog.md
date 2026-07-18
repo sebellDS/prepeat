@@ -225,6 +225,12 @@ the family can start collecting favourites immediately.
         "Fx Pasta al Pomodoro" is Danish and a recipe-name example;
         Thomas approved the reword 2026-07-18). Figma copy still says the
         old text – update the frame when convenient.
+- [x] Week picker restyled on Shopping (Thomas, 2026-07-18, Figma weekNav
+      163:38970 in the shopping frames): the quiet grey pill retired –
+      Shopping now shows the exact Plan-tab switcher (40px green chevrons,
+      serif date + week number). One shared component again: the Plan
+      screen's inline switcher moved into ui/week-picker.tsx so the two
+      tabs cannot drift; weekPickerLabel deleted from week.ts.
 - [x] Apply migration 0009 in the Supabase dashboard (done 2026-07-18,
       verifying SELECT returned true/true)
 - [x] Walk the manual-meal flow on-device after 0009 is applied (Thomas,

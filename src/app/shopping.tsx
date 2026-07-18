@@ -119,8 +119,8 @@ function ShoppingListScreen() {
         <LiveBadge />
       </View>
 
-      {/* Every week has its own list (designed 2026-07-16) – the quiet
-          picker variant per the shopping Figma frames. */}
+      {/* Every week has its own list (designed 2026-07-16). Same weekNav
+          as the Plan tab (Figma 163:38970, aligned 2026-07-18). */}
       <View className="w-full px-layout-small pb-layout-small">
         <WeekPicker
           weekStart={viewedWeekStart}

@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -19,6 +18,7 @@ import { DayRow } from "@/components/plan/day-row";
 import { MoveDaySheet } from "@/components/plan/move-day-sheet";
 import { RemoveMealSheet } from "@/components/plan/remove-meal-sheet";
 import { ServingsSheet } from "@/components/plan/servings-sheet";
+import { WeekPicker } from "@/components/ui/week-picker";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
 import {
@@ -26,14 +26,7 @@ import {
   useMealPlan,
   type PlanEntry,
 } from "@/lib/meal-plan";
-import {
-  DAY_LABELS,
-  DAY_NAMES,
-  isoWeekNumber,
-  toDateKey,
-  weekDates,
-  weekRangeLabel,
-} from "@/lib/week";
+import { DAY_LABELS, DAY_NAMES, toDateKey, weekDates } from "@/lib/week";
 
 // The Plan tab (route name "index" so the app opens here): the weekly meal
 // plan (Figma "Plan" page, reviewed 2026-07-16). Days hold a flat list of
@@ -119,50 +112,16 @@ function PlanContent() {
           Weekly plan
         </Text>
       </View>
-      {/* The week switcher (Figma 211:51693, 2026-07-17): ‹ dates + week
-          number ›. The "+" retired; "›" past the last week creates the
-          next one, so it never disables. */}
-      <View className="w-full flex-row items-center px-layout-small pb-layout-small">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Previous week"
-          disabled={!plan.canGoBack}
-          hitSlop={8}
-          onPress={plan.goBack}
-        >
-          <MaterialIcons
-            name="chevron-left"
-            size={40}
-            color={
-              plan.canGoBack
-                ? ds.colors.surface.primary.main
-                : ds.colors.text.disabled
-            }
-          />
-        </Pressable>
-        <View className="min-w-0 flex-1 flex-row items-center justify-center gap-comp-xsmall">
-          <Text
-            numberOfLines={1}
-            className="font-header text-display-6 font-emphasized leading-xsmall text-text-default"
-          >
-            {weekRangeLabel(plan.viewedWeekStart)}
-          </Text>
-          <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
-            Week {isoWeekNumber(plan.viewedWeekStart)}
-          </Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Next week"
-          hitSlop={8}
-          onPress={plan.goForward}
-        >
-          <MaterialIcons
-            name="chevron-right"
-            size={40}
-            color={ds.colors.surface.primary.main}
-          />
-        </Pressable>
+      {/* The shared week switcher (Figma weekNav 163:38970). "›" past the
+          last week creates the next one, so it never disables here. */}
+      <View className="w-full px-layout-small pb-layout-small">
+        <WeekPicker
+          weekStart={plan.viewedWeekStart}
+          canGoBack={plan.canGoBack}
+          canGoForward
+          onBack={plan.goBack}
+          onForward={plan.goForward}
+        />
       </View>
 
       {!plan.ready ? (
