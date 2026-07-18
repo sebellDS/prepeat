@@ -1,16 +1,8 @@
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Keyboard, Pressable, ScrollView, Text, View } from "react-native";
 
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
 import {
@@ -31,21 +23,16 @@ interface EditItemSheetProps {
 
 export function EditItemSheet({ item, onClose, onSave }: EditItemSheetProps) {
   return (
-    <Modal
+    <BottomSheet
       visible={item != null}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      title="Edit item"
+      onClose={onClose}
+      scroll
     >
       {item != null && (
-        <SheetContent
-          key={item.id}
-          item={item}
-          onClose={onClose}
-          onSave={onSave}
-        />
+        <SheetContent key={item.id} item={item} onClose={onClose} onSave={onSave} />
       )}
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -71,144 +58,102 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
   };
 
   return (
-    // The keyboard-avoiding view owns the whole screen so the sheet can
-    // never grow past it: capped at 90% of the space above the keyboard,
-    // the fields scroll in the middle while the title and buttons stay put
-    // (the sheet used to push "Edit item" under the status bar).
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1 justify-end"
-    >
-      <Pressable
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-        className="bg-black/30"
-        onPress={onClose}
-        accessibilityLabel="Close"
-      />
-      <View
-        style={{ maxHeight: "90%", marginBottom: -80, paddingBottom: 120 }}
-        className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-lightest p-layout-small"
-      >
-        <View className="w-full flex-row items-center">
-          <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">
-            Edit item
-          </Text>
-          <Pressable
-            onPress={onClose}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <SymbolView
-              name="xmark"
-              size={20}
-              tintColor={ds.colors.icon.default}
-            />
-          </Pressable>
-        </View>
-
-        <ScrollView style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
-          <View className="w-full gap-layout-small">
-            <View className="w-full gap-comp-xsmall">
-              <Text className="font-paragraph text-small font-default text-text-subtle">
-                Name
-              </Text>
-              <Input value={name} onChangeText={setName} accessibilityLabel="Name" />
-            </View>
-
-            <View className="w-full gap-comp-xsmall">
-              <Text className="font-paragraph text-small font-default text-text-subtle">
-                Quantity
-              </Text>
-              <Input
-                value={quantity}
-                onChangeText={setQuantity}
-                placeholder="e.g. 250g"
-                accessibilityLabel="Quantity"
-              />
-            </View>
-
-            <View className="w-full gap-comp-xsmall">
-              <Text className="font-paragraph text-small font-default text-text-subtle">
-                Category
-              </Text>
-              <Text className="font-paragraph text-small font-default text-text-subtle">
-                Your household will remember this.
-              </Text>
-              <Pressable
-                onPress={() => {
-                  // The keyboard and the picker fight for the same space –
-                  // hand it over cleanly instead of flickering.
-                  Keyboard.dismiss();
-                  setPickerOpen((value) => !value);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Category: ${aisle ?? "none yet"}`}
-                className="w-full flex-row items-center rounded-medium border border-forms-border-enabled bg-forms-background-default p-comp-large"
-              >
-                <Text
-                  className={
-                    "flex-1 font-paragraph text-paragraph " +
-                    (aisle == null ? "text-text-subtle" : "text-text-default")
-                  }
-                >
-                  {aisle ?? "Choose a category"}
-                </Text>
-                <SymbolView
-                  name={pickerOpen ? "chevron.up" : "chevron.down"}
-                  size={14}
-                  tintColor={ds.colors.icon.default}
-                />
-              </Pressable>
-              {pickerOpen && (
-                // Capped and scrollable so all nine categories are reachable
-                // even on small screens (bottom options were cut off before).
-                <ScrollView
-                  className="w-full overflow-hidden rounded-medium border border-border"
-                  style={{ maxHeight: 264 }}
-                  nestedScrollEnabled
-                >
-                  {CATEGORIES.map((category, index) => (
-                    <Pressable
-                      key={category}
-                      accessibilityRole="button"
-                      accessibilityLabel={category}
-                      onPress={() => {
-                        setAisle(category);
-                        setPickerOpen(false);
-                      }}
-                      className={
-                        (category === aisle
-                          ? "bg-success-lightest"
-                          : "bg-surface-neutral-white") +
-                        (index > 0
-                          ? " border-t border-surface-neutral-lightest"
-                          : "")
-                      }
-                    >
-                      <Text className="p-comp-medium font-paragraph text-paragraph text-text-default">
-                        {category}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-          </View>
-        </ScrollView>
-
-        <View className="w-full pt-comp-small">
-          <Pressable
-            onPress={save}
-            accessibilityRole="button"
-            className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
-          >
-            <Text className="font-paragraph text-components-button-label font-default text-text-default">
-              Done
-            </Text>
-          </Pressable>
-        </View>
+    <>
+      <View className="w-full gap-comp-xsmall">
+        <Text className="font-paragraph text-small font-default text-text-subtle">
+          Name
+        </Text>
+        <Input value={name} onChangeText={setName} accessibilityLabel="Name" />
       </View>
-    </KeyboardAvoidingView>
+
+      <View className="w-full gap-comp-xsmall">
+        <Text className="font-paragraph text-small font-default text-text-subtle">
+          Quantity
+        </Text>
+        <Input
+          value={quantity}
+          onChangeText={setQuantity}
+          placeholder="e.g. 250g"
+          accessibilityLabel="Quantity"
+        />
+      </View>
+
+      <View className="w-full gap-comp-xsmall">
+        <Text className="font-paragraph text-small font-default text-text-subtle">
+          Category
+        </Text>
+        <Text className="font-paragraph text-small font-default text-text-subtle">
+          Your household will remember this.
+        </Text>
+        <Pressable
+          onPress={() => {
+            // The keyboard and the picker fight for the same space – hand it
+            // over cleanly instead of flickering.
+            Keyboard.dismiss();
+            setPickerOpen((value) => !value);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Category: ${aisle ?? "none yet"}`}
+          className="w-full flex-row items-center rounded-medium border border-forms-border-enabled bg-forms-background-default p-comp-large"
+        >
+          <Text
+            className={
+              "flex-1 font-paragraph text-paragraph " +
+              (aisle == null ? "text-text-subtle" : "text-text-default")
+            }
+          >
+            {aisle ?? "Choose a category"}
+          </Text>
+          <SymbolView
+            name={pickerOpen ? "chevron.up" : "chevron.down"}
+            size={14}
+            tintColor={ds.colors.icon.default}
+          />
+        </Pressable>
+        {pickerOpen && (
+          // Capped and scrollable so all nine categories are reachable even on
+          // small screens (bottom options were cut off before).
+          <ScrollView
+            className="w-full overflow-hidden rounded-medium border border-border"
+            style={{ maxHeight: 264 }}
+            nestedScrollEnabled
+          >
+            {CATEGORIES.map((category, index) => (
+              <Pressable
+                key={category}
+                accessibilityRole="button"
+                accessibilityLabel={category}
+                onPress={() => {
+                  setAisle(category);
+                  setPickerOpen(false);
+                }}
+                className={
+                  (category === aisle
+                    ? "bg-success-lightest"
+                    : "bg-surface-neutral-white") +
+                  (index > 0
+                    ? " border-t border-surface-neutral-lightest"
+                    : "")
+                }
+              >
+                <Text className="p-comp-medium font-paragraph text-paragraph text-text-default">
+                  {category}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+
+      <Pressable
+        onPress={save}
+        accessibilityRole="button"
+        className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
+      >
+        <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
+          Done
+        </Text>
+      </Pressable>
+    </>
   );
 }

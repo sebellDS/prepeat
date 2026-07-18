@@ -512,11 +512,12 @@ same day – see the checked items below.
       blocks** ([src/lib/meal-plan.tsx:801](../src/lib/meal-plan.tsx)) –
       extract shared helpers so a meal added by swap can't diverge from one
       added normally.
-- [ ] **Drag-reorder row logic is copy-pasted** between the shopping and
-      recipes reorder sheets
-      ([src/components/shopping/reorder-categories-sheet.tsx](../src/components/shopping/reorder-categories-sheet.tsx)
-      vs [src/components/recipes/reorder-sheet.tsx](../src/components/recipes/reorder-sheet.tsx)),
-      which already says it generalizes the shopping interaction.
+- [x] **Drag-reorder row logic is copy-pasted** between the shopping and
+      recipes reorder sheets. Fixed 2026-07-19: the generic `ReorderSheet`
+      moved to [src/components/ui/reorder-sheet.tsx](../src/components/ui/reorder-sheet.tsx)
+      and shopping's `reorder-categories-sheet` is now a thin wrapper over it
+      (categories map to `{key,label}` items), removing the copied
+      DraggableRow + gesture code (~130 lines).
 - [ ] **Hardcoded DS values** instead of tokens: `#E7E6E4` dividers in
       recipes `[id].tsx` and `new.tsx`, white `tintColor` in
       [src/components/shopping/item-row.tsx](../src/components/shopping/item-row.tsx).
@@ -550,15 +551,17 @@ same day – see the checked items below.
       deleted_at
 - [x] "Fill from weekly plan" loads sample data until the Plan tab exists
       – real since 2026-07-16 (pushes the current week's plan)
-- [ ] Bottom sheets duplicate the KAV + backdrop + white-bleed shell. The
-      2026-07-18 review counts 7 hand-rolled copies, not 4: recipe
-      ingredient/step/import, shopping edit-item, both reorder sheets
-      (shopping + recipes), and the recipe delete ConfirmSheet inside
-      recipes/[id].tsx. The shared BottomSheet EXISTS
-      (src/components/ui/bottom-sheet.tsx, extracted 2026-07-16; all 5 Plan
-      sheets use it) and the copies have already drifted (different close
-      icons, two disabled greys, one wrong label token) – remaining work is
-      migrating the 7 onto it
+- [x] Bottom sheets duplicated the KAV + backdrop + white-bleed shell.
+      Fixed 2026-07-19: the four keyboard sheets (recipe
+      ingredient/step/import, shopping edit-item) and the recipe delete
+      ConfirmSheet now use the shared BottomSheet
+      (src/components/ui/bottom-sheet.tsx); edit-item's wrong Done-label token
+      was corrected in the move, and the recipe delete confirm now matches
+      the plan's RemoveMealSheet (both on BottomSheet). The two reorder
+      sheets keep a separate shell BY DESIGN (they need gesture handling and
+      no keyboard, so BottomSheet does not fit) but were deduped to one
+      shared component (see the drag-reorder item under Code review
+      findings). Net ~310 fewer lines.
 
 ## Design QA – sign-in + shopping vs Figma (found + fixed 2026-07-12)
 

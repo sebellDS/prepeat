@@ -9,7 +9,6 @@ import {
 import { Fragment, useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -22,7 +21,8 @@ import {
 
 import { IngredientSheet } from "@/components/recipes/ingredient-sheet";
 import { StepSheet } from "@/components/recipes/step-sheet";
-import { ReorderSheet } from "@/components/recipes/reorder-sheet";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { ReorderSheet } from "@/components/ui/reorder-sheet";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { ds } from "@/constants/ds";
@@ -761,57 +761,40 @@ function ConfirmSheet({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  // A real Modal so the sheet floats above the native tab bar (it used to
-  // hide the confirm button behind it).
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onCancel}
-    >
+    <BottomSheet visible={visible} title={title} onClose={onCancel}>
+      <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+        {body}
+      </Text>
+      {/* Cancel above the destructive action, per the Figma dialogs. */}
       <Pressable
-        className="flex-1 bg-black/30"
         onPress={onCancel}
-        accessibilityLabel="Cancel"
-      />
-      <View className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large">
-        <Text className="font-header text-display-5 font-emphasized text-text-default">
-          {title}
+        accessibilityRole="button"
+        className="w-full items-center rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
+      >
+        <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
+          Cancel
         </Text>
-        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
-          {body}
-        </Text>
-        {/* Cancel above the destructive action, per the Figma dialogs. */}
-        <Pressable
-          onPress={onCancel}
-          accessibilityRole="button"
-          className="w-full items-center rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
-        >
-          <Text className="font-paragraph text-components-button-label font-default text-text-subtle">
-            Cancel
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={onConfirm}
-          accessibilityRole="button"
+      </Pressable>
+      <Pressable
+        onPress={onConfirm}
+        accessibilityRole="button"
+        className={
+          "w-full items-center rounded-medium py-comp-large " +
+          (destructive ? "bg-error-main" : "bg-button-solid-fill-enabled")
+        }
+      >
+        <Text
           className={
-            "w-full items-center rounded-medium py-comp-large " +
-            (destructive ? "bg-error-main" : "bg-button-solid-fill-enabled")
+            "font-paragraph text-components-button-label font-default " +
+            (destructive
+              ? "text-error-contrast-text"
+              : "text-button-solid-label-enabled")
           }
         >
-          <Text
-            className={
-              "font-paragraph text-components-button-label font-default " +
-              (destructive
-                ? "text-error-contrast-text"
-                : "text-button-solid-label-enabled")
-            }
-          >
-            {confirmLabel}
-          </Text>
-        </Pressable>
-      </View>
-    </Modal>
+          {confirmLabel}
+        </Text>
+      </Pressable>
+    </BottomSheet>
   );
 }

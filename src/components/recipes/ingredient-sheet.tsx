@@ -1,17 +1,8 @@
-import { SymbolView } from "expo-symbols";
 import { useEffect, useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
-import { ds } from "@/constants/ds";
 
 /**
  * Focused add/edit of one ingredient (Figma "recipe – add ingredient"):
@@ -36,36 +27,27 @@ export function IngredientSheet({
   onSubmit: (name: string, quantityText: string | null) => void;
 }) {
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      title={editing ? "Edit ingredient" : "Add ingredient"}
+      onClose={onClose}
     >
-      {visible && (
-        <SheetContent
-          editing={editing}
-          initialName={initialName}
-          initialQuantity={initialQuantity}
-          onClose={onClose}
-          onSubmit={onSubmit}
-        />
-      )}
-    </Modal>
+      <SheetContent
+        initialName={initialName}
+        initialQuantity={initialQuantity}
+        onSubmit={onSubmit}
+      />
+    </BottomSheet>
   );
 }
 
 function SheetContent({
-  editing,
   initialName,
   initialQuantity,
-  onClose,
   onSubmit,
 }: {
-  editing: boolean;
   initialName: string;
   initialQuantity: string;
-  onClose: () => void;
   onSubmit: (name: string, quantityText: string | null) => void;
 }) {
   const [name, setName] = useState(initialName);
@@ -84,68 +66,41 @@ function SheetContent({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1 justify-end"
-    >
-      <Pressable
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-        className="bg-black/30"
-        onPress={onClose}
-        accessibilityLabel="Close"
-      />
-      <View
-        style={{ marginBottom: -80, paddingBottom: 120 }}
-        className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-lightest p-layout-small"
-      >
-        <View className="w-full flex-row items-center">
-          <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">
-            {editing ? "Edit ingredient" : "Add ingredient"}
-          </Text>
-          <Pressable
-            onPress={onClose}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <SymbolView name="xmark" size={20} tintColor={ds.colors.icon.default} />
-          </Pressable>
-        </View>
-        <View className="w-full gap-comp-xsmall">
-          <Text className="font-paragraph text-small font-default text-text-subtle">
-            Name
-          </Text>
-          <Input
-            ref={nameRef}
-            value={name}
-            onChangeText={setName}
-            placeholder="Cherry tomatoes"
-            accessibilityLabel="Name"
-          />
-        </View>
-        <View className="w-full gap-comp-xsmall">
-          <Text className="font-paragraph text-small font-default text-text-subtle">
-            Quantity
-          </Text>
-          <Input
-            value={quantity}
-            onChangeText={setQuantity}
-            placeholder="e.g. 250 g"
-            accessibilityLabel="Quantity"
-            onSubmitEditing={submit}
-            returnKeyType="done"
-          />
-        </View>
-        <Pressable
-          onPress={submit}
-          accessibilityRole="button"
-          className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
-        >
-          <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
-            Done
-          </Text>
-        </Pressable>
+    <>
+      <View className="w-full gap-comp-xsmall">
+        <Text className="font-paragraph text-small font-default text-text-subtle">
+          Name
+        </Text>
+        <Input
+          ref={nameRef}
+          value={name}
+          onChangeText={setName}
+          placeholder="Cherry tomatoes"
+          accessibilityLabel="Name"
+        />
       </View>
-    </KeyboardAvoidingView>
+      <View className="w-full gap-comp-xsmall">
+        <Text className="font-paragraph text-small font-default text-text-subtle">
+          Quantity
+        </Text>
+        <Input
+          value={quantity}
+          onChangeText={setQuantity}
+          placeholder="e.g. 250 g"
+          accessibilityLabel="Quantity"
+          onSubmitEditing={submit}
+          returnKeyType="done"
+        />
+      </View>
+      <Pressable
+        onPress={submit}
+        accessibilityRole="button"
+        className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
+      >
+        <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
+          Done
+        </Text>
+      </Pressable>
+    </>
   );
 }

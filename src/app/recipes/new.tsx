@@ -20,7 +20,7 @@ import { ImportRecipeSheet } from "@/components/recipes/import-recipe-sheet";
 import { IngredientSheet } from "@/components/recipes/ingredient-sheet";
 import { StepSheet } from "@/components/recipes/step-sheet";
 import type { ImportedRecipe } from "@/lib/recipe-import";
-import { ReorderSheet } from "@/components/recipes/reorder-sheet";
+import { ReorderSheet } from "@/components/ui/reorder-sheet";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
