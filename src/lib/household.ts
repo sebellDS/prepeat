@@ -42,7 +42,10 @@ function generateCode(): string {
 export async function fetchMyHousehold(): Promise<Household | null> {
   const { data, error } = await supabase
     .from('household_members')
-    .select('household_id, households(id, name, image_url)')
+    .select('household_id, households(id, name, image_url), joined_at')
+    // Oldest membership wins, so a stray duplicate household (e.g. one created
+    // during a launch-time network blip) can never shadow the real one.
+    .order('joined_at', { ascending: true })
     .limit(1);
   if (error) throw error;
   const row = data?.[0] as
@@ -183,6 +186,9 @@ export async function joinHousehold(code: string): Promise<Household> {
   if (error) {
     if (/invalid or expired/i.test(error.message)) {
       throw new Error('That code is not valid – check it with the person who sent it');
+    }
+    if (/too many attempts/i.test(error.message)) {
+      throw new Error('Too many tries – wait a few minutes, then try that code again');
     }
     throw error;
   }

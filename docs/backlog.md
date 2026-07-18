@@ -387,21 +387,151 @@ the family can start collecting favourites immediately.
   2026-07-08). Accidental taps are undone from the done section instead
   of a linger window.
 
+## Code review findings (2026-07-18)
+
+High-effort multi-agent review of the last two weeks (c09d57d..HEAD: shared
+shopping list, recipes, weekly plan, household). Grouped by severity;
+findings verified against the code. The two security rules were fixed the
+same day – see the checked items below.
+
+### Critical – security & data safety
+
+- [x] **Invite codes were brute-forceable.** PREP-XXXX is ~615k
+      combinations and `join_household_with_code` had no rate limit, so a
+      signed-in user could script their way into a stranger's household.
+      Fixed: migration 0012 throttles redemption to 10 tries/hour per user
+      (the friendly short code and multi-use behaviour stay). Applied to the
+      live database 2026-07-18.
+- [x] **A creator kept access after leaving – and could silently rejoin.**
+      `households_select` (0004) and the bootstrap membership policy (0001)
+      keyed on "did you create it", not "are you still a member". Fixed:
+      migration 0011 limits both to the creation-handshake window (creator,
+      no members yet). Applied to the live database 2026-07-18.
+- [x] **A launch-time network blip can look like lost data.** Fixed
+      2026-07-18: RootGate now keeps a fetch error distinct from a loaded
+      "no household" – a failed `fetchMyHousehold` shows a retry screen
+      ("Can't reach your kitchen", reassures nothing is lost) instead of the
+      create/join onboarding, so an existing member can never be pushed into
+      making a duplicate household. `fetchMyHousehold` also now orders by
+      `joined_at` ascending, so even a stray duplicate can't shadow the real
+      household on later launches. The retry screen is IMPROVISED (no Figma
+      design for the offline state yet) – see the design-gap item below.
+- [ ] **Plan→shopping-list push is not atomic.** Ingredients are written
+      one REST call at a time with no transaction, and the re-run guard
+      skips any meal that already has *any* contribution row
+      ([src/lib/plan-shopping.ts:124](../src/lib/plan-shopping.ts)), so a
+      kill mid-meal permanently loses that meal's remaining ingredients.
+      Also: concurrent read-modify-write on line quantities (lines 147-157)
+      loses updates between two phones, and there is no unique constraint on
+      `(list_id, name, unit)` to stop duplicate lines. Should move into a
+      single server-side Postgres function.
+- [ ] **Recipe "add ingredients to list" lines can be wiped by removing a
+      meal.** Those lines look plan-owned (no marker,
+      [src/lib/recipes.ts:491](../src/lib/recipes.ts)); withdrawing a
+      later planned meal that merged into them soft-deletes the whole line
+      ([src/lib/plan-shopping.ts:226](../src/lib/plan-shopping.ts)), losing
+      the hand-off quantity. Needs an origin marker so withdraw shrinks
+      instead of deleting.
+
+### High – correctness bugs a user will hit
+
+- [ ] **Shopping tab can get stuck permanently** if the first load fails:
+      it goes Offline with no list id, and every recovery path (refresh,
+      realtime subscribe, foreground refetch) early-returns on the null id,
+      so nothing retries until the app is force-quit
+      ([src/lib/shopping-list.tsx:462](../src/lib/shopping-list.tsx)). The
+      meal-plan provider recovers from the same case; mirror it.
+- [ ] **A fast device clock drops other phones' edits.** Optimistic writes
+      are stamped with the device's `Date.now()`, and incoming realtime
+      events are dropped if "older"
+      ([src/lib/shopping-list.tsx:183](../src/lib/shopping-list.tsx), same
+      pattern in meal-plan) – a phone running ahead ignores real edits until
+      a foreground refresh. Prefer the server's timestamp / a version bump.
+- [ ] **Multi-adding meals shows phantom meals on partial failure.** Meals
+      are shown optimistically as each recipe loads, but the save runs only
+      after the whole loop finishes
+      ([src/lib/meal-plan.tsx:627](../src/lib/meal-plan.tsx)); if one recipe
+      fetch fails, the already-shown meals were never saved and vanish on
+      refresh.
+- [ ] **Imported recipes double-count prep time.** When a page has prep +
+      total but no separate cook time, the importer stores total as cook
+      ([src/lib/recipe-import.ts:124](../src/lib/recipe-import.ts) and :277),
+      and the app shows Total = prep + cook
+      ([src/lib/recipes.ts:58](../src/lib/recipes.ts)), so prep 15 / total
+      45 displays Total 60.
+- [ ] **"Onions 0" on the list.** Removing a plan's contribution to a
+      hand-added item subtracts the quantity down to 0 instead of back to
+      blank ([src/lib/plan-shopping.ts:232](../src/lib/plan-shopping.ts)).
+- [ ] **Add-to-plan from a recipe allows past days**
+      ([src/components/recipes/add-to-plan-sheet.tsx:56](../src/components/recipes/add-to-plan-sheet.tsx)),
+      even though the plan screen deliberately locks past days as read-only
+      history ([src/components/plan/week-bar.tsx:36](../src/components/plan/week-bar.tsx)).
+
+### Speed & tech debt (from the same review)
+
+- [ ] **Pushing a week to the list is slow** (~100+ serial round trips):
+      each meal re-downloads the entire list and category memory and writes
+      ingredients one at a time
+      ([src/lib/plan-shopping.ts:129](../src/lib/plan-shopping.ts)). Fetch
+      once, pass it in, batch the inserts.
+- [ ] **List/plan open runs its queries twice** – the realtime subscribe
+      refetches immediately after the boot fetch already loaded the same
+      data ([src/lib/shopping-list.tsx:578](../src/lib/shopping-list.tsx),
+      same in meal-plan); and the boot awaits three independent queries in
+      series that could be parallel (lines 501-503).
+- [ ] **Reorder saves one row at a time** ([src/lib/recipes.ts:368](../src/lib/recipes.ts)
+      and :378) – a 20-item reorder is 20 sequential saves and can be left
+      half-done. Batch upsert or a small RPC.
+- [ ] **`swapMeal` duplicates `insertPlanEntry`'s snapshot + contribute
+      blocks** ([src/lib/meal-plan.tsx:801](../src/lib/meal-plan.tsx)) –
+      extract shared helpers so a meal added by swap can't diverge from one
+      added normally.
+- [ ] **Drag-reorder row logic is copy-pasted** between the shopping and
+      recipes reorder sheets
+      ([src/components/shopping/reorder-categories-sheet.tsx](../src/components/shopping/reorder-categories-sheet.tsx)
+      vs [src/components/recipes/reorder-sheet.tsx](../src/components/recipes/reorder-sheet.tsx)),
+      which already says it generalizes the shopping interaction.
+- [ ] **Hardcoded DS values** instead of tokens: `#E7E6E4` dividers in
+      recipes `[id].tsx` and `new.tsx`, white `tintColor` in
+      [src/components/shopping/item-row.tsx](../src/components/shopping/item-row.tsx).
+      Will drift on the next DS retune (against the CLAUDE.md token rule).
+- [ ] **Layout pinned with magic numbers**: per-screen tab-bar clearance
+      hand-computed with a different tail in six screens, the done-section
+      paints 1000px of overdraw to reach the screen bottom, and the recipe
+      overflow menu is pinned at `top: 52px`. Each breaks on a new device
+      size or spacing-token change. Wants a shared clearance hook and
+      anchored (not pixel-pinned) positioning.
+
+### Product decision flagged by the review
+
+- [ ] **Should invite codes expire?** Multi-use "one fridge code" is by
+      design, but a code currently works forever. The brute-force fix
+      (0012) holds either way; a lifetime (with auto-rotation) or a longer
+      code would be defense-in-depth. Thomas's call.
+
 ## Code debts (small, known, deliberate)
 
 - [ ] Onboarding error banners show raw technical messages ("fetch failed:
       The network connection was lost.") – translate the common cases
       (offline, wrong code, expired code) to plain language (2026-07-08)
+- [ ] Launch offline/retry screen is improvised (added 2026-07-18 with the
+      #3 fix, src/app/_layout.tsx `HouseholdLoadError`): centred title +
+      reassurance + "Try again" button on the lightest surface. No Figma
+      design for this state – design it if it should look different.
 - [ ] Delete an item has no undo – soft delete is wired to the database now
       (migration 0005), so a "Deleted · Undo" toast just needs to clear
       deleted_at
 - [x] "Fill from weekly plan" loads sample data until the Plan tab exists
       – real since 2026-07-16 (pushes the current week's plan)
-- [ ] Bottom sheets duplicate the KAV + backdrop + white-bleed shell
-      (4 sheets: recipe ingredient/step/import, shopping edit-item). The
-      shared BottomSheet now EXISTS (src/components/ui/bottom-sheet.tsx,
-      extracted 2026-07-16; all 5 Plan sheets use it) – remaining work is
-      migrating the 4 older sheets onto it
+- [ ] Bottom sheets duplicate the KAV + backdrop + white-bleed shell. The
+      2026-07-18 review counts 7 hand-rolled copies, not 4: recipe
+      ingredient/step/import, shopping edit-item, both reorder sheets
+      (shopping + recipes), and the recipe delete ConfirmSheet inside
+      recipes/[id].tsx. The shared BottomSheet EXISTS
+      (src/components/ui/bottom-sheet.tsx, extracted 2026-07-16; all 5 Plan
+      sheets use it) and the copies have already drifted (different close
+      icons, two disabled greys, one wrong label token) – remaining work is
+      migrating the 7 onto it
 
 ## Design QA – sign-in + shopping vs Figma (found + fixed 2026-07-12)
 
