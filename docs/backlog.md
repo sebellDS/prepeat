@@ -261,7 +261,8 @@ the family can start collecting favourites immediately.
       (first name; email read-only), invite code with copy + share, sign
       out. New shared ClearableInput variant in ui/input.tsx. New native
       modules: expo-clipboard + expo-linear-gradient (pods refreshed).
-      Improvisations to bless or redesign:
+      Improvisations – ALL BLESSED (Thomas, 2026-07-18, after the
+      on-device walk):
       - Picked household image previews in the sheet (recipe-form
         pattern) – the frame draws no picked state.
       - Save buttons disable until the name field is non-empty (frames
@@ -274,8 +275,8 @@ the family can start collecting favourites immediately.
         remove-meal Cancel, add-meal "Add recipe").
 - [x] Apply migration 0010 in the Supabase dashboard (done 2026-07-18,
       verifying SELECT returned 2 / true).
-- [ ] Walk the Household flows on-device after 0010 (rename, image pick,
-      profile rename, copy + share code, sign out/in again)
+- [x] Walk the Household flows on-device after 0010 (Thomas, 2026-07-18:
+      everything works on both phones, design blessed)
 
 ## In parallel – when it fits
 
