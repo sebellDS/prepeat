@@ -448,7 +448,12 @@ same day – see the checked items below.
       ([src/app/shopping.tsx](../src/app/shopping.tsx) `LoadFailed`) instead
       of a permanent blank. Client-only. The retry screen is improvised (no
       Figma design for this offline state – same as the #3 launch screen).
-      Needs an on-device airplane-mode test on the next device build.
+      Verified on-device 2026-07-18 (wifi launch → other tab → airplane mode
+      → first Shopping visit showed the retry screen → back online + Try
+      again loaded the list). Note: a fully offline launch hits the #3
+      household gate first, so #6's screen only appears when the household
+      loads but the list load fails. #3's launch screen also confirmed
+      on-device in the same session.
 - [ ] **A fast device clock drops other phones' edits.** Optimistic writes
       are stamped with the device's `Date.now()`, and incoming realtime
       events are dropped if "older"
