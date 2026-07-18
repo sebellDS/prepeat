@@ -416,15 +416,18 @@ same day – see the checked items below.
       `joined_at` ascending, so even a stray duplicate can't shadow the real
       household on later launches. The retry screen is IMPROVISED (no Figma
       design for the offline state yet) – see the design-gap item below.
-- [ ] **Plan→shopping-list push is not atomic.** Ingredients are written
-      one REST call at a time with no transaction, and the re-run guard
-      skips any meal that already has *any* contribution row
-      ([src/lib/plan-shopping.ts:124](../src/lib/plan-shopping.ts)), so a
-      kill mid-meal permanently loses that meal's remaining ingredients.
-      Also: concurrent read-modify-write on line quantities (lines 147-157)
-      loses updates between two phones, and there is no unique constraint on
-      `(list_id, name, unit)` to stop duplicate lines. Should move into a
-      single server-side Postgres function.
+- [x] **Plan→shopping-list push is not atomic.** Fixed in code 2026-07-18:
+      migration 0013 moves the contribute + push paths into server-side
+      Postgres functions (`push_plan_to_list`, `contribute_entry`), each
+      running in one transaction with a per-list advisory lock. That makes
+      a push all-or-nothing per meal (the idempotency guard is now
+      reliable), serialises concurrent pushes so quantities can't lose each
+      other and duplicate lines can't be created, and collapses the whole
+      push to one round trip (also clears the "push is slow" debt below).
+      Migration 0013 applied to the live database 2026-07-18 and the push
+      verified on-device (fresh week: quantities and the shared-ingredient
+      merge correct). withdraw/rescale stay on the client for now – fold
+      them into the same RPC pattern when #5/#10 land.
 - [ ] **Recipe "add ingredients to list" lines can be wiped by removing a
       meal.** Those lines look plan-owned (no marker,
       [src/lib/recipes.ts:491](../src/lib/recipes.ts)); withdrawing a
@@ -469,11 +472,9 @@ same day – see the checked items below.
 
 ### Speed & tech debt (from the same review)
 
-- [ ] **Pushing a week to the list is slow** (~100+ serial round trips):
-      each meal re-downloads the entire list and category memory and writes
-      ingredients one at a time
-      ([src/lib/plan-shopping.ts:129](../src/lib/plan-shopping.ts)). Fetch
-      once, pass it in, batch the inserts.
+- [x] **Pushing a week to the list is slow** (~100+ serial round trips):
+      resolved by migration 0013 (the atomicity fix above) – the whole push
+      is now a single server-side call instead of a per-meal REST storm.
 - [ ] **List/plan open runs its queries twice** – the realtime subscribe
       refetches immediately after the boot fetch already loaded the same
       data ([src/lib/shopping-list.tsx:578](../src/lib/shopping-list.tsx),

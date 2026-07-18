@@ -749,7 +749,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     const planId = data?.[0]?.id;
     if (!planId) return 0;
     try {
-      const touched = await pushPlanToList(household.id, userId, planId);
+      const touched = await pushPlanToList(planId);
       await refresh();
       return touched;
     } catch (pushError) {
@@ -757,7 +757,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       refresh();
       return 0;
     }
-  }, [household.id, userId, clearCompleted, refresh]);
+  }, [household.id, clearCompleted, refresh]);
 
   // Week navigation derived state: chevrons disable at the edges.
   const viewedIndex = weekOptions.indexOf(viewedWeekStart);

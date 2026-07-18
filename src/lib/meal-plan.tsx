@@ -35,7 +35,6 @@ import {
   withdrawEntry,
 } from "@/lib/plan-shopping";
 import { fetchRecipe, type Recipe } from "@/lib/recipes";
-import { getOrCreateListId } from "@/lib/shopping-core";
 import { type LiveStatus } from "@/lib/shopping-list";
 import { supabase } from "@/lib/supabase";
 import { addWeeksKey, fromDateKey, weekStartOf } from "@/lib/week";
@@ -278,18 +277,10 @@ async function insertPlanEntry(options: {
       );
     if (snapshotError) throw snapshotError;
   }
-  // A + rails: once the week is on the list, new meals flow in.
+  // A + rails: once the week is on the list, new meals flow in. The server
+  // resolves and locks the week's list itself.
   if (options.planPushed) {
-    const listId = await getOrCreateListId(
-      options.householdId,
-      options.userId,
-      options.weekStart,
-    );
-    await contributeEntry(listId, options.householdId, options.userId, {
-      id: options.entryId,
-      servings: options.servings,
-      recipeServings: options.recipe.servings,
-    });
+    await contributeEntry(options.entryId);
   }
 }
 
@@ -812,21 +803,12 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
             );
           if (snapshotError) throw snapshotError;
         }
-        if (pushed && entryWeek) {
-          const listId = await getOrCreateListId(
-            household.id,
-            userId,
-            entryWeek.weekStart,
-          );
-          await contributeEntry(listId, household.id, userId, {
-            id: entryId,
-            servings,
-            recipeServings: recipe.servings,
-          });
+        if (pushed) {
+          await contributeEntry(entryId);
         }
       });
     },
-    [guard, household.id, userId],
+    [guard],
   );
 
   const removeEntry = useCallback(
@@ -851,7 +833,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
 
   const pushToShoppingList = useCallback(async () => {
     const week = await ensureViewedPlan();
-    const touched = await pushPlanToList(household.id, userId, week.id);
+    const touched = await pushPlanToList(week.id);
     dispatch({
       type: "upsert-week",
       week: {
@@ -861,7 +843,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       },
     });
     return touched;
-  }, [ensureViewedPlan, household.id, userId]);
+  }, [ensureViewedPlan]);
 
   const value = useMemo<MealPlanContextValue>(
     () => ({
