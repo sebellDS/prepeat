@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +27,7 @@ import { BottomTabInset } from '@/constants/theme';
 function ShoppingListScreen() {
   const {
     loading,
+    live,
     items,
     categoryOrder,
     userId,
@@ -42,6 +43,7 @@ function ShoppingListScreen() {
     clearCompleted,
     fillFromWeeklyPlan,
     setCategoryOrder,
+    retry,
   } = useShoppingList();
   const insets = useSafeAreaInsets();
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
@@ -154,9 +156,16 @@ function ShoppingListScreen() {
             gap: 16,
           }}>
           {items.length === 0 ? (
-            // While the first fetch is in flight the list area stays blank –
-            // flashing the empty state at a household with items would lie.
-            !loading && <EmptyState onFillFromPlan={fillFromWeeklyPlan} />
+            loading && live === 'offline' ? (
+              // The initial load failed (launch-time outage). Offer a retry
+              // instead of a permanent blank; the tab also retries itself on
+              // foreground once the connection is back.
+              <LoadFailed onRetry={retry} />
+            ) : (
+              // While the first fetch is in flight the list area stays blank –
+              // flashing the empty state at a household with items would lie.
+              !loading && <EmptyState onFillFromPlan={fillFromWeeklyPlan} />
+            )
           ) : (
             <>
               <CategoryGroup
@@ -214,6 +223,34 @@ function ShoppingListScreen() {
         onChange={setCategoryOrder}
       />
     </SafeAreaView>
+  );
+}
+
+/**
+ * Shown when the shopping list's first load fails (no connection at launch).
+ * Improvised – no Figma design for this offline state yet (flagged in the
+ * backlog), matched to the launch retry screen in _layout.tsx.
+ */
+function LoadFailed({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View className="items-center gap-layout-medium px-layout-large py-layout-large">
+      <View className="w-full items-center gap-comp-small">
+        <Text className="text-center font-header text-display-6 font-emphasized leading-medium text-text-default">
+          Can&apos;t load your list
+        </Text>
+        <Text className="text-center font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+          Check your connection and try again – nothing on your list is lost.
+        </Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onRetry}
+        className="items-center rounded-medium bg-button-solid-fill-enabled px-comp-xlarge py-comp-large">
+        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-button-solid-label-enabled">
+          Try again
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 

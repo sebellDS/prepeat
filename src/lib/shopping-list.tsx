@@ -392,6 +392,8 @@ interface ShoppingListApi {
   clearCompleted: () => void;
   fillFromWeeklyPlan: () => Promise<number>;
   setCategoryOrder: (order: Category[]) => void;
+  /** Re-run the initial load after it failed at launch (the offline retry). */
+  retry: () => void;
 }
 
 const ShoppingListContext = createContext<ShoppingListApi | null>(null);
@@ -411,6 +413,8 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     categoryOrder: [...CATEGORIES],
   });
   const [live, setLive] = useState<LiveStatus>('connecting');
+  // Bumped to re-run the boot effect after a launch-time load failure.
+  const [bootAttempt, setBootAttempt] = useState(0);
   // Week navigation (designed 2026-07-16): every week has its own list.
   // Reachable weeks mirror the plan's rule – existing lists, weeks with a
   // plan, and the current week; two weeks back at most.
@@ -473,6 +477,14 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     }
   }, [household.id, fetchWeekOptions]);
 
+  // Re-run the initial load after it failed (a launch-time outage leaves the
+  // tab with no listId, which every other path no-ops on). Back to
+  // 'connecting' so the badge and the offline screen reflect the new attempt.
+  const retry = useCallback(() => {
+    setLive('connecting');
+    setBootAttempt((n) => n + 1);
+  }, []);
+
   // Fire-and-forget write: local state is already updated optimistically;
   // if the server disagrees, refetch so the phones converge on its truth.
   const guard = useCallback(
@@ -518,7 +530,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [household.id, userId, currentWeekStart, fetchWeekOptions]);
+  }, [household.id, userId, currentWeekStart, fetchWeekOptions, bootAttempt]);
 
   // Switching weeks swaps the whole list: resolve that week's list row and
   // load its items. The realtime channel follows listId automatically.
@@ -589,10 +601,14 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   // but events missed while backgrounded would otherwise leave stale state.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (appState) => {
-      if (appState === 'active') refresh();
+      if (appState !== 'active') return;
+      // Boot never finished (launch-time outage) leaves listId null, which
+      // refresh() no-ops on – re-run the boot instead so the tab recovers.
+      if (stateRef.current.listId == null) retry();
+      else refresh();
     });
     return () => subscription.remove();
-  }, [refresh]);
+  }, [refresh, retry]);
 
   const addItem = useCallback(
     (name: string) => {
@@ -791,6 +807,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,
+      retry,
     }),
     [
       state.loading,
@@ -810,6 +827,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,
+      retry,
     ],
   );
 

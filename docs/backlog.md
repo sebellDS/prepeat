@@ -440,12 +440,15 @@ same day – see the checked items below.
 
 ### High – correctness bugs a user will hit
 
-- [ ] **Shopping tab can get stuck permanently** if the first load fails:
-      it goes Offline with no list id, and every recovery path (refresh,
-      realtime subscribe, foreground refetch) early-returns on the null id,
-      so nothing retries until the app is force-quit
-      ([src/lib/shopping-list.tsx:462](../src/lib/shopping-list.tsx)). The
-      meal-plan provider recovers from the same case; mirror it.
+- [x] **Shopping tab can get stuck permanently** if the first load fails.
+      Fixed in code 2026-07-18: the boot is now retryable (a `bootAttempt`
+      counter re-runs it), the foreground listener re-runs the boot when
+      there is no listId instead of no-oping in refresh(), and the offline
+      state shows a "Can't load your list / Try again" screen
+      ([src/app/shopping.tsx](../src/app/shopping.tsx) `LoadFailed`) instead
+      of a permanent blank. Client-only. The retry screen is improvised (no
+      Figma design for this offline state – same as the #3 launch screen).
+      Needs an on-device airplane-mode test on the next device build.
 - [ ] **A fast device clock drops other phones' edits.** Optimistic writes
       are stamped with the device's `Date.now()`, and incoming realtime
       events are dropped if "older"
@@ -526,10 +529,11 @@ same day – see the checked items below.
 - [ ] Onboarding error banners show raw technical messages ("fetch failed:
       The network connection was lost.") – translate the common cases
       (offline, wrong code, expired code) to plain language (2026-07-08)
-- [ ] Launch offline/retry screen is improvised (added 2026-07-18 with the
-      #3 fix, src/app/_layout.tsx `HouseholdLoadError`): centred title +
-      reassurance + "Try again" button on the lightest surface. No Figma
-      design for this state – design it if it should look different.
+- [ ] Offline/retry screens are improvised (added 2026-07-18 with the #3 and
+      #6 fixes): `HouseholdLoadError` in src/app/_layout.tsx (launch) and
+      `LoadFailed` in src/app/shopping.tsx (shopping tab), both a centred
+      title + reassurance + "Try again" button on the lightest surface. No
+      Figma design for these states – design them if they should differ.
 - [ ] Delete an item has no undo – soft delete is wired to the database now
       (migration 0005), so a "Deleted · Undo" toast just needs to clear
       deleted_at
