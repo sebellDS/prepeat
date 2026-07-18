@@ -43,7 +43,8 @@ Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
 - `npm run lint` – ESLint via expo lint
 - `npx tsc --noEmit` – typecheck
 - `./scripts/build-iphone.sh` – build + install the Release app on
-  Thomas's iPhone (cabled + unlocked). Prints timestamped phases and
+  Thomas's iPhone (unlocked; cable or same Wi-Fi – the pairing installs
+  wirelessly too, cable is the fallback). Prints timestamped phases and
   exits when installed – never use raw `expo run:ios` for device builds
   (it tails logs forever and reads as a hung build). Run it in the
   background WITHOUT piping (a pipe buffers the log until exit) and

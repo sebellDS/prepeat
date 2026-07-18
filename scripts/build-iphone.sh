@@ -5,7 +5,10 @@
 # Usage: ./scripts/build-iphone.sh            (Thomas's iPhone)
 #        ./scripts/build-iphone.sh <UDID>     (another device)
 #
-# The phone must be cabled and unlocked. Free-team signing expires after
+# The phone must be reachable and unlocked: a cable always works, but a
+# paired phone on the same Wi-Fi also installs wirelessly via devicectl
+# (observed 2026-07-18) – cable is the fallback when "device not found".
+# Free-team signing expires after
 # 7 days. This script RENEWS that window on every run: a plain rebuild
 # reuses the still-valid profile and does NOT reset the clock (learned the
 # hard way 2026-07-15, both phones died mid-day), so we delete the app's
