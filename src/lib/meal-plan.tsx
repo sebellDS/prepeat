@@ -125,6 +125,7 @@ type Action =
   | { type: "upsert-week"; week: PlanWeek }
   | { type: "set-entries"; weekId: string | null; entries: PlanEntry[] }
   | { type: "apply-entry"; entry: PlanEntry }
+  | { type: "apply-remote-entry"; entry: PlanEntry }
   | { type: "remove-entry"; id: string }
   | { type: "view-week"; weekStart: string };
 
@@ -151,6 +152,23 @@ function reducer(state: State, action: Action): State {
       return { ...state, entries: action.entries };
     }
     case "apply-entry": {
+      // Optimistic local write: always apply (the user just did it). Keep the
+      // entry's last SERVER updatedAt – or 0 when brand new – so the device
+      // clock never enters the staleness comparison in apply-remote-entry: a
+      // fast-clock phone must not be able to outrank and drop real server
+      // updates from the other phones (#7).
+      const prev = state.entries.find((e) => e.id === action.entry.id);
+      const entry = { ...action.entry, updatedAt: prev?.updatedAt ?? 0 };
+      const rest = state.entries.filter((e) => e.id !== action.entry.id);
+      return {
+        ...state,
+        entries: [...rest, entry].sort((a, b) => a.createdAt - b.createdAt),
+      };
+    }
+    case "apply-remote-entry": {
+      // Realtime server event: drop stale or duplicate ones, comparing SERVER
+      // timestamps on both sides (optimistic writes above never store a
+      // client clock, so this comparison is always server-vs-server).
       const prev = state.entries.find((e) => e.id === action.entry.id);
       if (prev && prev.updatedAt >= action.entry.updatedAt) return state;
       const rest = state.entries.filter((e) => e.id !== action.entry.id);
@@ -500,7 +518,10 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
           }
           const prev = stateRef.current.entries.find((e) => e.id === row.id);
           if (prev) {
-            dispatch({ type: "apply-entry", entry: rowToEntry(row, prev) });
+            dispatch({
+              type: "apply-remote-entry",
+              entry: rowToEntry(row, prev),
+            });
           } else {
             // New meal from another phone – fetch with the recipe join.
             refresh();

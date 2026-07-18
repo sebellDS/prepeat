@@ -454,12 +454,16 @@ same day – see the checked items below.
       household gate first, so #6's screen only appears when the household
       loads but the list load fails. #3's launch screen also confirmed
       on-device in the same session.
-- [ ] **A fast device clock drops other phones' edits.** Optimistic writes
-      are stamped with the device's `Date.now()`, and incoming realtime
-      events are dropped if "older"
-      ([src/lib/shopping-list.tsx:183](../src/lib/shopping-list.tsx), same
-      pattern in meal-plan) – a phone running ahead ignores real edits until
-      a foreground refresh. Prefer the server's timestamp / a version bump.
+- [x] **A fast device clock drops other phones' edits.** Fixed 2026-07-18,
+      verified two-phone 2026-07-19 (sync works both ways on the list and the
+      plan). The staleness guard now only ever compares SERVER timestamps:
+      shopping stamps a fresh add with 0 instead of the device clock
+      ([src/lib/shopping-list.tsx](../src/lib/shopping-list.tsx)); meal-plan
+      splits the shared apply-entry into `apply-entry` (optimistic – always
+      applies, keeps the entry's last server time or 0) and
+      `apply-remote-entry` (realtime – keeps the stale-drop guard), so an
+      optimistic write can never carry a client clock into the comparison
+      ([src/lib/meal-plan.tsx](../src/lib/meal-plan.tsx)).
 - [x] **Multi-adding meals shows phantom meals on partial failure.** Fixed
       2026-07-18: `addMealsToDays`
       ([src/lib/meal-plan.tsx](../src/lib/meal-plan.tsx)) now fetches every

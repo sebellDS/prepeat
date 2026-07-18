@@ -204,7 +204,10 @@ function reducer(state: State, action: Action): State {
         checkedByUserId: null,
         checkedAt: null,
         settled: false,
-        updatedAt: action.now,
+        // No server timestamp yet: 0 so the insert's own realtime echo (and
+        // later remote edits) always apply. Stamping the device clock here let
+        // a fast-clock phone outrank real server updates and drop them (#7).
+        updatedAt: 0,
       };
       return { ...state, items: [...state.items, item] };
     }
