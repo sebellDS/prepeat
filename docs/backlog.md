@@ -251,9 +251,11 @@ the family can start collecting favourites immediately.
       2026-07-18), Figma frames to come. Decided up front: renaming the
       household IS in; every member stays equal – NO creator privileges
       (Thomas reaffirmed the projektgrundlag "no roles in v1" decision
-      after weighing it). Backend note: rename needs no migration – the
-      households update policy already lets any member rename; the app
-      just has no UI for it yet.
+      after weighing it). A rename reaches other members at next app
+      open, NOT live (Thomas, 2026-07-18 – keeps realtime limited to the
+      shopping list and plan per projektgrundlag). Backend note: rename
+      needs no migration – the households update policy already lets any
+      member rename; the app just has no UI for it yet.
 
 ## In parallel – when it fits
 
