@@ -612,10 +612,15 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       servings: number,
     ) => {
       const week = await ensureViewedPlan();
+      // Snapshot every recipe (ingredients at base servings) BEFORE showing
+      // anything: if one fetch fails, we bail with nothing on screen instead
+      // of leaving optimistic meals that were never saved and vanish on the
+      // next refresh (review #8). Fetching in parallel is a bonus.
+      const fetched = await Promise.all(
+        recipes.map((summary) => fetchRecipe(summary.id)),
+      );
       const writes: { entryId: string; date: string; recipe: Recipe }[] = [];
-      for (const summary of recipes) {
-        // Snapshot from the full recipe (ingredients at base servings).
-        const recipe = await fetchRecipe(summary.id);
+      for (const recipe of fetched) {
         for (const date of dates) {
           const entryId = Crypto.randomUUID();
           const now = Date.now();

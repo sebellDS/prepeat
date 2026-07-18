@@ -460,12 +460,13 @@ same day – see the checked items below.
       ([src/lib/shopping-list.tsx:183](../src/lib/shopping-list.tsx), same
       pattern in meal-plan) – a phone running ahead ignores real edits until
       a foreground refresh. Prefer the server's timestamp / a version bump.
-- [ ] **Multi-adding meals shows phantom meals on partial failure.** Meals
-      are shown optimistically as each recipe loads, but the save runs only
-      after the whole loop finishes
-      ([src/lib/meal-plan.tsx:627](../src/lib/meal-plan.tsx)); if one recipe
-      fetch fails, the already-shown meals were never saved and vanish on
-      refresh.
+- [x] **Multi-adding meals shows phantom meals on partial failure.** Fixed
+      2026-07-18: `addMealsToDays`
+      ([src/lib/meal-plan.tsx](../src/lib/meal-plan.tsx)) now fetches every
+      recipe snapshot (in parallel, via Promise.all) BEFORE dispatching any
+      optimistic entry, so a mid-list fetch failure bails with nothing on
+      screen instead of leaving meals that were never saved. Also parallelises
+      the fetches (was sequential). Client-only, rides the next device build.
 - [x] **Imported recipes double-count prep time.** Fixed 2026-07-18: a
       shared `resolveCookMinutes` helper
       ([src/lib/recipe-import.ts](../src/lib/recipe-import.ts), used by both
