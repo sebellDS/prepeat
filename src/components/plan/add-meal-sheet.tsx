@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Keyboard,
@@ -82,16 +82,25 @@ export function AddMealSheet({
     >
       {visible && (
         <>
-          {mode === "add" && <SheetTabs tab={tab} onChange={setTab} />}
           {mode === "add" && tab === "manual" ? (
-            <ManualContent
-              onClose={onClose}
-              onSubmit={(title) => onSubmitManual?.(title)}
-            />
+            <>
+              <SheetTabs tab={tab} onChange={setTab} />
+              <ManualContent
+                onClose={onClose}
+                onSubmit={(title) => onSubmitManual?.(title)}
+              />
+            </>
           ) : (
             <SheetContent
               mode={mode}
               withTabs={mode === "add"}
+              // Recipes mode scrolls the tabs away with the list (Thomas,
+              // 2026-07-19) – they ride in the list header, not pinned above.
+              tabsSlot={
+                mode === "add" ? (
+                  <SheetTabs tab={tab} onChange={setTab} />
+                ) : null
+              }
               weekStart={weekStart}
               originDate={originDate}
               initialServings={initialServings}
@@ -237,6 +246,7 @@ function ManualContent({
 function SheetContent({
   mode,
   withTabs = false,
+  tabsSlot,
   weekStart,
   originDate,
   initialServings,
@@ -244,8 +254,10 @@ function SheetContent({
   onSubmit,
 }: {
   mode: "add" | "swap";
-  /** The tab row above takes ~64px – the list gives that height back. */
+  /** The tab row rides in the list header – it takes ~64px of list height. */
   withTabs?: boolean;
+  /** Recipes/Manual tabs (add mode), rendered inside the scrolling header. */
+  tabsSlot?: ReactNode;
   weekStart?: string;
   originDate?: string;
   initialServings: number;
@@ -259,6 +271,22 @@ function SheetContent({
   const household = useHousehold();
   const router = useRouter();
   const { height } = useWindowDimensions();
+  const listRef = useRef<FlatList<RecipeSummary>>(null);
+  // Which rows are fully on screen right now – used to skip the auto-scroll
+  // when the picked row is already visible (Thomas, 2026-07-19).
+  const viewableIndices = useRef<Set<number>>(new Set());
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
+      viewableIndices.current = new Set(
+        viewableItems
+          .map((v) => v.index)
+          .filter((i): i is number => i != null),
+      );
+    },
+  ).current;
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 100,
+  }).current;
   const [recipes, setRecipes] = useState<RecipeSummary[] | null>(null);
   const [query, setQuery] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -313,13 +341,27 @@ function SheetContent({
     [recipes, favoritesOnly, query],
   );
 
-  const toggle = (recipe: RecipeSummary) => {
+  const toggle = (recipe: RecipeSummary, index: number) => {
+    const selecting = !selected.includes(recipe.id);
     setSelected((current) => {
       if (current.includes(recipe.id))
         return current.filter((id) => id !== recipe.id);
       // Swap picks exactly one; add multi-selects (decided 2026-07-16).
       return mode === "swap" ? [recipe.id] : [...current, recipe.id];
     });
+    // Selecting reveals the servings/day/button block below the list, which
+    // shrinks it – keep the just-picked row visible by floating it to the
+    // bottom of the shrunk viewport, just above those controls (Thomas,
+    // 2026-07-19). The visibility check runs *after* the shrink (in the
+    // deferred step, once viewability has recomputed against the smaller
+    // list) so a row that was visible before but is now covered still
+    // scrolls, while a row that stays on screen doesn't jump.
+    if (selecting) {
+      setTimeout(() => {
+        if (viewableIndices.current.has(index)) return;
+        listRef.current?.scrollToIndex({ index, viewPosition: 1, animated: true });
+      }, 150);
+    }
   };
 
   const submit = () => {
@@ -354,33 +396,49 @@ function SheetContent({
 
   return (
     <View className="w-full gap-layout-small" style={{ height: contentHeight }}>
-      <SearchField value={query} onChangeText={setQuery} />
-      <View className="w-full flex-row gap-comp-small">
-        <Chip
-          label="All"
-          active={!favoritesOnly}
-          onPress={() => setFavoritesOnly(false)}
-        />
-        <Chip
-          label="Favorites"
-          active={favoritesOnly}
-          onPress={() => setFavoritesOnly(true)}
-        />
-      </View>
+      {/* Tabs, search and chips ride in the list header so they scroll away
+          with the recipes (Thomas, 2026-07-19) instead of staying pinned. */}
       <FlatList
+        ref={listRef}
         data={visible}
         keyExtractor={(recipe) => recipe.id}
         className="flex-1"
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ gap: 8 }}
-        renderItem={({ item }) => (
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        ListHeaderComponent={
+          <View className="w-full gap-layout-small pb-layout-small">
+            {tabsSlot}
+            <SearchField value={query} onChangeText={setQuery} />
+            <View className="w-full flex-row gap-comp-small">
+              <Chip
+                label="All"
+                active={!favoritesOnly}
+                onPress={() => setFavoritesOnly(false)}
+              />
+              <Chip
+                label="Favorites"
+                active={favoritesOnly}
+                onPress={() => setFavoritesOnly(true)}
+              />
+            </View>
+          </View>
+        }
+        renderItem={({ item, index }) => (
           <PickerRow
             recipe={item}
             selected={selected.includes(item.id)}
-            onPress={() => toggle(item)}
+            onPress={() => toggle(item, index)}
           />
         )}
+        onScrollToIndexFailed={({ index, averageItemLength }) => {
+          listRef.current?.scrollToOffset({
+            offset: averageItemLength * index,
+            animated: true,
+          });
+        }}
         ListEmptyComponent={
           recipes == null ? null : (
             <EmptySearch query={query.trim()} onAddRecipe={addRecipe} />
@@ -445,8 +503,10 @@ function PickerRow({
       accessibilityState={{ selected }}
       onPress={onPress}
       className={
-        "w-full flex-row items-center gap-comp-small rounded-medium bg-surface-neutral-white py-comp-small pl-comp-small pr-comp-large " +
-        (selected ? "border-2 border-surface-primary-main" : "")
+        // Always a 2px border (transparent when unselected) so the green
+        // outline never nudges neighbouring rows (Thomas, 2026-07-19).
+        "w-full flex-row items-center gap-comp-small rounded-medium border-2 bg-surface-neutral-white py-comp-small pl-comp-small pr-comp-large " +
+        (selected ? "border-surface-primary-main" : "border-transparent")
       }
     >
       {recipe.imageUrl ? (
