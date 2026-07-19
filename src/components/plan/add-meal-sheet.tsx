@@ -1,7 +1,14 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   FlatList,
   Keyboard,
@@ -26,6 +33,10 @@ import {
   matchesSearch,
   type RecipeSummary,
 } from "@/lib/recipes";
+
+// A row counts as "on screen" only when fully visible, so a pick that the
+// controls would clip still scrolls into the clear.
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 100 } as const;
 
 /**
  * The recipe picker sheet (Figma "Add to Monday" 207:46306 pre-selection,
@@ -275,7 +286,9 @@ function SheetContent({
   // Which rows are fully on screen right now – used to skip the auto-scroll
   // when the picked row is already visible (Thomas, 2026-07-19).
   const viewableIndices = useRef<Set<number>>(new Set());
-  const onViewableItemsChanged = useRef(
+  // Stable identity – FlatList rejects an onViewableItemsChanged that changes
+  // between renders, and viewabilityConfig lives at module scope below.
+  const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
       viewableIndices.current = new Set(
         viewableItems
@@ -283,10 +296,8 @@ function SheetContent({
           .filter((i): i is number => i != null),
       );
     },
-  ).current;
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 100,
-  }).current;
+    [],
+  );
   const [recipes, setRecipes] = useState<RecipeSummary[] | null>(null);
   const [query, setQuery] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -343,6 +354,14 @@ function SheetContent({
 
   const toggle = (recipe: RecipeSummary, index: number) => {
     const selecting = !selected.includes(recipe.id);
+    // The counter defaults to the recipe's own serving count, not the
+    // last-used value (Thomas, 2026-07-19). Add mode has one shared counter,
+    // so the first pick sets it; later picks in a multi-add keep whatever is
+    // showing (which the user may have adjusted). Swap keeps the meal's
+    // existing count – you swap the dish, not the headcount.
+    if (selecting && mode === "add" && selected.length === 0) {
+      setServings(recipe.servings);
+    }
     setSelected((current) => {
       if (current.includes(recipe.id))
         return current.filter((id) => id !== recipe.id);
@@ -407,7 +426,7 @@ function SheetContent({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ gap: 8 }}
         onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
+        viewabilityConfig={VIEWABILITY_CONFIG}
         ListHeaderComponent={
           <View className="w-full gap-layout-small pb-layout-small">
             {tabsSlot}

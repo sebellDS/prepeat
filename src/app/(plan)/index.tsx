@@ -1,6 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -50,26 +49,12 @@ type SheetState =
   | { kind: "servings"; entry: PlanEntry }
   | { kind: "remove"; entry: PlanEntry };
 
-// The add-meal stepper starts from the household's habit, not a hardcoded 4
-// (feedback 2026-07-16): remember the last chosen serving count per device.
-const LAST_SERVINGS_KEY = "prepeat.plan.last-servings";
-
 function PlanContent() {
   const plan = useMealPlan();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [sheet, setSheet] = useState<SheetState>({ kind: "none" });
   const [pushed, setPushed] = useState(false);
-  const [defaultServings, setDefaultServings] = useState(4);
-
-  useEffect(() => {
-    AsyncStorage.getItem(LAST_SERVINGS_KEY)
-      .then((stored) => {
-        const parsed = Number(stored);
-        if (Number.isInteger(parsed) && parsed > 0) setDefaultServings(parsed);
-      })
-      .catch(() => {});
-  }, []);
 
   const todayKey = toDateKey(new Date());
   const dates = useMemo(
@@ -210,9 +195,10 @@ function PlanContent() {
         }
         weekStart={plan.viewedWeekStart}
         originDate={sheet.kind === "add-meal" ? sheet.date : undefined}
-        initialServings={
-          sheet.kind === "swap" ? sheet.entry.servings : defaultServings
-        }
+        // Add mode overrides this with the picked recipe's own default on
+        // the first selection – the placeholder only matters pre-selection,
+        // when the counter is hidden. Swap keeps the meal's current count.
+        initialServings={sheet.kind === "swap" ? sheet.entry.servings : 4}
         onClose={close}
         onSubmitManual={(title) => {
           if (sheet.kind !== "add-meal") return;
@@ -223,10 +209,6 @@ function PlanContent() {
             );
         }}
         onSubmit={(recipes, servings, days) => {
-          setDefaultServings(servings);
-          AsyncStorage.setItem(LAST_SERVINGS_KEY, String(servings)).catch(
-            () => {},
-          );
           if (sheet.kind === "add-meal") {
             plan
               .addMealsToDays(days, recipes, servings)

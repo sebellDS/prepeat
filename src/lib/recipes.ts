@@ -21,6 +21,9 @@ export interface RecipeSummary {
   imageUrl: string | null;
   totalMinutes: number | null;
   isFavorite: boolean;
+  /** The recipe's own default serving count – the add-to-plan counter
+   * starts here rather than at the last-used value. */
+  servings: number;
   /** Ingredient names, so search can match "chicken" without tags. */
   ingredientNames: string[];
 }
@@ -83,7 +86,7 @@ export async function fetchRecipes(
   const { data, error } = await supabase
     .from("recipes")
     .select(
-      "id, title, image_url, prep_minutes, cook_minutes, is_favorite, recipe_ingredients(name)",
+      "id, title, image_url, servings, prep_minutes, cook_minutes, is_favorite, recipe_ingredients(name)",
     )
     .eq("household_id", householdId)
     .is("deleted_at", null)
@@ -95,6 +98,7 @@ export async function fetchRecipes(
     imageUrl: row.image_url,
     totalMinutes: totalMinutes(row.prep_minutes, row.cook_minutes),
     isFavorite: row.is_favorite,
+    servings: row.servings ?? 4,
     ingredientNames: (row.recipe_ingredients ?? []).map(
       (i: { name: string }) => i.name,
     ),
