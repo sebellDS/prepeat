@@ -2,6 +2,7 @@
   "expo": {
     "name": "Prep+Eat",
     "slug": "prepeat",
+    "owner": "sebell",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,7 +11,10 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.prepeat",
-      "appleTeamId": "Z58TG8X9KB"
+      "appleTeamId": "Z58TG8X9KB",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "app.prepeat",
@@ -51,6 +55,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2bebc2d2-b057-49e0-b992-a20fb1c34614"
+      }
     }
   }
 }

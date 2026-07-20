@@ -303,7 +303,34 @@ the family can start collecting favourites immediately.
 
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables (also ends the 7-day rebuild ritual on both
-      phones)
+      phones). Path decided 2026-07-20 (Thomas): EAS cloud build → EAS
+      submit → TestFlight. Steps:
+      - [ ] Thomas: enrol in the Apple Developer Program, $99/yr, as
+            Individual (Apple Developer iPhone app is the fastest route –
+            Face ID + Apple Pay). Apple ID sebell@mac.com; 2FA required.
+            Approval instant–48h. THE LONG POLE.
+      - [x] Thomas: created a free Expo account (username sebell, via GitHub
+            SSO – added an Expo password so the CLI can log in) 2026-07-20.
+      - [x] Claude: wired up EAS in the repo 2026-07-20 – eas.json
+            (development/preview/production build profiles + a production
+            iOS submit profile), owner "sebell" + projectId
+            2bebc2d2-b057-49e0-b992-a20fb1c34614 in app.json (project
+            @sebell/prepeat created on expo.dev). Encryption answer baked in
+            (ios.infoPlist.ITSAppUsesNonExemptEncryption = false).
+      - [ ] BLOCKED on Apple: first `eas build -p ios --profile production`
+            reached Apple login fine (2FA via SMS works; device push
+            doesn't fire – known for Thomas) but failed "no team associated"
+            – the developer account still shows "Thomas Sebell (Pending)",
+            purchase processing (up to 48h) as of 2026-07-20. Paid already
+            (receipt 19 July) – do NOT re-purchase. Retry the build once the
+            account activates (Pending clears; accept the Program License
+            Agreement first). Apple password is now in the Mac keychain, so
+            the retry only needs the SMS 2FA code.
+      - [ ] Joint, after activation: first `eas build` (EAS manages the
+            distribution cert + profile), then `eas submit` to TestFlight.
+      - [ ] Thomas: in App Store Connect, accept agreements, create the app
+            record (bundle app.prepeat), add the family as TestFlight
+            testers.
 - [ ] "Continue with Apple" button once the paid developer account exists
 - [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
       (2026-07-07) is 402px wide (1x), soft on a Retina screen
