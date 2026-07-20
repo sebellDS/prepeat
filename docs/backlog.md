@@ -277,6 +277,27 @@ the family can start collecting favourites immediately.
       verifying SELECT returned 2 / true).
 - [x] Walk the Household flows on-device after 0010 (Thomas, 2026-07-18:
       everything works on both phones, design blessed)
+- [x] Add-meal picker polish (Thomas, 2026-07-19, all built + on-device
+      confirmed same day, commit f849a40):
+      - Picking a recipe near the bottom no longer hides behind the
+        servings/day/button block: the list scrolls the picked row to sit
+        just above those controls. The check runs after the block appears
+        (deferred 150ms) and against a fully-visible threshold, so a row
+        already on screen doesn't jump.
+      - Every picker row carries a 2px transparent border so the green
+        selection outline stops nudging its neighbours a couple of pixels.
+      - The Recipes/Manual toggle, search field and All/Favorites chips
+        moved into the list header so they scroll away with the recipes
+        instead of staying pinned (Manual tab keeps them static – nothing
+        to scroll there).
+- [x] Add-meal servings default to the recipe's own count, not last-used
+      (Thomas, 2026-07-19, commit 14ea136): the counter starts from the
+      picked recipe's `servings` (now carried in RecipeSummary) instead of
+      the per-device last-used value, which is dropped. Add mode has one
+      shared counter, so the first pick sets it and later picks in a
+      multi-add keep the shown value; swap keeps the meal's existing count.
+      Open tweak if wanted: re-default the counter to each newly-tapped
+      recipe in a multi-add (one-liner).
 
 ## In parallel – when it fits
 
