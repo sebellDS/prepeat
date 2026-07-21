@@ -338,8 +338,43 @@ the family can start collecting favourites immediately.
       are improvised in code – design them if they should look different
       (2026-07-08)
 
+## Later (v1.1+)
+
+From projektgrundlag "Later (v1.1+)" – committed but deferred past the v1
+ship. Surfaced 2026-07-20 (Thomas) while reviewing the welcome screen: none
+of the leave / multi-household journey is built yet.
+
+- [ ] **Leave household** – full spec + decisions in
+      [leave-household.md](leave-household.md) (decided 2026-07-20). Leave
+      button in Household → confirm → atomic copy-on-leave into a new
+      "[Firstname]'s Kitchen" (recipes only, re-attributed to the leaver for
+      GDPR), family membership removed. Needs: a SECURITY DEFINER RPC and the
+      confirmation screen designed in Figma. Depends on "Change household"
+      below for the rejoin case.
+- [ ] **Change household (the switcher)** – NEW, flagged 2026-07-20 (Thomas).
+      v1 shows one household by design (`fetchMyHousehold` = oldest
+      membership). Leave/rejoin makes a two-household state reachable for the
+      first time, so a way to switch the active household graduates from
+      "someday" to a real dependency. Minimum for Leave: on rejoin, the
+      just-joined household becomes active (not oldest-wins) and the parked
+      solo kitchen stays reachable. Design the switcher UI.
+- [ ] Merge two households / "copy a recipe to my other household" – the
+      deferred merge mechanic that later lets a rejoiner bring their parked
+      solo-kitchen recipes into the family (leave-household.md, rule A).
+
 ## Decisions log (recent)
 
+- Leave household spec settled (2026-07-20, Thomas) – full write-up in
+  [leave-household.md](leave-household.md). Calls: Leave lives in Household;
+  copy recipes only; new kitchen auto-named "[Firstname]'s Kitchen"; copied
+  recipes re-attributed to the leaver (GDPR). Rejoin = plain join, no
+  auto-merge, nothing lost (rule A) – the leaver's solo kitchen is parked
+  until the household switcher ships. Surfaced that "Change household" is an
+  unbuilt dependency; all filed under Later (v1.1+).
+- Leaving again (2026-07-21, Thomas): one uniform rule – every leave takes a
+  fresh snapshot into a new personal kitchen ("Anna's Kitchen 2"), never
+  reuses the stale one, never leaves the person with nothing. Stale kitchens
+  are cleaned up later by the switcher + merge (leave-household.md).
 - Plan → shopping list stays live in step for the week ("A + rails",
   decided 2026-07-16). The auto-generated part of the shopping list is a
   live projection of that week's plan, not a one-time copy. When a plan
