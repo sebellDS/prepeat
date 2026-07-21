@@ -364,6 +364,12 @@ of the leave / multi-household journey is built yet.
 
 ## Decisions log (recent)
 
+- Delete account / GDPR erasure spec settled (2026-07-21, Thomas) – full
+  write-up in [delete-account.md](delete-account.md). Calls: lives in Household
+  (no Settings area yet); instant hard delete (no grace period); recipes added
+  to a shared family stay with the family; the deleted person's name is cleared
+  (nothing replaces it). Pre-launch, because Apple requires in-app account
+  deletion for any app with account creation.
 - Leave household spec settled (2026-07-20, Thomas) – full write-up in
   [leave-household.md](leave-household.md). Calls: Leave lives in Household;
   copy recipes only; new kitchen auto-named "[Firstname]'s Kitchen"; copied
@@ -741,6 +747,15 @@ pre-retune published value).
 
 ## Pre-launch checklist (v1 ship)
 
+- [ ] **Delete account & wipe my data (GDPR erasure)** – spec + decisions in
+      [delete-account.md](delete-account.md) (decided 2026-07-21). Required by
+      both GDPR and Apple's App Store rule (apps with account creation must
+      offer in-app deletion), so it gates the public release. Lives in
+      Household for now; instant hard delete; shared recipes stay with the
+      family with the name cleared; nothing replaces the name. Needs an Edge
+      Function (service-role) plus a schema change making the attribution
+      columns nullable so erasure can clear them. Surfaced 2026-07-21 while
+      cleaning up a test user (the same FK blocks a manual delete hits).
 - [ ] Proper trademark search for "Prepeat" / "Prep+Eat"
 - [ ] App Store assets: icon, screenshots, description
 - [ ] Privacy policy (required for accounts + a database)
