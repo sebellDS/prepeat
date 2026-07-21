@@ -1,9 +1,10 @@
 # Prep+Eat backlog
 
 The working to-do list for the project. Scope and decisions live in
-[projektgrundlag.md](projektgrundlag.md) – this file is about what happens
-next and in which order. Checked items move to git history; ideas graduate
-upward when we commit to them.
+[projektgrundlag.md](projektgrundlag.md), and the database schema is drawn out
+in [data-model.md](data-model.md) – this file is about what happens next and in
+which order. Checked items move to git history; ideas graduate upward when we
+commit to them.
 
 Ordering principle (agreed 2026-07-08): things that stand on their own and
 deliver value by themselves come before things that depend on them – and
