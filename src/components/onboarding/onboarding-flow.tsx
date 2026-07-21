@@ -28,7 +28,7 @@ import {
   type Household,
 } from '@/lib/household';
 
-const welcomePhoto = require('../../../assets/images/onboarding/welcome-macarons.jpg');
+const welcomePhoto = require('../../../assets/images/onboarding/welcome-green-macarons.jpg');
 const splashPhoto = require('../../../assets/images/onboarding/splash.jpg');
 const bottomScrim = require('../../../assets/images/onboarding/scrim-bottom.png');
 
@@ -348,23 +348,36 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
   );
 }
 
+// The wordmark stacks vertically on the welcome screen (Figma "household
+// set up 5"): each word subtle, each period lime, one per line.
+const stackedWordmark = ['prep', 'cook', 'eat', 'repeat'];
+
 function WelcomeScreen({ household, onContinue }: { household: Household; onContinue: () => void }) {
   return (
-    <ImageBackground source={welcomePhoto} resizeMode="cover" className="flex-1">
+    <ImageBackground
+      source={welcomePhoto}
+      resizeMode="cover"
+      className="flex-1 bg-surface-neutral-lightest">
       <SafeAreaView edges={['top', 'bottom']} className="flex-1">
-        <View className="h-[300px] w-full items-center justify-center gap-layout-small px-layout-small">
-          <Text className="text-center font-header text-display-4 font-emphasized leading-medium text-text-subtle">
+        <View className="w-full items-start gap-layout-medium px-layout-large pt-layout-large">
+          <View className="items-start">
+            {stackedWordmark.map((word) => (
+              <Text
+                key={word}
+                // 40px is the welcome-only wordmark size; inline to match the
+                // design exactly (same pattern as the splash wordmark).
+                className="font-header font-emphasized text-text-subtle"
+                style={{ fontSize: 40, lineHeight: 40 }}>
+                {word}
+                <Text className="text-text-link">.</Text>
+              </Text>
+            ))}
+          </View>
+          <Text className="font-header text-display-5 font-emphasized leading-small text-text-default">
             Welcome to {household.name}
           </Text>
-          <View className="flex-row">
-            <WordmarkPart text="prep" />
-            <WordmarkPlus />
-            <WordmarkPart text="eat" />
-            <WordmarkPlus />
-            <WordmarkPart text="repeat" />
-          </View>
         </View>
-        <View className="w-full flex-1 justify-end px-layout-small pb-layout-medium">
+        <View className="w-full flex-1 items-center justify-end gap-layout-small px-layout-small pb-layout-medium">
           <PrimaryButton label="Start planning" onPress={onContinue} />
         </View>
       </SafeAreaView>
