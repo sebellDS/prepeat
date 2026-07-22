@@ -282,3 +282,14 @@ export async function leaveHousehold(householdId: string): Promise<Household> {
 
   return rowToHousehold(result.household);
 }
+
+/**
+ * GDPR erasure (docs/delete-account.md): delete the caller's account and
+ * personal data via the delete_profile RPC (0016). Shared recipes stay with
+ * their family with the name cleared; sole-member households are wiped. The
+ * caller should sign out afterwards – the session token is now orphaned.
+ */
+export async function deleteProfile(): Promise<void> {
+  const { error } = await supabase.rpc('delete_profile');
+  if (error) throw error;
+}

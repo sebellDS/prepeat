@@ -22,6 +22,7 @@ export function EditProfileSheet({
   onClose,
   onSaved,
   onLeave,
+  onDelete,
 }: {
   visible: boolean;
   // Leaving is offered only when the household has other members – a solo
@@ -30,6 +31,7 @@ export function EditProfileSheet({
   onClose: () => void;
   onSaved: (firstName: string) => void;
   onLeave: () => void;
+  onDelete: () => void;
 }) {
   return (
     <BottomSheet visible={visible} title="Edit profile" onClose={onClose}>
@@ -39,6 +41,7 @@ export function EditProfileSheet({
           onClose={onClose}
           onSaved={onSaved}
           onLeave={onLeave}
+          onDelete={onDelete}
         />
       )}
     </BottomSheet>
@@ -50,11 +53,13 @@ function SheetContent({
   onClose,
   onSaved,
   onLeave,
+  onDelete,
 }: {
   canLeave: boolean;
   onClose: () => void;
   onSaved: (firstName: string) => void;
   onLeave: () => void;
+  onDelete: () => void;
 }) {
   const { session, firstName, saveFirstName } = useAuth();
   const [name, setName] = useState(firstName ?? "");
@@ -132,6 +137,17 @@ function SheetContent({
           </Text>
         </Pressable>
       )}
+      <Pressable
+        accessibilityRole="button"
+        disabled={busy}
+        onPress={onDelete}
+        className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-error py-comp-large"
+      >
+        <MaterialIcons name="delete-outline" size={24} color={ds.colors.error.main} />
+        <Text className="font-paragraph text-components-button-label font-default text-error">
+          Delete profile
+        </Text>
+      </Pressable>
     </View>
   );
 }

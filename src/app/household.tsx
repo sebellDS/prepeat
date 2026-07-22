@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { DeleteProfileSheet } from "@/components/household/delete-profile-sheet";
 import { EditHouseholdSheet } from "@/components/household/edit-household-sheet";
 import { EditProfileSheet } from "@/components/household/edit-profile-sheet";
 import { InviteSomeoneSheet } from "@/components/household/invite-someone-sheet";
@@ -13,6 +14,7 @@ import { BottomTabInset } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { useHouseholdSwitcher } from "@/lib/household-context";
 import {
+  deleteProfile,
   fetchHouseholdMembers,
   getOrCreateInvite,
   leaveHousehold,
@@ -26,7 +28,7 @@ import {
 // "Invite someone" action; sign out at the bottom. Built on the app's current
 // tokens – the sage/Noto DS retune the mock references is a separate job.
 export default function HouseholdScreen() {
-  const { session, signOut } = useAuth();
+  const { session, firstName, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const myUserId = session?.user?.id ?? null;
   const {
@@ -41,7 +43,7 @@ export default function HouseholdScreen() {
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [sheet, setSheet] = useState<
-    "none" | "household" | "profile" | "invite" | "leave"
+    "none" | "household" | "profile" | "invite" | "leave" | "deleteProfile"
   >("none");
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
@@ -189,6 +191,7 @@ export default function HouseholdScreen() {
           loadMembers(household.id);
         }}
         onLeave={() => setSheet("leave")}
+        onDelete={() => setSheet("deleteProfile")}
       />
       <InviteSomeoneSheet
         visible={sheet === "invite"}
@@ -206,6 +209,17 @@ export default function HouseholdScreen() {
           // (addHousehold makes it active, remounting the tabs).
           removeHousehold(household.id);
           addHousehold(newHousehold);
+        }}
+      />
+      <DeleteProfileSheet
+        visible={sheet === "deleteProfile"}
+        firstName={firstName}
+        onClose={() => setSheet("none")}
+        onConfirm={async () => {
+          await deleteProfile();
+          // The account is gone server-side; clear the local session, which
+          // drops back to onboarding.
+          await signOut();
         }}
       />
 
