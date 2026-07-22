@@ -680,6 +680,11 @@ same day – see the checked items below.
 
 ## Code debts (small, known, deliberate)
 
+- [ ] **Unused `households.image_url` column** – the household image was dropped
+      from the design 2026-07-22, so the app no longer reads or writes it (Edit
+      household is name-only; `imageUrl` removed from the Household type/lib).
+      The column (added migration 0010) is now dead. Drop it with a migration
+      when convenient – harmless meanwhile.
 - [ ] Onboarding error banners show raw technical messages ("fetch failed:
       The network connection was lost.") – translate the common cases
       (offline, wrong code, expired code) to plain language (2026-07-08)

@@ -8,7 +8,6 @@ import { supabase } from '@/lib/supabase';
 export interface Household {
   id: string;
   name: string;
-  imageUrl: string | null;
 }
 
 /** One row of the Household screen's member directory (profiles, 0010). */
@@ -22,11 +21,10 @@ export interface HouseholdMember {
 interface HouseholdRow {
   id: string;
   name: string;
-  image_url: string | null;
 }
 
 function rowToHousehold(row: HouseholdRow): Household {
-  return { id: row.id, name: row.name, imageUrl: row.image_url };
+  return { id: row.id, name: row.name };
 }
 
 // Unambiguous alphabet: no 0/O, 1/I/L or 5/S look-alikes.
@@ -55,7 +53,7 @@ export async function fetchMyHouseholds(): Promise<Household[]> {
   if (!userId) return [];
   const { data, error } = await supabase
     .from('household_members')
-    .select('households(id, name, image_url), joined_at')
+    .select('households(id, name), joined_at')
     .eq('user_id', userId)
     .order('joined_at', { ascending: true });
   if (error) throw error;
@@ -76,7 +74,7 @@ export async function fetchMyHouseholds(): Promise<Household[]> {
 export async function fetchMyHousehold(): Promise<Household | null> {
   const { data, error } = await supabase
     .from('household_members')
-    .select('household_id, households(id, name, image_url), joined_at')
+    .select('household_id, households(id, name), joined_at')
     // Oldest membership wins, so a stray duplicate household (e.g. one created
     // during a launch-time network blip) can never shadow the real one.
     .order('joined_at', { ascending: true })
@@ -124,18 +122,17 @@ export async function fetchHouseholdMembers(
   }));
 }
 
-/** Rename and/or set the household image (any member may, no roles). */
+/** Rename the household (any member may, no roles). */
 export async function updateHousehold(
   householdId: string,
-  changes: { name?: string; imageUrl?: string },
+  changes: { name?: string },
 ): Promise<void> {
-  const patch: { name?: string; image_url?: string } = {};
+  const patch: { name?: string } = {};
   if (changes.name != null) {
     const trimmed = changes.name.replace(/\s+/g, ' ').trim();
     if (!trimmed) throw new Error('Please give your household a name');
     patch.name = trimmed;
   }
-  if (changes.imageUrl != null) patch.image_url = changes.imageUrl;
   const { error } = await supabase
     .from('households')
     .update(patch)
@@ -158,7 +155,7 @@ export async function createHousehold(name: string): Promise<{ household: Househ
   const { data: created, error: householdError } = await supabase
     .from('households')
     .insert({ name: trimmed, created_by_user_id: userId })
-    .select('id, name, image_url')
+    .select('id, name')
     .single();
   if (householdError) throw householdError;
   const household = rowToHousehold(created);
@@ -228,7 +225,7 @@ export async function joinHousehold(code: string): Promise<Household> {
   }
   const { data, error: fetchError } = await supabase
     .from('households')
-    .select('id, name, image_url')
+    .select('id, name')
     .eq('id', householdId)
     .single();
   if (fetchError) throw fetchError;
