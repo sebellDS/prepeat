@@ -14,7 +14,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+  SafeAreaView,
+} from 'react-native-safe-area-context';
 
 import { WelcomeScreen } from '@/components/onboarding/onboarding-flow';
 import { Input } from '@/components/ui/input';
@@ -69,22 +73,27 @@ export function JoinHouseholdModal({
   if (joined != null) {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={close}>
-        <WelcomeScreen
-          household={joined}
-          buttonLabel="Take a look around your new household"
-          onContinue={() => {
-            const result = joined;
-            reset();
-            onJoined(result);
-          }}
-        />
+        {/* A SafeAreaView inside a Modal gets no insets (the Modal renders
+            outside the provider tree), so re-establish the provider here. */}
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+          <WelcomeScreen
+            household={joined}
+            buttonLabel="Take a look around your new household"
+            onContinue={() => {
+              const result = joined;
+              reset();
+              onJoined(result);
+            }}
+          />
+        </SafeAreaProvider>
       </Modal>
     );
   }
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={close}>
-      <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-neutral-lightest">
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-neutral-lightest">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           className="flex-1">
@@ -150,7 +159,8 @@ export function JoinHouseholdModal({
             </Pressable>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

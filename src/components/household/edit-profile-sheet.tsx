@@ -141,10 +141,14 @@ function SheetContent({
         accessibilityRole="button"
         disabled={busy}
         onPress={onDelete}
-        className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-error py-comp-large"
+        className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium bg-button-danger-fill-enabled py-comp-large"
       >
-        <MaterialIcons name="delete-outline" size={24} color={ds.colors.error.main} />
-        <Text className="font-paragraph text-components-button-label font-default text-error">
+        <MaterialIcons
+          name="delete-outline"
+          size={24}
+          color={ds.colors.error["contrast-text"]}
+        />
+        <Text className="font-paragraph text-components-button-label font-default text-button-danger-label-enabled">
           Delete profile
         </Text>
       </Pressable>
