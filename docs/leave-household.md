@@ -4,7 +4,7 @@ Status: **BUILT 2026-07-22 (commit f4277cd), verified on device.** Migration
 0015 `leave_household()` does the atomic copy-on-leave; the client copies recipe
 photos into the new kitchen's folder. Entry point: a red-outline "Leave
 household" in the Edit-**profile** sheet (only when the household has other
-members). Built on the app's current tokens pending the DS retune. Original
+members). Built in the Prepeat DS brand (Montserrat + lime). Original
 decisions below (decided 2026-07-20).
 
 Implements the copy-on-leave promise from

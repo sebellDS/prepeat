@@ -301,17 +301,6 @@ the family can start collecting favourites immediately.
 
 ## In parallel – when it fits
 
-- [ ] **DS retune → re-theme the whole app** (surfaced 2026-07-22). The new
-      Household design references a retuned Sebell DS – **Noto Serif** headers,
-      **Noto Sans** body, a muted **sage `#476b4a`** + warm-neutral palette –
-      while the app still ships the old **Montserrat + IBM Plex + lime
-      `#56C91D`** tokens (last synced 2026-07-12). Thomas chose to build the
-      Household rework on the CURRENT tokens for now, so once the retune is
-      published we run `npm run sync-ds-tokens`, diff `ds-theme.cjs`, and walk
-      EVERY screen (Plan, Shopping, Recipes, onboarding, the welcome screen,
-      the new Household screens) to the new fonts/colours. Whole-app pass, not
-      Household-only.
-
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables (also ends the 7-day rebuild ritual on both
       phones). Path decided 2026-07-20 (Thomas): EAS cloud build → EAS
@@ -355,10 +344,9 @@ From projektgrundlag "Later (v1.1+)" – committed but deferred past the v1
 ship. Surfaced 2026-07-20 (Thomas) while reviewing the welcome screen.
 
 The whole household journey (switcher, join, leave, invite, delete) was
-**designed AND built 2026-07-22** (Thomas), slice by slice on device, on the
-app's current lime/Montserrat tokens (the sage/Noto DS retune is a separate
-whole-app pass – see "In parallel"). Commits 61aa239 / 052aae0 / f4277cd /
-25df0ac.
+**designed AND built 2026-07-22** (Thomas), slice by slice on device, in the
+Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
+052aae0 / f4277cd / 25df0ac.
 
 - [x] **Change household (the switcher)** – built 2026-07-22 (commit 61aa239).
       A dropdown from the "Household ▾" title lists the households you belong to
@@ -395,16 +383,23 @@ whole-app pass – see "In parallel"). Commits 61aa239 / 052aae0 / f4277cd /
 
 ## Decisions log (recent)
 
-- Household journey BUILT (2026-07-22, Thomas), slice by slice on device on the
-  app's current lime/Montserrat tokens: multi-household switcher + join (61aa239),
+- Household journey BUILT (2026-07-22, Thomas), slice by slice on device in the
+  Prepeat DS brand (Montserrat + lime): multi-household switcher + join (61aa239),
   invite-someone sheet simplified to code-sharing only – email field dropped
   (052aae0), leave household with copy-on-leave incl. photos (f4277cd), delete
   profile / GDPR erasure with the type-DELETE fail-safe (25df0ac). Two learnings
   worth keeping: a direct `delete from auth.users` from a SECURITY DEFINER RPC
   works in Supabase, so **no Edge Function** was needed for erasure; and Leave/
   Delete live in the Edit-**profile** sheet (not Edit household). Deferred:
-  the sage/Noto DS re-theme (whole app), photo-orphan cleanup on delete,
-  invite-by-email, the post-join welcome interstitial.
+  photo-orphan cleanup on delete, invite-by-email, the post-join welcome
+  interstitial.
+- CORRECTION (2026-07-22): an earlier note in this session claimed a "DS retune
+  to sage/Noto" requiring a whole-app re-theme. That was wrong – the sage/Noto
+  values came from reading a DIFFERENT brand's mode in the multi-brand Sebell DS
+  via get_design_context fallbacks. The **Prepeat brand is Montserrat + lime**
+  (`ds-theme.cjs`), which the app already ships. No re-theme is needed; the
+  household screens are correctly Prepeat-branded. Trust `ds-theme.cjs` over
+  Figma get_design_context hex fallbacks (they can resolve another brand mode).
 - Household journey designed + reviewed (2026-07-22, Thomas). The Figma
   "Household" page now covers the switcher (header "Household ▾" dropdown +
   "Join a household"), join-another-household (reuses onboarding invite-code →
