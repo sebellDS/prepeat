@@ -352,7 +352,15 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
 // set up 5"): each word subtle, each period lime, one per line.
 const stackedWordmark = ['prep', 'cook', 'eat', 'repeat'];
 
-function WelcomeScreen({ household, onContinue }: { household: Household; onContinue: () => void }) {
+export function WelcomeScreen({
+  household,
+  onContinue,
+  buttonLabel = 'Start planning',
+}: {
+  household: Household;
+  onContinue: () => void;
+  buttonLabel?: string;
+}) {
   return (
     <ImageBackground
       source={welcomePhoto}
@@ -378,7 +386,7 @@ function WelcomeScreen({ household, onContinue }: { household: Household; onCont
           </Text>
         </View>
         <View className="w-full flex-1 items-center justify-end gap-layout-small px-layout-small pb-layout-medium">
-          <PrimaryButton label="Start planning" onPress={onContinue} />
+          <PrimaryButton label={buttonLabel} onPress={onContinue} />
         </View>
       </SafeAreaView>
     </ImageBackground>

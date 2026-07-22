@@ -373,9 +373,11 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
 - [ ] Merge two households / "copy a recipe to my other household" – the
       deferred merge mechanic that later lets a rejoiner bring their parked
       solo-kitchen recipes into the family (leave-household.md, rule A).
-- [ ] **Post-join welcome interstitial** – the design shows a "welcome to the
-      new household" screen after joining; the build lands you straight in.
-      Small polish.
+- [x] **Post-join welcome interstitial** – BUILT 2026-07-22 (commit below).
+      Joining with a code now shows the welcome screen (Figma "join a household
+      4") before landing you in the household. Reuses the onboarding
+      WelcomeScreen (now exported with a `buttonLabel` prop) with the label
+      "Take a look around your new household".
 - [x] **Delete household** – BUILT 2026-07-22 (commit below), verified on
       device. Migration 0017 `delete_household()` (SECURITY DEFINER) refuses
       unless you are the SOLE member (a shared household uses Leave) and have

@@ -1,8 +1,8 @@
 // Join another household from the switcher (Figma "join household", 2026-07-22).
-// Reuses the onboarding invite-code pattern in a full-screen modal so the
-// flow stays inside HouseholdProvider (the switcher's addHousehold makes the
-// joined household active). Built on the app's current tokens pending the DS
-// retune. The post-join welcome interstitial from the design is deferred.
+// Reuses the onboarding invite-code screen, then the welcome screen (Figma
+// "join a household 4"), inside a full-screen modal so the flow stays inside
+// HouseholdProvider – the switcher's addHousehold makes the joined household
+// active. Built on the app's current tokens.
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { WelcomeScreen } from '@/components/onboarding/onboarding-flow';
 import { Input } from '@/components/ui/input';
 import { ds } from '@/constants/ds';
 import { joinHousehold, type Household } from '@/lib/household';
@@ -32,11 +33,15 @@ export function JoinHouseholdModal({
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set once the code is redeemed – swaps the form for the welcome screen
+  // before the switcher makes the household active.
+  const [joined, setJoined] = useState<Household | null>(null);
 
   const reset = () => {
     setCode('');
     setBusy(false);
     setError(null);
+    setJoined(null);
   };
 
   const close = () => {
@@ -48,9 +53,9 @@ export function JoinHouseholdModal({
     setBusy(true);
     setError(null);
     try {
-      const joined = await joinHousehold(code.trim());
-      reset();
-      onJoined(joined);
+      const result = await joinHousehold(code.trim());
+      setBusy(false);
+      setJoined(result);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Something went wrong – please try again';
@@ -60,6 +65,22 @@ export function JoinHouseholdModal({
   };
 
   const canSubmit = code.trim().length >= 4 && !busy;
+
+  if (joined != null) {
+    return (
+      <Modal visible={visible} animationType="slide" onRequestClose={close}>
+        <WelcomeScreen
+          household={joined}
+          buttonLabel="Take a look around your new household"
+          onContinue={() => {
+            const result = joined;
+            reset();
+            onJoined(result);
+          }}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={close}>
