@@ -380,22 +380,17 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
 - [ ] **Post-join welcome interstitial** – the design shows a "welcome to the
       new household" screen after joining; the build lands you straight in.
       Small polish.
-- [ ] **Delete household** – NEW gap, flagged 2026-07-22 (Thomas). Multi-
-      household makes it possible to hold a solo kitchen you don't want (e.g. a
-      parked "[Firstname]'s Kitchen" left behind by copy-on-leave), and there's
-      no way to remove it: Leave is blocked on a solo household and there's no
-      delete. **Designed 2026-07-22** (Figma "Household – delete household",
-      276:5359): lives in the **Edit household** sheet (name + Save + a warning
-      + red "Delete household") → confirm sheet with a "type DELETE" fail-safe,
-      same as Delete profile. **Visibility rule LOCKED (Thomas 2026-07-22):
-      show Delete household only when you are the SOLE member of it AND it is
-      not your only household.** Multi-member households use Leave (which
-      preserves everyone's data); deleting a shared household would wipe all
-      members' recipes/plans/lists and the app has no roles, so sole-member-only
-      is the safe rule. Build: reuse the sole-member wipe logic from
-      `delete_profile()` (0016); after delete, switch to another of your
-      households. Copy fixes still to apply in Figma (fragment "…household. All
-      plans…" → "…household, all its plans…"; stray comma "lists, in the").
+- [x] **Delete household** – BUILT 2026-07-22 (commit below), verified on
+      device. Migration 0017 `delete_household()` (SECURITY DEFINER) refuses
+      unless you are the SOLE member (a shared household uses Leave) and have
+      another household to keep (≥1), then deletes it – cascading its recipes /
+      plans / lists / membership. UI: a red "Delete household" (+ warning) in
+      the Edit-household sheet, shown only when `members.length === 1 &&
+      households.length > 1`, → a confirm sheet with the "type DELETE"
+      fail-safe; on success it switches you to another household. Design Figma
+      276:5359; its two copy strings were fixed in Figma too. Follow-up: recipe
+      photos of the deleted household stay orphaned in storage (same as
+      delete_profile).
 
 ## Decisions log (recent)
 

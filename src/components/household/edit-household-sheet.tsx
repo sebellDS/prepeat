@@ -1,31 +1,44 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ClearableInput } from "@/components/ui/input";
+import { ds } from "@/constants/ds";
 import { updateHousehold, type Household } from "@/lib/household";
 
 /**
- * "Edit household" (Figma "edit household", designed 2026-07-18 / reworked
- * 2026-07-22): rename the household. Any member may – no roles. The household
- * image was dropped from the design 2026-07-22, so this is name-only; the save
- * button disables on an empty name (same convention as the other sheets).
+ * "Edit household" (Figma "edit household" / "delete household", reworked
+ * 2026-07-22): rename the household (name-only – the image was dropped), and
+ * Delete household when you're its sole member with another to keep (a shared
+ * household uses Leave instead; docs/backlog "Delete household"). Any member
+ * may rename – no roles.
  */
 export function EditHouseholdSheet({
   visible,
   household,
+  canDelete,
   onClose,
   onSaved,
+  onDelete,
 }: {
   visible: boolean;
   household: Household;
+  canDelete: boolean;
   onClose: () => void;
   onSaved: (updated: Household) => void;
+  onDelete: () => void;
 }) {
   return (
     <BottomSheet visible={visible} title="Edit household" onClose={onClose}>
       {visible && (
-        <SheetContent household={household} onClose={onClose} onSaved={onSaved} />
+        <SheetContent
+          household={household}
+          canDelete={canDelete}
+          onClose={onClose}
+          onSaved={onSaved}
+          onDelete={onDelete}
+        />
       )}
     </BottomSheet>
   );
@@ -33,12 +46,16 @@ export function EditHouseholdSheet({
 
 function SheetContent({
   household,
+  canDelete,
   onClose,
   onSaved,
+  onDelete,
 }: {
   household: Household;
+  canDelete: boolean;
   onClose: () => void;
   onSaved: (updated: Household) => void;
+  onDelete: () => void;
 }) {
   const [name, setName] = useState(household.name);
   const [busy, setBusy] = useState(false);
@@ -90,6 +107,29 @@ function SheetContent({
           {busy ? "Saving…" : "Save household"}
         </Text>
       </Pressable>
+      {canDelete && (
+        <>
+          <Text className="w-full font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
+            If you delete this household, all its plans, recipes and shopping
+            lists will be deleted. This cannot be undone.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={onDelete}
+            className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium bg-button-danger-fill-enabled py-comp-large"
+          >
+            <MaterialIcons
+              name="delete-outline"
+              size={24}
+              color={ds.colors.error["contrast-text"]}
+            />
+            <Text className="font-paragraph text-components-button-label font-default text-button-danger-label-enabled">
+              Delete household
+            </Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }

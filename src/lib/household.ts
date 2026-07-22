@@ -290,3 +290,13 @@ export async function deleteProfile(): Promise<void> {
   const { error } = await supabase.rpc('delete_profile');
   if (error) throw error;
 }
+
+/**
+ * Delete a household you are the sole member of (0017 `delete_household`).
+ * The RPC refuses if the household has other members (use leaveHousehold) or
+ * if it is your only household. Cascades away its recipes / plans / lists.
+ */
+export async function deleteHousehold(householdId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_household', { p_household_id: householdId });
+  if (error) throw error;
+}

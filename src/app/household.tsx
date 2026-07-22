@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { DeleteHouseholdSheet } from "@/components/household/delete-household-sheet";
 import { DeleteProfileSheet } from "@/components/household/delete-profile-sheet";
 import { EditHouseholdSheet } from "@/components/household/edit-household-sheet";
 import { EditProfileSheet } from "@/components/household/edit-profile-sheet";
@@ -14,6 +15,7 @@ import { BottomTabInset } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { useHouseholdSwitcher } from "@/lib/household-context";
 import {
+  deleteHousehold,
   deleteProfile,
   fetchHouseholdMembers,
   getOrCreateInvite,
@@ -43,7 +45,13 @@ export default function HouseholdScreen() {
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [sheet, setSheet] = useState<
-    "none" | "household" | "profile" | "invite" | "leave" | "deleteProfile"
+    | "none"
+    | "household"
+    | "profile"
+    | "invite"
+    | "leave"
+    | "deleteProfile"
+    | "deleteHousehold"
   >("none");
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
@@ -178,8 +186,10 @@ export default function HouseholdScreen() {
       <EditHouseholdSheet
         visible={sheet === "household"}
         household={household}
+        canDelete={members.length === 1 && households.length > 1}
         onClose={() => setSheet("none")}
         onSaved={applyHouseholdUpdate}
+        onDelete={() => setSheet("deleteHousehold")}
       />
       <EditProfileSheet
         visible={sheet === "profile"}
@@ -220,6 +230,19 @@ export default function HouseholdScreen() {
           // The account is gone server-side; clear the local session, which
           // drops back to onboarding.
           await signOut();
+        }}
+      />
+      <DeleteHouseholdSheet
+        visible={sheet === "deleteHousehold"}
+        householdName={household.name}
+        onClose={() => setSheet("none")}
+        onConfirm={async () => {
+          await deleteHousehold(household.id);
+          // Switch to another of your households (canDelete guarantees one
+          // exists), then drop the deleted one. Switching remounts the tabs.
+          const other = households.find((h) => h.id !== household.id);
+          if (other) setActiveHousehold(other.id);
+          removeHousehold(household.id);
         }}
       />
 
