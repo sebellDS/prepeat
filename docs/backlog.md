@@ -317,20 +317,73 @@ the family can start collecting favourites immediately.
             2bebc2d2-b057-49e0-b992-a20fb1c34614 in app.json (project
             @sebell/prepeat created on expo.dev). Encryption answer baked in
             (ios.infoPlist.ITSAppUsesNonExemptEncryption = false).
-      - [ ] BLOCKED on Apple: first `eas build -p ios --profile production`
-            reached Apple login fine (2FA via SMS works; device push
-            doesn't fire – known for Thomas) but failed "no team associated"
-            – the developer account still shows "Thomas Sebell (Pending)",
-            purchase processing (up to 48h) as of 2026-07-20. Paid already
-            (receipt 19 July) – do NOT re-purchase. Retry the build once the
-            account activates (Pending clears; accept the Program License
-            Agreement first). Apple password is now in the Mac keychain, so
-            the retry only needs the SMS 2FA code.
+      - [x] UNBLOCKED 2026-07-22: Thomas reports the developer account is
+            active (it was "Pending" purchase-processing 2026-07-20 – paid
+            19 July, do NOT re-purchase). Earlier symptom: `eas build -p ios
+            --profile production` reached Apple login fine (2FA via SMS
+            works; device push doesn't fire – known for Thomas) but failed
+            "no team associated". Apple password is in the Mac keychain.
+      - [x] Team ID confirmed 2026-07-22: the paid Individual team kept the
+            SAME id as the free personal team, Z58TG8X9KB. So app.json
+            (ios.appleTeamId) and eas.json (submit.production) were already
+            right – no change needed.
+      - [ ] Thomas: accept the Program License Agreement + any tax/banking
+            agreements in App Store Connect (Business → Agreements).
+      - [x] App Store Connect API key in place 2026-07-22: key UN3YR958DC,
+            issuer 5ba3a44b-c5b2-4447-8120-72fb441faa08, .p8 at
+            credentials/AuthKey_UN3YR958DC.p8 (credentials/ is gitignored).
+            Wired into eas.json submit.production (ascApiKey*) and exported
+            as EXPO_ASC_* by scripts/eas-build-ios.sh. This replaces Apple
+            ID login, so no SMS 2FA on builds or submits.
+      - [x] DONE 2026-07-22 23:36: Thomas ran `./scripts/eas-build-ios.sh`
+            in Terminal, answered Yes to the certificate prompt, and the
+            first signed .ipa built (build number 3, then a second run
+            produced build 4 at 23:54 – both "finished"). The distribution
+            cert now lives on the Expo servers, so Claude can run every
+            later build headless. Kept for the record – why it couldn't be
+            Claude: EAS's
+            SetUpDistributionCertificate.runNonInteractiveAsync throws
+            MissingCredentialsNonInteractiveError when no cert exists – the
+            ASC API key does NOT cover certificate *creation*, only
+            provisioning profiles and submits. Verified 2026-07-22 by
+            reading eas-cli 21.0.3 source after the first non-interactive
+            build failed at "Failed to set up credentials". Once the cert is
+            on the Expo servers, Claude can run every later build headless.
+            Apple caps the account at 2 distribution certs – answer Yes only
+            this once.
+      - [x] App record exists: "Prep+Eat", bundle app.prepeat, ascAppId
+            6793690543 (now pinned in eas.json submit.production so submits
+            don't have to look it up). Verified 2026-07-22 via the ASC API.
+            Same check confirmed only ONE distribution certificate exists
+            (IOS_DISTRIBUTION "THOMAS SEBELL", expires 2027-07-22) – the
+            second build run reused it, so 1 of Apple's 2 slots is free.
+            Handy trick: the .p8 can drive the App Store Connect REST API
+            directly (ES256 JWT, aud "appstoreconnect-v1", sign with
+            dsaEncoding 'ieee-p1363') to read certs/apps without eas-cli's
+            interactive credentials menu.
+      - [ ] IN FLIGHT overnight 2026-07-22→23: `eas submit -p ios --latest`
+            uploaded build 4 (id 837bc127-3f00-4009-ac0f-1df136cd5bea) with
+            Thomas's go-ahead at ~00:15. EAS reported "Scheduled iOS
+            submission" and then sat on "Submitting" for 20+ min; the ASC
+            API showed no build in App Store Connect yet when the session
+            ended. Submission page:
+            https://expo.dev/accounts/sebell/projects/prepeat/submissions/b8a97e1a-ed80-45b1-a7cf-b09c433a6e76
+            FIRST THING NEXT SESSION: check whether it completed –
+            `npx eas-cli build:list --platform ios --limit 1
+            --non-interactive` plus the ASC builds query (the scratchpad
+            script pattern is recorded above). If it failed, just re-run
+            `npx eas-cli submit --platform ios --profile production
+            --latest --non-interactive`; the .ipa is already built, so a
+            retry costs nothing and needs no rebuild.
+      - [ ] Thomas: add the family as TestFlight testers, once the build
+            shows up under TestFlight → Internal Testing (up to 100
+            internal testers, no Apple review – do NOT use External
+            Testing, that one queues for review and isn't needed here).
+      - [ ] Keep running scripts/build-iphone.sh on both phones every ~7
+            days until a family phone has ACTUALLY installed from
+            TestFlight. The upload succeeding is not proof; the install is.
       - [ ] Joint, after activation: first `eas build` (EAS manages the
             distribution cert + profile), then `eas submit` to TestFlight.
-      - [ ] Thomas: in App Store Connect, accept agreements, create the app
-            record (bundle app.prepeat), add the family as TestFlight
-            testers.
 - [ ] "Continue with Apple" button once the paid developer account exists
 - [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
       (2026-07-07) is 402px wide (1x), soft on a Retina screen

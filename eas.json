@@ -28,8 +28,11 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "sebell@mac.com",
-        "appleTeamId": "Z58TG8X9KB"
+        "appleTeamId": "Z58TG8X9KB",
+        "ascAppId": "6793690543",
+        "ascApiKeyPath": "./credentials/AuthKey_UN3YR958DC.p8",
+        "ascApiKeyId": "UN3YR958DC",
+        "ascApiKeyIssuerId": "5ba3a44b-c5b2-4447-8120-72fb441faa08"
       }
     }
   }
