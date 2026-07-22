@@ -232,20 +232,17 @@ export async function joinHousehold(code: string): Promise<Household> {
   return rowToHousehold(data);
 }
 
-/** The bucket-relative path from a recipe-photos public URL, or null. */
-function recipePhotoPath(url: string): string | null {
-  const marker = '/recipe-photos/';
-  const i = url.indexOf(marker);
-  return i === -1 ? null : url.slice(i + marker.length);
-}
-
 /**
  * Leave a household, taking a personal copy of its recipes (copy-on-leave,
  * docs/leave-household.md). The leave_household RPC (0015) does the atomic DB
  * copy + membership removal and returns the new kitchen plus the photos to
- * carry over; SQL can't move storage files, so we copy each recipe photo into
- * the new household's folder here and point the copy at it. Photo failures are
- * non-fatal – the recipe simply keeps no image.
+ * carry over; SQL can't move storage files, so we bring each recipe photo into
+ * the new household's folder here. We FETCH the original via its public URL
+ * (the recipe-photos bucket is public-read, so a just-departed member can
+ * still read it) and re-upload – rather than the authenticated storage copy
+ * API, which needs read access the leaver no longer has now that listing is
+ * scoped to members (0018). Photo failures are non-fatal – the recipe simply
+ * keeps no image.
  */
 export async function leaveHousehold(householdId: string): Promise<Household> {
   const { data, error } = await supabase.rpc('leave_household', {
@@ -259,14 +256,15 @@ export async function leaveHousehold(householdId: string): Promise<Household> {
 
   for (const photo of result.photos) {
     try {
-      const source = recipePhotoPath(photo.sourceUrl);
-      if (source == null) continue;
+      const response = await fetch(photo.sourceUrl);
+      if (!response.ok) continue;
+      const body = await response.arrayBuffer();
       const dest = `${result.household.id}/${Crypto.randomUUID()}.jpg`;
-      const { error: copyError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('recipe-photos')
-        .copy(source, dest);
-      if (copyError) {
-        console.warn('[household] recipe photo copy failed', copyError);
+        .upload(dest, body, { contentType: 'image/jpeg' });
+      if (uploadError) {
+        console.warn('[household] recipe photo copy failed', uploadError);
         continue;
       }
       const publicUrl = supabase.storage.from('recipe-photos').getPublicUrl(dest).data

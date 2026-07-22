@@ -394,6 +394,14 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
 
 ## Decisions log (recent)
 
+- Storage hardening (2026-07-22): recipe-photo listing scoped to members
+  (migration 0018) – the old broad SELECT let any client enumerate every photo
+  path, undermining the "unguessable URL" privacy (Supabase flagged it). Public
+  display is unaffected (public-bucket URLs bypass RLS). Copy-on-leave was
+  reworked to FETCH originals via their public URL and re-upload, instead of the
+  authenticated storage copy API, which the tighter policy would deny to a
+  just-departed member. Verified on device (photos display, leave keeps photos,
+  banner cleared).
 - Household journey BUILT (2026-07-22, Thomas), slice by slice on device in the
   Prepeat DS brand (Montserrat + lime): multi-household switcher + join (61aa239),
   invite-someone sheet simplified to code-sharing only – email field dropped
