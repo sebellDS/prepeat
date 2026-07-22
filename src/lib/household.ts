@@ -281,12 +281,60 @@ export async function leaveHousehold(householdId: string): Promise<Household> {
 }
 
 /**
+ * Best-effort removal of a household's recipe photos from storage (SQL can't
+ * touch storage files, so cascade deletes leave them orphaned). Must run while
+ * the caller is still a member of the folder's household – the delete policy
+ * is per-household-folder – so call this BEFORE the delete RPC removes the
+ * membership. Failures are swallowed: a leftover photo is harmless.
+ */
+async function deleteHouseholdPhotos(householdId: string): Promise<void> {
+  try {
+    const { data, error } = await supabase.storage
+      .from('recipe-photos')
+      .list(householdId, { limit: 1000 });
+    if (error || !data || data.length === 0) return;
+    const { error: removeError } = await supabase.storage
+      .from('recipe-photos')
+      .remove(data.map((file) => `${householdId}/${file.name}`));
+    if (removeError) console.warn('[household] photo folder cleanup failed', removeError);
+  } catch (error) {
+    console.warn('[household] photo folder cleanup failed', error);
+  }
+}
+
+/** Ids of households the signed-in user is the sole member of. */
+async function soleMemberHouseholdIds(userId: string): Promise<string[]> {
+  const { data: mine, error } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', userId);
+  if (error || !mine || mine.length === 0) return [];
+  const ids = mine.map((r) => r.household_id);
+  // RLS lets me read every membership of households I belong to, so counting
+  // is a single query.
+  const { data: all } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .in('household_id', ids);
+  const counts = new Map<string, number>();
+  for (const r of all ?? []) counts.set(r.household_id, (counts.get(r.household_id) ?? 0) + 1);
+  return ids.filter((id) => counts.get(id) === 1);
+}
+
+/**
  * GDPR erasure (docs/delete-account.md): delete the caller's account and
  * personal data via the delete_profile RPC (0016). Shared recipes stay with
- * their family with the name cleared; sole-member households are wiped. The
+ * their family with the name cleared; sole-member households are wiped. We
+ * clear those households' photos from storage first (the RPC can't). The
  * caller should sign out afterwards – the session token is now orphaned.
  */
 export async function deleteProfile(): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  if (userId) {
+    const soleIds = await soleMemberHouseholdIds(userId).catch(() => []);
+    for (const id of soleIds) await deleteHouseholdPhotos(id);
+  }
   const { error } = await supabase.rpc('delete_profile');
   if (error) throw error;
 }
@@ -294,9 +342,11 @@ export async function deleteProfile(): Promise<void> {
 /**
  * Delete a household you are the sole member of (0017 `delete_household`).
  * The RPC refuses if the household has other members (use leaveHousehold) or
- * if it is your only household. Cascades away its recipes / plans / lists.
+ * if it is your only household. Cascades away its recipes / plans / lists;
+ * we clear its photos from storage first (the RPC can't).
  */
 export async function deleteHousehold(householdId: string): Promise<void> {
+  await deleteHouseholdPhotos(householdId);
   const { error } = await supabase.rpc('delete_household', { p_household_id: householdId });
   if (error) throw error;
 }

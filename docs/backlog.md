@@ -817,10 +817,12 @@ pre-retune published value).
       auth.users` from a SECURITY DEFINER RPC works, so **no Edge Function was
       needed**. UI: red-outline "Delete profile" in the Edit-profile sheet + a
       confirm sheet with the design's "type DELETE" fail-safe. Follow-up below.
-- [ ] **Delete profile – photo-orphan cleanup** (follow-up to the above): recipe
-      photos of deleted sole-member households stay in storage (orphaned, no
-      personal data – random-UUID food images). Clean them (client-side folder
-      removal before erasure, or a storage sweep) for a complete wipe.
+- [x] **Photo cleanup on delete** – BUILT 2026-07-22 (commit below). Both
+      deleteHousehold and deleteProfile now clear the recipe-photo folders of
+      the households being wiped from storage first (client-side list+remove,
+      while membership is still intact so the per-household-folder delete policy
+      allows it), before the delete RPC. Best-effort – a failed removal is
+      logged, never blocks the delete. Verified on device (listed 1, removed 1).
 - [ ] Proper trademark search for "Prepeat" / "Prep+Eat"
 - [ ] App Store assets: icon, screenshots, description
 - [ ] Privacy policy (required for accounts + a database)
