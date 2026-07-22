@@ -397,6 +397,23 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
 
 ## Decisions log (recent)
 
+- **2026-07-22 – multi-household journey shipped end to end** (16 commits,
+  built slice by slice on device in the Prepeat brand). At a glance:
+  - Switcher + join another household + post-join welcome interstitial
+    (61aa239, 9135cc9); invite-someone sheet, code-sharing only – email dropped
+    (052aae0).
+  - Leave household with copy-on-leave incl. photos (f4277cd, migration 0015);
+    Delete profile / GDPR erasure with type-DELETE fail-safe (25df0ac,
+    migration 0016 – a direct auth.users delete from a SECURITY DEFINER RPC
+    works, no Edge Function); Delete household, sole-member only (52fc9a9,
+    migration 0017).
+  - Photo cleanup on delete (645fb19); storage read policy scoped to members
+    (7a34b34, migration 0018); household image dropped (fb7f60d); join
+    back-arrow safe-area fix + solid Delete profile (3299d42).
+  - Migrations 0015–0018 applied on Supabase. Walked the whole flow on device.
+    Deferred: merge / copy-to-my-other-kitchen (incl. the "extra kitchen on
+    leave" gripe). Detailed entries below and items checked off in "Later
+    (v1.1+)" and the Pre-launch checklist.
 - Storage hardening (2026-07-22): recipe-photo listing scoped to members
   (migration 0018) – the old broad SELECT let any client enumerate every photo
   path, undermining the "unguessable URL" privacy (Supabase flagged it). Public
