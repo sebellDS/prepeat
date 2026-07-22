@@ -1,10 +1,11 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EditHouseholdSheet } from "@/components/household/edit-household-sheet";
 import { EditProfileSheet } from "@/components/household/edit-profile-sheet";
+import { InviteSomeoneSheet } from "@/components/household/invite-someone-sheet";
 import { JoinHouseholdModal } from "@/components/household/join-household-modal";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
@@ -31,7 +32,7 @@ export default function HouseholdScreen() {
 
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<"none" | "household" | "profile">("none");
+  const [sheet, setSheet] = useState<"none" | "household" | "profile" | "invite">("none");
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
 
@@ -56,19 +57,6 @@ export default function HouseholdScreen() {
       cancelled = true;
     };
   }, [household.id, loadMembers]);
-
-  // "Invite someone" shares the code for now; the designed invite sheet
-  // (email + code) is the next slice.
-  const invite = async () => {
-    if (!inviteCode) return;
-    try {
-      await Share.share({
-        message: `Join our household "${household.name}" in Prep+Eat with the code ${inviteCode}`,
-      });
-    } catch {
-      // Sharing cancelled – nothing to do.
-    }
-  };
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-surface-neutral-lightest">
@@ -127,8 +115,7 @@ export default function HouseholdScreen() {
             </Text>
             <Pressable
               accessibilityRole="button"
-              disabled={inviteCode == null}
-              onPress={invite}
+              onPress={() => setSheet("invite")}
               className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
             >
               <MaterialIcons
@@ -190,6 +177,12 @@ export default function HouseholdScreen() {
           // refetch so the member row follows.
           loadMembers(household.id);
         }}
+      />
+      <InviteSomeoneSheet
+        visible={sheet === "invite"}
+        onClose={() => setSheet("none")}
+        householdName={household.name}
+        inviteCode={inviteCode}
       />
 
       <HouseholdSwitcherMenu
