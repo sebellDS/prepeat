@@ -146,6 +146,14 @@ function RootGate() {
     );
   }, []);
 
+  const removeHousehold = useCallback((id: string) => {
+    setMembership((prev) =>
+      prev && prev.status === 'ready'
+        ? { ...prev, households: prev.households.filter((h) => h.id !== id) }
+        : prev,
+    );
+  }, []);
+
   // Still restoring the stored session at launch: stay behind the splash.
   if (session === undefined) {
     return null;
@@ -209,6 +217,7 @@ function RootGate() {
       setActiveHousehold={setActiveHousehold}
       addHousehold={addHousehold}
       applyHouseholdUpdate={applyHouseholdUpdate}
+      removeHousehold={removeHousehold}
     >
       {/* Remount the tabs on switch so the meal-plan / shopping providers
           start clean for the new household instead of showing the old one's

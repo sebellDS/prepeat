@@ -7,6 +7,7 @@ import { EditHouseholdSheet } from "@/components/household/edit-household-sheet"
 import { EditProfileSheet } from "@/components/household/edit-profile-sheet";
 import { InviteSomeoneSheet } from "@/components/household/invite-someone-sheet";
 import { JoinHouseholdModal } from "@/components/household/join-household-modal";
+import { LeaveHouseholdSheet } from "@/components/household/leave-household-sheet";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
@@ -14,6 +15,7 @@ import { useHouseholdSwitcher } from "@/lib/household-context";
 import {
   fetchHouseholdMembers,
   getOrCreateInvite,
+  leaveHousehold,
   type Household,
   type HouseholdMember,
 } from "@/lib/household";
@@ -27,12 +29,20 @@ export default function HouseholdScreen() {
   const { session, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const myUserId = session?.user?.id ?? null;
-  const { household, households, setActiveHousehold, addHousehold, applyHouseholdUpdate } =
-    useHouseholdSwitcher();
+  const {
+    household,
+    households,
+    setActiveHousehold,
+    addHousehold,
+    applyHouseholdUpdate,
+    removeHousehold,
+  } = useHouseholdSwitcher();
 
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<"none" | "household" | "profile" | "invite">("none");
+  const [sheet, setSheet] = useState<
+    "none" | "household" | "profile" | "invite" | "leave"
+  >("none");
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
 
@@ -171,18 +181,32 @@ export default function HouseholdScreen() {
       />
       <EditProfileSheet
         visible={sheet === "profile"}
+        canLeave={members.length > 1}
         onClose={() => setSheet("none")}
         onSaved={() => {
           // The 0010 auth trigger has mirrored the new name into profiles –
           // refetch so the member row follows.
           loadMembers(household.id);
         }}
+        onLeave={() => setSheet("leave")}
       />
       <InviteSomeoneSheet
         visible={sheet === "invite"}
         onClose={() => setSheet("none")}
         householdName={household.name}
         inviteCode={inviteCode}
+      />
+      <LeaveHouseholdSheet
+        visible={sheet === "leave"}
+        householdName={household.name}
+        onClose={() => setSheet("none")}
+        onConfirm={async () => {
+          const newHousehold = await leaveHousehold(household.id);
+          // Drop the household we left and switch into the new kitchen
+          // (addHousehold makes it active, remounting the tabs).
+          removeHousehold(household.id);
+          addHousehold(newHousehold);
+        }}
       />
 
       <HouseholdSwitcherMenu

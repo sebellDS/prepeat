@@ -18,6 +18,8 @@ interface HouseholdContextValue {
   addHousehold: (household: Household) => void;
   /** Reflect an edit (rename/image) back into the list without a refetch. */
   applyHouseholdUpdate: (household: Household) => void;
+  /** Drop a household the user no longer belongs to (after leaving). */
+  removeHousehold: (id: string) => void;
 }
 
 const HouseholdContext = createContext<HouseholdContextValue | null>(null);
@@ -28,6 +30,7 @@ export function HouseholdProvider({
   setActiveHousehold,
   addHousehold,
   applyHouseholdUpdate,
+  removeHousehold,
   children,
 }: {
   household: Household;
@@ -35,11 +38,19 @@ export function HouseholdProvider({
   setActiveHousehold: (id: string) => void;
   addHousehold: (household: Household) => void;
   applyHouseholdUpdate: (household: Household) => void;
+  removeHousehold: (id: string) => void;
   children: ReactNode;
 }) {
   const value = useMemo(
-    () => ({ household, households, setActiveHousehold, addHousehold, applyHouseholdUpdate }),
-    [household, households, setActiveHousehold, addHousehold, applyHouseholdUpdate],
+    () => ({
+      household,
+      households,
+      setActiveHousehold,
+      addHousehold,
+      applyHouseholdUpdate,
+      removeHousehold,
+    }),
+    [household, households, setActiveHousehold, addHousehold, applyHouseholdUpdate, removeHousehold],
   );
   return <HouseholdContext.Provider value={value}>{children}</HouseholdContext.Provider>;
 }

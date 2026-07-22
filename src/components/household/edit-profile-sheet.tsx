@@ -1,39 +1,60 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ClearableInput } from "@/components/ui/input";
+import { ds } from "@/constants/ds";
 import { useAuth } from "@/lib/auth";
 
 /**
- * "Edit profile" (Figma 213:66236, designed 2026-07-18): first name is
- * editable, email is read-only (decided 2026-07-18 – the email is the
+ * "Edit profile" (Figma "edit your profile", 2026-07-18 / reworked
+ * 2026-07-22): first name is editable, email is read-only (the email is the
  * sign-in identity; changing it is an account flow, not a profile field).
- * Saving goes through auth metadata; the 0010 trigger mirrors it into
- * profiles so the member list follows.
+ * This sheet also hosts the personal household actions – Leave household
+ * (when there are other members) and, later, Delete profile. Saving goes
+ * through auth metadata; the 0010 trigger mirrors it into profiles so the
+ * member list follows.
  */
 export function EditProfileSheet({
   visible,
+  canLeave,
   onClose,
   onSaved,
+  onLeave,
 }: {
   visible: boolean;
+  // Leaving is offered only when the household has other members – a solo
+  // household has nobody to leave (docs/leave-household.md).
+  canLeave: boolean;
   onClose: () => void;
   onSaved: (firstName: string) => void;
+  onLeave: () => void;
 }) {
   return (
     <BottomSheet visible={visible} title="Edit profile" onClose={onClose}>
-      {visible && <SheetContent onClose={onClose} onSaved={onSaved} />}
+      {visible && (
+        <SheetContent
+          canLeave={canLeave}
+          onClose={onClose}
+          onSaved={onSaved}
+          onLeave={onLeave}
+        />
+      )}
     </BottomSheet>
   );
 }
 
 function SheetContent({
+  canLeave,
   onClose,
   onSaved,
+  onLeave,
 }: {
+  canLeave: boolean;
   onClose: () => void;
   onSaved: (firstName: string) => void;
+  onLeave: () => void;
 }) {
   const { session, firstName, saveFirstName } = useAuth();
   const [name, setName] = useState(firstName ?? "");
@@ -98,6 +119,19 @@ function SheetContent({
           {busy ? "Saving…" : "Save profile"}
         </Text>
       </Pressable>
+      {canLeave && (
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={onLeave}
+          className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-error py-comp-large"
+        >
+          <MaterialIcons name="logout" size={24} color={ds.colors.error.main} />
+          <Text className="font-paragraph text-components-button-label font-default text-error">
+            Leave household
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }
