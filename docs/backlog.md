@@ -383,14 +383,19 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
 - [ ] **Delete household** – NEW gap, flagged 2026-07-22 (Thomas). Multi-
       household makes it possible to hold a solo kitchen you don't want (e.g. a
       parked "[Firstname]'s Kitchen" left behind by copy-on-leave), and there's
-      no way to remove it: Leave is blocked on a solo household ("nobody to
-      leave") and there's no delete. Only deleting the whole account clears it.
-      Coherent model to design + build: **multi-member household → Leave**
-      (exists); **solo household when you have others → Delete household** (new –
-      wipes it + its recipes/plans/lists, which are yours alone); **your only
-      household → neither** (always keep ≥1). Thomas will DESIGN it in Figma
-      first (2026-07-22), then build. The sole-member wipe can reuse the logic
-      already in `delete_profile()` (0016).
+      no way to remove it: Leave is blocked on a solo household and there's no
+      delete. **Designed 2026-07-22** (Figma "Household – delete household",
+      276:5359): lives in the **Edit household** sheet (name + Save + a warning
+      + red "Delete household") → confirm sheet with a "type DELETE" fail-safe,
+      same as Delete profile. **Visibility rule LOCKED (Thomas 2026-07-22):
+      show Delete household only when you are the SOLE member of it AND it is
+      not your only household.** Multi-member households use Leave (which
+      preserves everyone's data); deleting a shared household would wipe all
+      members' recipes/plans/lists and the app has no roles, so sole-member-only
+      is the safe rule. Build: reuse the sole-member wipe logic from
+      `delete_profile()` (0016); after delete, switch to another of your
+      households. Copy fixes still to apply in Figma (fragment "…household. All
+      plans…" → "…household, all its plans…"; stray comma "lists, in the").
 
 ## Decisions log (recent)
 
