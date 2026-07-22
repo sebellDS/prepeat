@@ -38,6 +38,38 @@ function generateCode(): string {
   return `PREP-${suffix}`;
 }
 
+/**
+ * Every household the signed-in user belongs to, oldest membership first.
+ * Powers the multi-household switcher; `fetchMyHousehold` (limit 1) is kept
+ * for the onboarding gate where only "is there any household yet" matters.
+ */
+export async function fetchMyHouseholds(): Promise<Household[]> {
+  // Scope to MY memberships: RLS lets a member read every row of a household
+  // they belong to (that powers the member directory), so without this filter
+  // a 3-member household would come back as three identical rows. Dedupe by
+  // household id as a belt-and-braces guard too.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from('household_members')
+    .select('households(id, name, image_url), joined_at')
+    .eq('user_id', userId)
+    .order('joined_at', { ascending: true });
+  if (error) throw error;
+  const rows = (data ?? []) as { households: HouseholdRow | HouseholdRow[] | null }[];
+  const seen = new Set<string>();
+  const households: Household[] = [];
+  for (const row of rows) {
+    const h = Array.isArray(row.households) ? (row.households[0] ?? null) : row.households;
+    if (h && !seen.has(h.id)) {
+      seen.add(h.id);
+      households.push(rowToHousehold(h));
+    }
+  }
+  return households;
+}
+
 /** The signed-in user's household, or null while onboarding is unfinished. */
 export async function fetchMyHousehold(): Promise<Household | null> {
   const { data, error } = await supabase

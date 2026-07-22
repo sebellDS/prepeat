@@ -301,6 +301,17 @@ the family can start collecting favourites immediately.
 
 ## In parallel – when it fits
 
+- [ ] **DS retune → re-theme the whole app** (surfaced 2026-07-22). The new
+      Household design references a retuned Sebell DS – **Noto Serif** headers,
+      **Noto Sans** body, a muted **sage `#476b4a`** + warm-neutral palette –
+      while the app still ships the old **Montserrat + IBM Plex + lime
+      `#56C91D`** tokens (last synced 2026-07-12). Thomas chose to build the
+      Household rework on the CURRENT tokens for now, so once the retune is
+      published we run `npm run sync-ds-tokens`, diff `ds-theme.cjs`, and walk
+      EVERY screen (Plan, Shopping, Recipes, onboarding, the welcome screen,
+      the new Household screens) to the new fonts/colours. Whole-app pass, not
+      Household-only.
+
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables (also ends the 7-day rebuild ritual on both
       phones). Path decided 2026-07-20 (Thomas): EAS cloud build → EAS

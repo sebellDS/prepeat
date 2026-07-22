@@ -13,9 +13,10 @@ import {
   Montserrat_700Bold,
   useFonts,
 } from '@expo-google-fonts/montserrat';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,8 +25,13 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { OnboardingFlow } from '@/components/onboarding/onboarding-flow';
 import { AuthProvider, useAuth } from '@/lib/auth';
-import { fetchMyHousehold, type Household } from '@/lib/household';
+import { fetchMyHouseholds, type Household } from '@/lib/household';
 import { HouseholdProvider } from '@/lib/household-context';
+
+// The device-local pick of which household is showing. Device-local (not a
+// DB column) matches the existing AsyncStorage patterns; a cross-device
+// remembered selection can come later as a profiles column.
+const ACTIVE_HOUSEHOLD_KEY = 'prepeat.active-household.v1';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -76,12 +82,16 @@ export default function TabLayout() {
 // not in one yet): the first must NOT drop an existing member into "create a
 // household", which would let them make a duplicate and think their data is gone.
 type Membership =
-  | { userId: string; status: 'ready'; household: Household | null }
+  | { userId: string; status: 'ready'; households: Household[] }
   | { userId: string; status: 'error' };
 
 function RootGate() {
   const { session, firstName } = useAuth();
   const [membership, setMembership] = useState<Membership | null>(null);
+  // Which household is showing (id). Restored from AsyncStorage at load, then
+  // driven by the switcher. Held separately from `membership` so switching
+  // never needs a refetch.
+  const [activeId, setActiveId] = useState<string | null>(null);
   // Bumping this re-runs the fetch – the retry screen's "Try again".
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -89,26 +99,65 @@ function RootGate() {
   useEffect(() => {
     if (userId == null) return;
     let cancelled = false;
-    fetchMyHousehold()
-      .then((result) => {
-        if (!cancelled) setMembership({ userId, status: 'ready', household: result });
-      })
-      .catch(() => {
+    (async () => {
+      try {
+        const [households, storedId] = await Promise.all([
+          fetchMyHouseholds(),
+          AsyncStorage.getItem(ACTIVE_HOUSEHOLD_KEY),
+        ]);
+        if (cancelled) return;
+        setMembership({ userId, status: 'ready', households });
+        // Keep the remembered pick if it is still a membership, else oldest.
+        setActiveId(households.find((h) => h.id === storedId)?.id ?? households[0]?.id ?? null);
+      } catch {
         if (!cancelled) setMembership({ userId, status: 'error' });
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, [userId, reloadKey]);
+
+  const setActiveHousehold = useCallback((id: string) => {
+    setActiveId(id);
+    AsyncStorage.setItem(ACTIVE_HOUSEHOLD_KEY, id).catch(() => {});
+  }, []);
+
+  const addHousehold = useCallback((household: Household) => {
+    setMembership((prev) =>
+      prev && prev.status === 'ready'
+        ? {
+            ...prev,
+            households: prev.households.some((h) => h.id === household.id)
+              ? prev.households
+              : [...prev.households, household],
+          }
+        : prev,
+    );
+    setActiveId(household.id);
+    AsyncStorage.setItem(ACTIVE_HOUSEHOLD_KEY, household.id).catch(() => {});
+  }, []);
+
+  const applyHouseholdUpdate = useCallback((household: Household) => {
+    setMembership((prev) =>
+      prev && prev.status === 'ready'
+        ? { ...prev, households: prev.households.map((h) => (h.id === household.id ? household : h)) }
+        : prev,
+    );
+  }, []);
 
   // Still restoring the stored session at launch: stay behind the splash.
   if (session === undefined) {
     return null;
   }
 
+  // Onboarding finishes with the user's first household – seed it as the only
+  // membership and make it active.
   const markHouseholdReady = (ready: Household) => {
     if (userId != null) {
-      setMembership({ userId, status: 'ready', household: ready });
+      setMembership({ userId, status: 'ready', households: [ready] });
+      setActiveId(ready.id);
+      AsyncStorage.setItem(ACTIVE_HOUSEHOLD_KEY, ready.id).catch(() => {});
     }
   };
 
@@ -140,7 +189,7 @@ function RootGate() {
     );
   }
 
-  if (current.household == null) {
+  if (current.households.length === 0) {
     return (
       <OnboardingFlow
         session={session}
@@ -150,9 +199,21 @@ function RootGate() {
     );
   }
 
+  const activeHousehold =
+    current.households.find((h) => h.id === activeId) ?? current.households[0];
+
   return (
-    <HouseholdProvider household={current.household}>
-      <AppTabs />
+    <HouseholdProvider
+      household={activeHousehold}
+      households={current.households}
+      setActiveHousehold={setActiveHousehold}
+      addHousehold={addHousehold}
+      applyHouseholdUpdate={applyHouseholdUpdate}
+    >
+      {/* Remount the tabs on switch so the meal-plan / shopping providers
+          start clean for the new household instead of showing the old one's
+          data until their effects re-run. */}
+      <AppTabs key={activeHousehold.id} />
     </HouseholdProvider>
   );
 }
