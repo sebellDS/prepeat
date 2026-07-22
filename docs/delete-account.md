@@ -1,6 +1,15 @@
 # Delete account & wipe my data (GDPR erasure) – spec
 
-Status: **decided 2026-07-21 (Thomas), not yet built. PRE-LAUNCH.**
+Status: **BUILT 2026-07-22 (commit 25df0ac), verified on device.** Migration
+0016 makes the attribution columns nullable + ON DELETE SET NULL and adds
+`delete_profile()`, which deletes sole-member households, clears check-off
+initials, then deletes the auth user. A direct `delete from auth.users` from a
+SECURITY DEFINER RPC works in Supabase, so **no Edge Function was needed**
+(the implementation note below anticipated one – it turned out unnecessary).
+UI: red-outline "Delete profile" in the Edit-profile sheet + a confirm sheet
+with a "type DELETE" fail-safe. Follow-up: recipe photos of deleted
+sole-member households stay orphaned in storage (no personal data). Original
+decisions below (decided 2026-07-21). PRE-LAUNCH gate now met.
 
 Two forces make this required, and one is a hard gate:
 

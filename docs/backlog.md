@@ -352,45 +352,59 @@ the family can start collecting favourites immediately.
 ## Later (v1.1+)
 
 From projektgrundlag "Later (v1.1+)" – committed but deferred past the v1
-ship. Surfaced 2026-07-20 (Thomas) while reviewing the welcome screen: none
-of the leave / multi-household journey is built yet.
+ship. Surfaced 2026-07-20 (Thomas) while reviewing the welcome screen.
 
-The whole household journey (switcher, join, leave, delete, invite) was
-**designed 2026-07-22** (Thomas) on the Figma "Household" page; reviewed and
-copy-fixed the same day. Build still pending. Details in each item below.
+The whole household journey (switcher, join, leave, invite, delete) was
+**designed AND built 2026-07-22** (Thomas), slice by slice on device, on the
+app's current lime/Montserrat tokens (the sage/Noto DS retune is a separate
+whole-app pass – see "In parallel"). Commits 61aa239 / 052aae0 / f4277cd /
+25df0ac.
 
-- [ ] **Leave household** – full spec + decisions in
-      [leave-household.md](leave-household.md) (decided 2026-07-20). Confirm →
-      atomic copy-on-leave into a new "[Firstname]'s Kitchen" (recipes only,
-      re-attributed to the leaver for GDPR), family membership removed. Needs a
-      SECURITY DEFINER RPC. Designed 2026-07-22: the Leave action lives inside
-      the **Edit household** sheet (not the main screen); confirm-sheet copy
-      updated in Figma to carry the copy-on-leave promise. Depends on "Change
-      household" below for the rejoin case.
-- [ ] **Change household (the switcher)** – flagged 2026-07-20, **designed
-      2026-07-22**. A dropdown from the "Household ▾" title lists the
-      households you belong to (checkmark on the active one) plus a "Join a
-      household" action; selecting one switches the active household. v1 today
-      shows one household (`fetchMyHousehold` = oldest membership) – build must
-      change that so the selected/just-joined household becomes active (not
-      oldest-wins) and parked kitchens stay reachable.
-- [ ] **Join another household** – designed 2026-07-22. "Join a household" in
-      the switcher reuses the onboarding invite-code screen and lands on the
-      welcome screen. This is the missing entry point that makes multi-household
-      actually reachable. (No "start a NEW household from the switcher" is
-      designed – only join-by-code; revisit if creating a second household from
-      here is wanted.)
-- [ ] **Invite by email** – designed 2026-07-22 in the "Invite someone" sheet:
-      invite a member by email OR share the code. Today invites are code-only
-      (`join_household_with_code`), so the email path is NEW backend work (an
-      email-sending step + an invite record keyed to the address). The
-      shareable code is the no-backend fallback and already works.
+- [x] **Change household (the switcher)** – built 2026-07-22 (commit 61aa239).
+      A dropdown from the "Household ▾" title lists the households you belong to
+      (checkmark on the active one) + "Join a household"; selecting switches the
+      active household. `fetchMyHouseholds` lists all memberships (scoped to the
+      user + deduped); active id persists in AsyncStorage; RootGate remounts the
+      tabs on switch so meal-plan/shopping re-fetch cleanly.
+- [x] **Join another household** – built 2026-07-22 (commit 61aa239). "Join a
+      household" opens a full-screen invite-code modal; on success the joined
+      household becomes active. The post-join welcome interstitial from the
+      design is deferred. (No "start a NEW household from the switcher" –
+      join-by-code only; revisit if wanted.)
+- [x] **Invite someone** – built 2026-07-22 (commit 052aae0). The card's
+      "Invite someone" opens a sheet with the code (copy) + "Share the code".
+      SIMPLIFIED from the design: the email field was dropped (Thomas preferred
+      the old simple sharing) – see "Invite by email" below.
+- [x] **Leave household (copy-on-leave)** – built 2026-07-22 (commit f4277cd).
+      Migration 0015 `leave_household()` (SECURITY DEFINER) copies live recipes
+      (+ingredients+steps) into a new "[Firstname]'s Kitchen" re-attributed to
+      the leaver, ends the old membership; the client copies recipe photos into
+      the new folder (recipe-photos is public-read, no Edge Function). Red-
+      outline "Leave household" in the Edit-**profile** sheet (only when others
+      exist) + confirm sheet. Spec: [leave-household.md](leave-household.md).
+- [ ] **Invite by email** – DEFERRED / likely dropped (Thomas 2026-07-22 chose
+      code-sharing only, removed the email field). If revived: an email-sending
+      backend (Edge Function or Supabase email) + an invite record keyed to the
+      address. The shareable code already works without it.
 - [ ] Merge two households / "copy a recipe to my other household" – the
       deferred merge mechanic that later lets a rejoiner bring their parked
       solo-kitchen recipes into the family (leave-household.md, rule A).
+- [ ] **Post-join welcome interstitial** – the design shows a "welcome to the
+      new household" screen after joining; the build lands you straight in.
+      Small polish.
 
 ## Decisions log (recent)
 
+- Household journey BUILT (2026-07-22, Thomas), slice by slice on device on the
+  app's current lime/Montserrat tokens: multi-household switcher + join (61aa239),
+  invite-someone sheet simplified to code-sharing only – email field dropped
+  (052aae0), leave household with copy-on-leave incl. photos (f4277cd), delete
+  profile / GDPR erasure with the type-DELETE fail-safe (25df0ac). Two learnings
+  worth keeping: a direct `delete from auth.users` from a SECURITY DEFINER RPC
+  works in Supabase, so **no Edge Function** was needed for erasure; and Leave/
+  Delete live in the Edit-**profile** sheet (not Edit household). Deferred:
+  the sage/Noto DS re-theme (whole app), photo-orphan cleanup on delete,
+  invite-by-email, the post-join welcome interstitial.
 - Household journey designed + reviewed (2026-07-22, Thomas). The Figma
   "Household" page now covers the switcher (header "Household ▾" dropdown +
   "Join a household"), join-another-household (reuses onboarding invite-code →
@@ -784,15 +798,18 @@ pre-retune published value).
 
 ## Pre-launch checklist (v1 ship)
 
-- [ ] **Delete account & wipe my data (GDPR erasure)** – spec + decisions in
-      [delete-account.md](delete-account.md) (decided 2026-07-21). Required by
-      both GDPR and Apple's App Store rule (apps with account creation must
-      offer in-app deletion), so it gates the public release. Lives in
-      Household for now; instant hard delete; shared recipes stay with the
-      family with the name cleared; nothing replaces the name. Needs an Edge
-      Function (service-role) plus a schema change making the attribution
-      columns nullable so erasure can clear them. Surfaced 2026-07-21 while
-      cleaning up a test user (the same FK blocks a manual delete hits).
+- [x] **Delete profile / wipe my data (GDPR erasure)** – BUILT 2026-07-22
+      (commit 25df0ac), verified on device. Spec: [delete-account.md](delete-account.md).
+      Migration 0016 makes the attribution columns nullable + ON DELETE SET
+      NULL, and `delete_profile()` deletes sole-member households, clears
+      check-off initials, then deletes the auth user – a direct `delete from
+      auth.users` from a SECURITY DEFINER RPC works, so **no Edge Function was
+      needed**. UI: red-outline "Delete profile" in the Edit-profile sheet + a
+      confirm sheet with the design's "type DELETE" fail-safe. Follow-up below.
+- [ ] **Delete profile – photo-orphan cleanup** (follow-up to the above): recipe
+      photos of deleted sole-member households stay in storage (orphaned, no
+      personal data – random-UUID food images). Clean them (client-side folder
+      removal before erasure, or a storage sweep) for a complete wipe.
 - [ ] Proper trademark search for "Prepeat" / "Prep+Eat"
 - [ ] App Store assets: icon, screenshots, description
 - [ ] Privacy policy (required for accounts + a database)
