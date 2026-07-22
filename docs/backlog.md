@@ -361,8 +361,8 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
       join-by-code only; revisit if wanted.)
 - [x] **Invite someone** – built 2026-07-22 (commit 052aae0). The card's
       "Invite someone" opens a sheet with the code (copy) + "Share the code".
-      SIMPLIFIED from the design: the email field was dropped (Thomas preferred
-      the old simple sharing) – see "Invite by email" below.
+      SIMPLIFIED from the design: the email field was dropped for the simpler
+      old code-sharing (Thomas). Invite-by-email is DROPPED, not deferred.
 - [x] **Leave household (copy-on-leave)** – built 2026-07-22 (commit f4277cd).
       Migration 0015 `leave_household()` (SECURITY DEFINER) copies live recipes
       (+ingredients+steps) into a new "[Firstname]'s Kitchen" re-attributed to
@@ -370,10 +370,6 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
       the new folder (recipe-photos is public-read, no Edge Function). Red-
       outline "Leave household" in the Edit-**profile** sheet (only when others
       exist) + confirm sheet. Spec: [leave-household.md](leave-household.md).
-- [ ] **Invite by email** – DEFERRED / likely dropped (Thomas 2026-07-22 chose
-      code-sharing only, removed the email field). If revived: an email-sending
-      backend (Edge Function or Supabase email) + an invite record keyed to the
-      address. The shareable code already works without it.
 - [ ] Merge two households / "copy a recipe to my other household" – the
       deferred merge mechanic that later lets a rejoiner bring their parked
       solo-kitchen recipes into the family (leave-household.md, rule A).
@@ -409,9 +405,9 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
   profile / GDPR erasure with the type-DELETE fail-safe (25df0ac). Two learnings
   worth keeping: a direct `delete from auth.users` from a SECURITY DEFINER RPC
   works in Supabase, so **no Edge Function** was needed for erasure; and Leave/
-  Delete live in the Edit-**profile** sheet (not Edit household). Deferred:
-  photo-orphan cleanup on delete, invite-by-email, the post-join welcome
-  interstitial.
+  Delete live in the Edit-**profile** sheet (not Edit household). Deferred at
+  the time: photo-orphan cleanup (since done), the post-join welcome
+  interstitial. Invite-by-email was later DROPPED (2026-07-22).
 - CORRECTION (2026-07-22): an earlier note in this session claimed a "DS retune
   to sage/Noto" requiring a whole-app re-theme. That was wrong – the sage/Noto
   values came from reading a DIFFERENT brand's mode in the multi-brand Sebell DS
