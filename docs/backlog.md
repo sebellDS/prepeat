@@ -380,6 +380,17 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
 - [ ] **Post-join welcome interstitial** – the design shows a "welcome to the
       new household" screen after joining; the build lands you straight in.
       Small polish.
+- [ ] **Delete household** – NEW gap, flagged 2026-07-22 (Thomas). Multi-
+      household makes it possible to hold a solo kitchen you don't want (e.g. a
+      parked "[Firstname]'s Kitchen" left behind by copy-on-leave), and there's
+      no way to remove it: Leave is blocked on a solo household ("nobody to
+      leave") and there's no delete. Only deleting the whole account clears it.
+      Coherent model to design + build: **multi-member household → Leave**
+      (exists); **solo household when you have others → Delete household** (new –
+      wipes it + its recipes/plans/lists, which are yours alone); **your only
+      household → neither** (always keep ≥1). Thomas will DESIGN it in Figma
+      first (2026-07-22), then build. The sole-member wipe can reuse the logic
+      already in `delete_profile()` (0016).
 
 ## Decisions log (recent)
 
