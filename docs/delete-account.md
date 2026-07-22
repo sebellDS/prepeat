@@ -11,6 +11,10 @@ Two forces make this required, and one is a hard gate:
 So unlike [leave-household.md](leave-household.md) (v1.1+), this ships **before**
 the public App Store release. Filed under the Pre-launch checklist.
 
+**Terminology (design 2026-07-22):** the UI calls this **"Delete profile"** and
+reaches it from **"Edit your profile"**. Throughout this spec "account" means
+the same thing – the user-facing word is "profile".
+
 ## Goal
 
 Let a user erase themselves and every trace that points to them – without
@@ -55,8 +59,9 @@ data" is **erase-me + anonymise-my-traces + delete-anything-only-mine**, not
 
 ## Locked decisions (Thomas, 2026-07-21)
 
-1. **Where:** lives in **Household** for now (no separate Settings/Account area
-   yet – it can move there later alongside Leave household).
+1. **Where:** in the **Household** area. Designed 2026-07-22 inside the **Edit
+   your profile** sheet (reached from the pencil on your own member row) – not
+   on the main screen. No separate Settings/Account area yet.
 2. **Timing:** **instant** hard delete on confirm – no grace period, no undo,
    no scheduled cleanup job. The strong confirmation in step 3 is the guard.
 3. **Recipes you added to a shared family:** the **family keeps them, your name

@@ -344,26 +344,52 @@ From projektgrundlag "Later (v1.1+)" – committed but deferred past the v1
 ship. Surfaced 2026-07-20 (Thomas) while reviewing the welcome screen: none
 of the leave / multi-household journey is built yet.
 
+The whole household journey (switcher, join, leave, delete, invite) was
+**designed 2026-07-22** (Thomas) on the Figma "Household" page; reviewed and
+copy-fixed the same day. Build still pending. Details in each item below.
+
 - [ ] **Leave household** – full spec + decisions in
-      [leave-household.md](leave-household.md) (decided 2026-07-20). Leave
-      button in Household → confirm → atomic copy-on-leave into a new
-      "[Firstname]'s Kitchen" (recipes only, re-attributed to the leaver for
-      GDPR), family membership removed. Needs: a SECURITY DEFINER RPC and the
-      confirmation screen designed in Figma. Depends on "Change household"
-      below for the rejoin case.
-- [ ] **Change household (the switcher)** – NEW, flagged 2026-07-20 (Thomas).
-      v1 shows one household by design (`fetchMyHousehold` = oldest
-      membership). Leave/rejoin makes a two-household state reachable for the
-      first time, so a way to switch the active household graduates from
-      "someday" to a real dependency. Minimum for Leave: on rejoin, the
-      just-joined household becomes active (not oldest-wins) and the parked
-      solo kitchen stays reachable. Design the switcher UI.
+      [leave-household.md](leave-household.md) (decided 2026-07-20). Confirm →
+      atomic copy-on-leave into a new "[Firstname]'s Kitchen" (recipes only,
+      re-attributed to the leaver for GDPR), family membership removed. Needs a
+      SECURITY DEFINER RPC. Designed 2026-07-22: the Leave action lives inside
+      the **Edit household** sheet (not the main screen); confirm-sheet copy
+      updated in Figma to carry the copy-on-leave promise. Depends on "Change
+      household" below for the rejoin case.
+- [ ] **Change household (the switcher)** – flagged 2026-07-20, **designed
+      2026-07-22**. A dropdown from the "Household ▾" title lists the
+      households you belong to (checkmark on the active one) plus a "Join a
+      household" action; selecting one switches the active household. v1 today
+      shows one household (`fetchMyHousehold` = oldest membership) – build must
+      change that so the selected/just-joined household becomes active (not
+      oldest-wins) and parked kitchens stay reachable.
+- [ ] **Join another household** – designed 2026-07-22. "Join a household" in
+      the switcher reuses the onboarding invite-code screen and lands on the
+      welcome screen. This is the missing entry point that makes multi-household
+      actually reachable. (No "start a NEW household from the switcher" is
+      designed – only join-by-code; revisit if creating a second household from
+      here is wanted.)
+- [ ] **Invite by email** – designed 2026-07-22 in the "Invite someone" sheet:
+      invite a member by email OR share the code. Today invites are code-only
+      (`join_household_with_code`), so the email path is NEW backend work (an
+      email-sending step + an invite record keyed to the address). The
+      shareable code is the no-backend fallback and already works.
 - [ ] Merge two households / "copy a recipe to my other household" – the
       deferred merge mechanic that later lets a rejoiner bring their parked
       solo-kitchen recipes into the family (leave-household.md, rule A).
 
 ## Decisions log (recent)
 
+- Household journey designed + reviewed (2026-07-22, Thomas). The Figma
+  "Household" page now covers the switcher (header "Household ▾" dropdown +
+  "Join a household"), join-another-household (reuses onboarding invite-code →
+  welcome), invite-by-email, and moves Leave/Delete into the Edit household /
+  Edit your profile sheets. Reviewed and copy-fixed in Figma (spelling,
+  "1 member", lowercase "household", leave/delete confirmation copy aligned to
+  the specs). Terminology: the UI calls it **"Delete profile"** / **"Edit your
+  profile"** (the spec's "account" = this "profile"). Open: the auto-name shown
+  ("Thomas3' kitchen") must follow the spec format "[Firstname]'s Kitchen"
+  (capital K, proper 's) when built.
 - Delete account / GDPR erasure spec settled (2026-07-21, Thomas) – full
   write-up in [delete-account.md](delete-account.md). Calls: lives in Household
   (no Settings area yet); instant hard delete (no grace period); recipes added

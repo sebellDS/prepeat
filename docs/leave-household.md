@@ -138,6 +138,20 @@ two-household state reachable for the first time, so the switcher graduates
 from "someday" to a real dependency of this feature. Tracked as its own
 backlog item.
 
+**Designed 2026-07-22.** The switcher is a dropdown from the "Household ▾"
+title: it lists the households you belong to (checkmark on the active one)
+plus a "Join a household" action; selecting one switches the active
+household. Joining reuses the onboarding invite-code screen and lands on the
+welcome screen. Build must change `fetchMyHousehold`'s "oldest membership
+wins" rule so the selected / just-joined household becomes active. The Leave
+action lives inside the **Edit household** sheet; its confirmation copy in
+Figma now carries the copy-on-leave promise.
+
+**Naming:** the design shows the personal household by its auto-name in the
+switcher (earlier "My own kitchen" was a placeholder). The mock reads
+"Thomas3' kitchen" – build must generate it as **"[Firstname]'s Kitchen"**
+(capital K, proper 's, e.g. "Thomas's Kitchen") per decision #3.
+
 ## Confirmation copy (draft – refine at design time)
 
 > **Leave [Household name]?**
