@@ -828,9 +828,16 @@ pre-retune published value).
       Xcode 16. `devicectl` accepts the hardware UDID directly (no need for
       the separate CoreDevice id). WATCH the printed expiry – if it ever
       comes back under ~7 days out, the free dev CERTIFICATE (also 7-day) is
-      the limiter and needs regenerating too. Pia's phone still on the old
-      window – renew hers with a build too. User re-trusts on each phone
+      the limiter and needs regenerating too. User re-trusts on each phone
       after a fresh profile if prompted.
+      - **Device UDIDs** (pass as the arg: `./scripts/build-iphone.sh <UDID>`;
+        no arg defaults to Thomas's): Thomas's iPhone 15 Pro
+        `00008130-000C28221489001C`; Pia's iPhone 17 ("PHS work phone")
+        `00008150-00086D290198401C`.
+      - **Both phones on the 2026-07-22 build** (the full household journey).
+        Pia's phone brought current 2026-07-22 – first install, so she must
+        trust the dev profile (Settings → General → VPN & Device Management →
+        Trust) before the app opens. Both now need the weekly renewal.
 - [ ] After every DS publish/retune (Thomas says "DS published"): rebuild
       tokens in the DS repo, `npm run sync-ds-tokens` here, diff
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12)
