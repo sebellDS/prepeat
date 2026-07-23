@@ -927,5 +927,73 @@ pre-retune published value).
       allows it), before the delete RPC. Best-effort – a failed removal is
       logged, never blocks the delete. Verified on device (listed 1, removed 1).
 - [ ] Proper trademark search for "Prepeat" / "Prep+Eat"
-- [ ] App Store assets: icon, screenshots, description
+- [x] iOS app icon shipped 2026-07-23. Thomas designed "app icon 2" (node
+      296:6786 in nA8SLN8rhdBov97B1IYxnP): Montserrat Bold "prep+eat" in
+      white on #83E651, the + in #476B4A. Exported at 1024x1024 to
+      assets/images/icon.png; the Figma export carries an alpha channel
+      that Apple's validator rejects, so it is re-encoded as RGB colorType
+      2 (verified opaque first – minimum alpha was 255, nothing lost).
+      app.json: removed ios.icon (was the Expo template's
+      assets/expo.icon Icon Composer bundle, now deleted) so iOS uses the
+      top-level expo.icon.
+      BUG, build 6, shipped corrupt (Thomas caught it on the home screen –
+      tiled smear, wrong colours, white band along the bottom). Cause: the
+      alpha-stripping script packed 3 bytes per pixel into pngjs's `data`
+      buffer, which is ALWAYS RGBA/4 bytes per pixel whatever colorType
+      you construct it with – every pixel shifted progressively and the
+      last quarter of the image ran out of data. Correct way: leave `data`
+      as RGBA and pass {colorType: 2} to PNG.sync.write, letting the
+      packer convert. Lesson: spot-checking a few pixels passed on the
+      broken file (the corner happened to be plausible) – LOOK at the
+      exported image before shipping it.
+      OPEN, flagged rather than improvised:
+      - Android adaptiveIcon still points at the EXPO TEMPLATE art
+        (android-icon-foreground/background/monochrome + backgroundColor
+        #E6F4FE). Not designed yet, and Android isn't shipping, so it was
+        left alone rather than approximated. Needs "android-foreground"
+        (art inside the centre 66% safe zone) and "android-monochrome"
+        (single-colour silhouette) frames.
+      - No ios-dark / ios-tinted variants yet (iOS 18+ appearance icons).
+      - iOS launch screen DONE 2026-07-23. Thomas first pointed at the
+        photo version (298:6806 "launch-screen 1"), then designed two
+        more and chose 298:7330 "launch-screen 3" – type only, no photo:
+        "prep. cook. eat. repeat." in Montserrat Bold 56/56, #5F503A with
+        #56C91D full stops, over the tagline in Montserrat Bold 24/32 all
+        in #56C91D. Background: Thomas first had a subtle vertical
+        gradient, then dropped it the same day – it is now a FLAT
+        color/surface/neutral/lightest (#F8F7F7, and ds-theme.cjs
+        colors.surface.neutral.lightest agrees, no drift). Re-read the
+        design and re-exported after that change; the first export had
+        the gradient baked in. Exported at 4x to
+        assets/images/launch-screen.png (1608x3496) and wired into the
+        expo-splash-screen plugin as ios.image, resizeMode cover,
+        backgroundColor #F8F7F7 (the design's base colour).
+        Aspect-ratio note: the frame is 402x874 (0.460), which matches
+        every modern iPhone almost exactly, so `cover` crops
+        imperceptibly. An iPhone SE (0.562) would crop top and bottom
+        and push the type up – not a concern for the family's phones,
+        but it's the failure mode if it ever looks wrong on an older
+        device.
+        Full-bleed on iOS needs ios.enableFullScreenImage_legacy – the
+        SDK 56 docs mark that flag legacy and say it will be REMOVED, so
+        this needs revisiting at some future SDK upgrade.
+        Also removed <AnimatedSplashOverlay /> from src/app/_layout.tsx:
+        Expo template code that flashed a solid #208AEF (Expo blue) over
+        the app for 600ms after the native splash hid – actively wrong
+        against a photo launch screen. Removed rather than recoloured,
+        because the splash→app transition isn't designed; if a transition
+        IS wanted, it needs drawing.
+      - Android splash still uses Expo's splash-icon.png. Left alone: the
+        Android 12+ splash system forces a centred icon in a circle, so
+        the full-bleed photo can't be reused there – it needs its own
+        design. src/components/animated-icon.tsx (now only used for the
+        unused AnimatedIcon export) + web-badge.tsx still reference
+        expo-logo/expo-badge/logo-glow. Leftover template art, separate
+        cleanup.
+      - Legibility: Claude twice warned the wordmark would be an
+        illegible smudge at home-screen size. WRONG – build 7 verified on
+        Thomas's iPhone reads clearly, both lines, and the + clears the
+        squircle mask. Design stands as drawn; no change wanted.
+- [ ] App Store assets: screenshots, description (icon has its own item
+      above)
 - [ ] Privacy policy (required for accounts + a database)

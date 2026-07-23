@@ -21,7 +21,6 @@ import { Pressable, Text, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { OnboardingFlow } from '@/components/onboarding/onboarding-flow';
 import { AuthProvider, useAuth } from '@/lib/auth';
@@ -62,7 +61,6 @@ export default function TabLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AnimatedSplashOverlay />
           <RootGate />
         </ThemeProvider>
       </AuthProvider>

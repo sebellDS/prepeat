@@ -9,7 +9,6 @@
     "scheme": "prepeat",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.prepeat",
       "appleTeamId": "Z58TG8X9KB",
       "infoPlist": {
@@ -35,7 +34,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#F8F7F7",
+          "ios": {
+            "image": "./assets/images/launch-screen.png",
+            "resizeMode": "cover",
+            "enableFullScreenImage_legacy": true
+          },
           "android": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
