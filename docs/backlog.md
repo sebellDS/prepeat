@@ -299,7 +299,49 @@ the family can start collecting favourites immediately.
       Open tweak if wanted: re-default the counter to each newly-tapped
       recipe in a multi-add (one-liner).
 
+- [x] Swipe affordance on every swipeable row (Thomas, 2026-07-23):
+      more_vert at the row end, from the Figma recipe row 147:24404,
+      24px in icon/default #4F4230. Shared component
+      src/components/ui/swipe-hint.tsx, used by the planned-meal row,
+      shopping item row, recipe ingredient + step rows, and the draft
+      ingredient + step rows on the add-recipe form. Done shopping items
+      deliberately have NO hint – those rows can't be swiped.
+      Tapping the dots slides the row open (Thomas's call, after Claude
+      flagged that a three-dot icon reads as a button and would otherwise
+      be a dead control). Wired with a small React context,
+      SwipeRowProvider, so each swipeable hands its openRight() down to
+      the hint without threading a prop through every row's content – the
+      four SwipeActions call sites needed no change at all. The hint's
+      Pressable nests inside the row's own Pressable on purpose: React
+      Native gives the touch to the innermost one, so tapping the dots
+      opens the actions instead of firing the row's press.
+      Ingredient row order confirmed by Thomas: name, amount, three dots.
+      NOT yet verified on a device – it's behind sign-in, so the web
+      preview can't reach it.
+
 ## In parallel – when it fits
+
+- [ ] Dev build variant so the TestFlight app and a fast cable build can
+      live on ONE phone at once (raised 2026-07-23, when the round-trip to
+      TestFlight – ~8 min compile + 1-45 min Apple upload + processing –
+      proved too slow for iterating on UI). NOT needed yet; only worth it
+      when Thomas wants to hack on the app while ALSO keeping a working
+      build on his own phone. Right now both pipelines already work, they
+      just can't coexist on the same phone: scripts/build-iphone.sh builds
+      bundle id app.prepeat, the SAME as the TestFlight build (confirmed
+      in the script, line ~30), so whichever installs last overwrites the
+      other, and switching between them can force a delete+reinstall
+      because the signing differs (free 7-day dev vs distribution). That
+      wipes device-local state only (active-household pick, cooking-mode
+      checks); recipes/plan/shopping live in Supabase and re-sync.
+      The fix when wanted: a separate identity for the dev build –
+      bundleIdentifier app.prepeat.dev, name "Prep+Eat Dev", a tinted
+      icon – via an app.config variant keyed off an env flag, so it
+      installs as a second icon alongside the TestFlight app. Standard
+      Expo pattern, ~30 min. build-iphone.sh would set the flag; the EAS
+      production profile would leave it off. Two phones (Thomas cable,
+      family TestFlight) is the zero-setup alternative and is what we do
+      today.
 
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables (also ends the 7-day rebuild ritual on both
@@ -387,11 +429,52 @@ the family can start collecting favourites immediately.
             PROVEN 2026-07-23: build 5 installed from TestFlight and
             launched cleanly on Thomas's iPhone. The whole path (EAS cloud
             build → eas submit → TestFlight → install) now works.
+      - [x] Submit HANG 2026-07-23 ~19:07: build 9's `eas submit` wedged on
+            "Submitting" for 90 min and never handed the build to Apple
+            (builds 4-8 present in ASC, 9 absent). The upload runs on
+            Expo's servers; the CLI only watches, so a server-side stall
+            shows as an endless spinner with no error. Killed the CLI (safe
+            – server-side submission is separate) and re-ran submit; a
+            duplicate upload of an already-present build number is ignored
+            by Apple, so retry is free. FIX going forward (Thomas's call):
+            split the one build+submit script into two –
+            scripts/eas-build-ios.sh (build only) and
+            scripts/eas-submit-ios.sh (submit only), sharing
+            scripts/eas-env.sh. The submit script has a WATCHDOG: no output
+            for 600s → kill + non-zero exit + "safe to retry" message,
+            instead of hanging. A build is now a build and a stuck submit
+            is obvious immediately. NOTE: the old `--submit` flag is gone;
+            build then submit as two commands.
+            TWIST: the retry then exposed a SECOND, different CLI fault –
+            the re-submit's upload actually SUCCEEDED (~25 min, build 9
+            VALID in ASC at 12:02 PT) but the CLI never noticed and kept
+            printing "Submitting" past 30 min. So `eas submit` completion
+            is unreliable in BOTH directions: it can hang when stuck AND
+            hang after success. The trustworthy success signal is Apple's
+            side – the build showing VALID in App Store Connect – NOT the
+            CLI. The 600s-no-output watchdog covers the genuinely-stuck
+            case; the after-success hang would trip it too and a retry is
+            harmless (Apple rejects a duplicate build number).
+            IMPROVEMENT worth doing (not yet built): have
+            eas-submit-ios.sh poll ASC for the build going VALID as the
+            real done-signal, instead of trusting the CLI. The JWT-signed
+            ASC query already exists as a scratchpad script
+            (scratchpad/asc.mjs pattern) and could move into the repo.
       - [ ] Thomas: add the family as TestFlight testers under TestFlight →
-            Internal Testing (up to 100 internal testers, no Apple review –
-            do NOT use External Testing, that one queues for review and
-            isn't needed here). Pia's phone is the one still on the 7-day
-            ritual.
+            Internal Testing (up to 100 internal testers, 30 devices each,
+            no Apple review). Pia invited 2026-07-23, not yet accepted.
+            Internal testers must ALSO be App Store Connect team users, so
+            they get TWO emails – the App Store Connect team invite has to
+            be accepted first or the TestFlight one fails with a useless
+            error. Send them docs/testflight-tester-guide.md, written for
+            a non-technical tester to follow unaided.
+            External testing (up to 10,000, no account access, public
+            link) is the route for anyone outside the household – but the
+            first build needs Beta App Review, and because Prep+Eat gates
+            everything behind sign-in that review WILL need a working demo
+            account with a household and some recipes in it, plus a beta
+            description and contact email. Not needed while it's family
+            only (Thomas, 2026-07-23: internal only for now).
       - [ ] Keep running scripts/build-iphone.sh on PIA's phone every ~7
             days until she has installed from TestFlight too. Thomas's
             phone no longer needs it (TestFlight install confirmed
