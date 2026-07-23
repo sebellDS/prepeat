@@ -22,6 +22,7 @@ import { StepSheet } from "@/components/recipes/step-sheet";
 import type { ImportedRecipe } from "@/lib/recipe-import";
 import { ReorderSheet } from "@/components/ui/reorder-sheet";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
+import { SwipeHint } from "@/components/ui/swipe-hint";
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
@@ -372,6 +373,7 @@ export default function AddRecipeScreen() {
                               {ingredient.quantityText}
                             </Text>
                           )}
+                          <SwipeHint />
                         </View>
                       </SwipeActions>
                     </Fragment>
@@ -440,6 +442,7 @@ export default function AddRecipeScreen() {
                           >
                             {step}
                           </Text>
+                          <SwipeHint />
                         </View>
                       </SwipeActions>
                     </Fragment>

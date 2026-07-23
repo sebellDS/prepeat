@@ -5,6 +5,7 @@ import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
 
+import { SwipeRowProvider } from "@/components/ui/swipe-hint";
 import { ds } from "@/constants/ds";
 
 /**
@@ -64,7 +65,9 @@ export function SwipeActions({
         </View>
       )}
     >
-      {children}
+      <SwipeRowProvider open={() => swipeable.current?.openRight()}>
+        {children}
+      </SwipeRowProvider>
     </ReanimatedSwipeable>
   );
 }

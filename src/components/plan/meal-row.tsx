@@ -6,6 +6,7 @@ import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
 
+import { SwipeHint, SwipeRowProvider } from "@/components/ui/swipe-hint";
 import { ds } from "@/constants/ds";
 import { type PlanEntry } from "@/lib/meal-plan";
 
@@ -91,50 +92,53 @@ export function MealRow({
         </View>
       )}
     >
-      <Pressable
-        onPress={handlePress}
-        accessibilityRole="button"
-        accessibilityLabel={
-          isManual ? entry.recipeTitle : `Open ${entry.recipeTitle}`
-        }
-        className="w-full flex-row items-center gap-comp-small border-b border-border-subtle bg-surface-neutral-white py-comp-small pl-comp-small pr-comp-large"
-      >
-        {entry.recipeImageUrl ? (
-          <Image
-            source={{ uri: entry.recipeImageUrl }}
-            style={{ width: 40, height: 40, borderRadius: 8 }}
-            contentFit="cover"
-          />
-        ) : (
-          <View className="h-[40px] w-[40px] items-center justify-center rounded-small bg-surface-neutral-lighter">
-            <MaterialIcons
-              name="restaurant"
-              size={20}
-              color={ds.colors.icon.subtle}
+      <SwipeRowProvider open={() => swipeable.current?.openRight()}>
+        <Pressable
+          onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isManual ? entry.recipeTitle : `Open ${entry.recipeTitle}`
+          }
+          className="w-full flex-row items-center gap-comp-small border-b border-border-subtle bg-surface-neutral-white py-comp-small pl-comp-small pr-comp-large"
+        >
+          {entry.recipeImageUrl ? (
+            <Image
+              source={{ uri: entry.recipeImageUrl }}
+              style={{ width: 40, height: 40, borderRadius: 8 }}
+              contentFit="cover"
             />
-          </View>
-        )}
-        <View className="min-w-0 flex-1">
-          <Text
-            numberOfLines={1}
-            className="font-header text-display-6 font-emphasized leading-xsmall text-text-accent"
-          >
-            {entry.recipeTitle}
-          </Text>
-          {!isManual && (
-            <View className="flex-row items-center gap-comp-small">
+          ) : (
+            <View className="h-[40px] w-[40px] items-center justify-center rounded-small bg-surface-neutral-lighter">
               <MaterialIcons
-                name="people-alt"
-                size={16}
-                color={ds.colors.icon.default}
+                name="restaurant"
+                size={20}
+                color={ds.colors.icon.subtle}
               />
-              <Text className="font-paragraph text-small font-default leading-xxsmall text-text-default">
-                {entry.servings} servings
-              </Text>
             </View>
           )}
-        </View>
-      </Pressable>
+          <View className="min-w-0 flex-1">
+            <Text
+              numberOfLines={1}
+              className="font-header text-display-6 font-emphasized leading-xsmall text-text-accent"
+            >
+              {entry.recipeTitle}
+            </Text>
+            {!isManual && (
+              <View className="flex-row items-center gap-comp-small">
+                <MaterialIcons
+                  name="people-alt"
+                  size={16}
+                  color={ds.colors.icon.default}
+                />
+                <Text className="font-paragraph text-small font-default leading-xxsmall text-text-default">
+                  {entry.servings} servings
+                </Text>
+              </View>
+            )}
+          </View>
+          <SwipeHint />
+        </Pressable>
+      </SwipeRowProvider>
     </ReanimatedSwipeable>
   );
 }

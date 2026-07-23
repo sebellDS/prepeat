@@ -25,6 +25,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ReorderSheet } from "@/components/ui/reorder-sheet";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
+import { SwipeHint } from "@/components/ui/swipe-hint";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
 import { AddToPlanSheet } from "@/components/recipes/add-to-plan-sheet";
@@ -675,6 +676,7 @@ function IngredientRow({
               {quantityText}
             </Text>
           )}
+          <SwipeHint />
         </Pressable>
       </SwipeActions>
     </View>
@@ -737,6 +739,7 @@ function StepRow({
           >
             {step.text}
           </Text>
+          <SwipeHint />
         </Pressable>
       </SwipeActions>
     </View>

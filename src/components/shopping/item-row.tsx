@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { useRef } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { SwipeHint, SwipeRowProvider } from '@/components/ui/swipe-hint';
 import { ds } from '@/constants/ds';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
@@ -104,6 +105,8 @@ export function ItemRow({
           </Text>
         </View>
       )}
+      {/* Done-section rows can't be swiped, so they get no hint. */}
+      {!showInitial && <SwipeHint />}
     </Pressable>
   );
 
@@ -154,7 +157,9 @@ export function ItemRow({
           </Pressable>
         </View>
       )}>
-      {row}
+      <SwipeRowProvider open={() => swipeable.current?.openRight()}>
+        {row}
+      </SwipeRowProvider>
     </ReanimatedSwipeable>
   );
 }
