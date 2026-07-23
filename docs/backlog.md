@@ -361,27 +361,42 @@ the family can start collecting favourites immediately.
             directly (ES256 JWT, aud "appstoreconnect-v1", sign with
             dsaEncoding 'ieee-p1363') to read certs/apps without eas-cli's
             interactive credentials menu.
-      - [ ] IN FLIGHT overnight 2026-07-22→23: `eas submit -p ios --latest`
-            uploaded build 4 (id 837bc127-3f00-4009-ac0f-1df136cd5bea) with
-            Thomas's go-ahead at ~00:15. EAS reported "Scheduled iOS
-            submission" and then sat on "Submitting" for 20+ min; the ASC
-            API showed no build in App Store Connect yet when the session
-            ended. Submission page:
-            https://expo.dev/accounts/sebell/projects/prepeat/submissions/b8a97e1a-ed80-45b1-a7cf-b09c433a6e76
-            FIRST THING NEXT SESSION: check whether it completed –
-            `npx eas-cli build:list --platform ios --limit 1
-            --non-interactive` plus the ASC builds query (the scratchpad
-            script pattern is recorded above). If it failed, just re-run
-            `npx eas-cli submit --platform ios --profile production
-            --latest --non-interactive`; the .ipa is already built, so a
-            retry costs nothing and needs no rebuild.
-      - [ ] Thomas: add the family as TestFlight testers, once the build
-            shows up under TestFlight → Internal Testing (up to 100
-            internal testers, no Apple review – do NOT use External
-            Testing, that one queues for review and isn't needed here).
-      - [ ] Keep running scripts/build-iphone.sh on both phones every ~7
-            days until a family phone has ACTUALLY installed from
-            TestFlight. The upload succeeding is not proof; the install is.
+      - [x] LANDED 2026-07-23 ~01:00: `eas submit -p ios --latest` finished
+            ("Submitted your app to Apple App Store Connect!") and Apple
+            processed build 4 (id 837bc127-3f00-4009-ac0f-1df136cd5bea) to
+            processingState VALID. It is live at
+            https://appstoreconnect.apple.com/apps/6793690543/testflight/ios
+            Timing note for next time: the upload sat on "Submitting" for
+            ~45 min before completing – that is normal for a first upload
+            on a fresh account, not a hang. Don't kill it and retry.
+      - [x] Build 4 CRASHED ON LAUNCH from TestFlight (2026-07-23 08:07,
+            Thomas's iPhone 16). Cause: EAS cloud builds never see the
+            gitignored .env, so EXPO_PUBLIC_SUPABASE_URL/ANON_KEY were
+            missing and src/lib/supabase.ts threw at module load – which
+            reads as a native EXC_CRASH/SIGABRT (RCTFatal via
+            RCTExceptionsManager) even though the cause is plain JS. The
+            build log had warned: "No environment variables ... found for
+            the 'production' environment on EAS" – treat that line as an
+            error in future. Fixed by pushing both vars to the EAS project
+            (production + preview + development, plaintext) with
+            `npx eas-cli env:set`; build 5 confirms them loading. Any NEW
+            EXPO_PUBLIC_* var added to .env must be pushed to EAS too.
+      - [x] Build 5 (with the Supabase env vars) uploaded and processed to
+            VALID 2026-07-23 ~09:35. Upload took ~1 min this time vs ~45 for
+            the first one, so the slow first upload really was a one-off.
+            PROVEN 2026-07-23: build 5 installed from TestFlight and
+            launched cleanly on Thomas's iPhone. The whole path (EAS cloud
+            build → eas submit → TestFlight → install) now works.
+      - [ ] Thomas: add the family as TestFlight testers under TestFlight →
+            Internal Testing (up to 100 internal testers, no Apple review –
+            do NOT use External Testing, that one queues for review and
+            isn't needed here). Pia's phone is the one still on the 7-day
+            ritual.
+      - [ ] Keep running scripts/build-iphone.sh on PIA's phone every ~7
+            days until she has installed from TestFlight too. Thomas's
+            phone no longer needs it (TestFlight install confirmed
+            2026-07-23) – see the Recurring item below, which can be
+            closed once Pia is on TestFlight.
       - [ ] Joint, after activation: first `eas build` (EAS manages the
             distribution cert + profile), then `eas submit` to TestFlight.
 - [ ] "Continue with Apple" button once the paid developer account exists
