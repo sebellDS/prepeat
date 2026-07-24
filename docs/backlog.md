@@ -2,532 +2,59 @@
 
 The working to-do list for the project. Scope and decisions live in
 [projektgrundlag.md](projektgrundlag.md) – this file is about what happens
-next and in which order. Checked items move to git history; ideas graduate
-upward when we commit to them.
+next and in which order. Completed items are pruned and live in git history;
+the Decisions log below keeps the reasoning that's still worth having close.
+Ideas graduate upward when we commit to them.
 
 Ordering principle (agreed 2026-07-08): things that stand on their own and
 deliver value by themselves come before things that depend on them – and
 when a milestone finishes, the order gets a fresh look before starting the
 next one.
 
-## Next milestone: recipes
+Pruned 2026-07-24: the recipes, weekly-plan and multi-household milestones
+all shipped (on TestFlight); their finished items were removed. Only open
+threads remain below.
 
-Chosen ahead of the weekly plan (2026-07-08): the planner's core
-interaction is picking a recipe, the plan→shopping-list magic needs recipe
-ingredients to snapshot, and recipes are useful on their own from day one –
-the family can start collecting favourites immediately.
+## Recipes & weekly plan (shipped – leftover)
 
-- [x] Design: recipes screens (Thomas, 2026-07-12; reviewed, spelling and
-      copy fixed in the file the same day)
-- [x] Build: migration 0006 (recipes/ingredients/steps + shared favorite +
-      photo storage bucket) and all screens – list with search+chips,
-      detail with servings scaling and cooking check-offs, add/edit form
-      with photo picking, sheets and dialogs (built 2026-07-12)
-- [x] Apply migration 0006 in the Supabase dashboard (Thomas; SQL goes on
-      the clipboard) – the Recipes tab needs it
-- [x] Device build with expo-image-picker (new native module) + walk every
-      recipe flow on-device
-- [ ] Build notes to revisit: the Figma form has no save button (added a
-      solid "Save recipe" at the bottom – design one if it should differ).
-      (Two stale notes cleared 2026-07-16: "Add to weekly plan" is now
-      wired into the recipe menu, and the edit form has been full-featured
-      – ingredients/steps included – since the focused-sheet rework
-      2026-07-15, not facts-only.)
-- [x] URL import – built 2026-07-12: paste a link on the Add-recipe screen,
-      the app reads the page's embedded recipe data (JSON-LD and microdata
-      flavors) and prefills the whole form for review; source link stored
-      on the recipe. Verified live against valdemarsro.dk (Danish
-      microdata, 14 ingredients + 5 steps + times parsed)
 - [ ] Import fallback for bot-blocking sites (madensverden.dk, allrecipes
       refused non-browser fetches in testing): hidden-WebView fetch is the
-      known fix if the family's sites need it – test the family's real
-      sites first
-- [ ] "Add from a link" sheet is improvised in code – design it if it
-      should look different (2026-07-12)
-
-## Then: the weekly plan
-
-- [x] Design: weekly plan screen (Plan tab) – reviewed 2026-07-16 (Thomas),
-      see decisions log. Copy/QA fixed in Figma the same day. Three
-      follow-ups designed + reviewed 2026-07-16:
-      - [x] Moving between weeks (prev/next switcher; nav disabled at the
-            edges, 2 weeks back is the limit)
-      - [x] Header "+" = add another week (clean or copy-this-week's-meals)
-      - [x] Empty-search state in the recipe picker (leads to "Add recipe")
-- [x] Parked question, RESOLVED 2026-07-16: how do mid-week plan changes
-      (new meals, changed servings) reach a non-empty shopping list? Answer:
-      the list live-reconciles with the plan for the week (A + rails, see
-      decisions log). The week switcher on the shopping list (above) gives
-      each week its own list that stays in step with its plan.
-- [x] Design + build: week switcher on the shopping list (designed +
-      built 2026-07-16). Migration 0008 makes lists per-week (the legacy
-      list becomes the current week's); the picker mirrors the plan's
-      navigation rule (existing lists ∪ plan weeks ∪ current week, two
-      back); an untouched week shows the normal "Time to prep" empty state
-      whose "Fill from weekly plan" fills from THAT week's plan.
-- [x] Apply migration 0008 in the Supabase dashboard – needed a second run
-      (2026-07-16): the first apply silently executed only part of the SQL,
-      leaving the old one-list-per-household index in place, which broke the
-      shopping boot (blank list + Offline badge). LESSON for every future
-      migration: the Supabase SQL editor runs ONLY the highlighted text if
-      any is selected – click once in the editor to clear the selection
-      before hitting Run, and prefer migrations that end with a verifying
-      SELECT so success is visible.
-- [x] Design nit settled 2026-07-16: Thomas unified the week picker in
-      Figma (quiet grey component on both tabs); code follows, variant
-      prop removed
-- [x] Build: meal plan tables + screen, ingredient snapshots into the
-      shopping list, realtime like the shopping list (built 2026-07-16:
-      migration 0007, Plan screen with week switcher/add week/add meals/
-      swipe actions, A+rails reconciler in src/lib/plan-shopping.ts,
-      "Fill from weekly plan" now pushes the real current week)
-- [ ] Apply migration 0007 in the Supabase dashboard (Thomas; SQL goes on
-      the clipboard) – the Plan tab needs it
-- [ ] Walk every Plan flow after 0007 is applied (web preview needs
-      Thomas's sign-in code; then on-device build) – typecheck/lint are
-      clean and the web bundle compiles, but no flow has been driven yet
-- [x] First on-device feedback round (Thomas, 2026-07-16) – fixed same day:
-      far-swipe no longer checks items off; add-meal sheet taller and
-      keyboard-aware; "Add all to shopping list" sits in the flow and flips
-      to "Update shopping list" once the week is linked; servings default
-      remembers the last used count; move-sheet rows say just the day name;
-      the plan-changed marker is now a warning chip after the item name
-      showing the calculated amount (with rounding – the raw float sum was
-      a bug)
-- [x] Second feedback round (Thomas, 2026-07-16) – fixed same day: week
-      picker unified to the quiet grey component on both tabs (Figma
-      164:2508); tapping a planned meal opens its recipe; the plan-changed
-      chips dropped entirely (decision: the reconciler still updates clean
-      lines, checked/edited lines just keep their value with no marker);
-      recipe menu slimmed (no add-ingredient/add-instruction) and "Add to
-      weekly plan" added with a day+servings sheet; recipe header spacing
-      fixed to 16px; another stray "people" → "servings" in the
-      add-to-shopping dialog
-- [x] (Resolved – false alarm 2026-07-16): removing add-ingredient /
-      add-instruction from the recipe menu loses nothing; the "Edit recipe"
-      button covers adding ingredients/steps – the edit form has been
-      full-featured (not facts-only) since the focused-sheet rework
-      2026-07-15.
-- [ ] The add-to-plan sheet (day + servings from recipe detail) is
-      improvised in code – design it if it should look different
-      (2026-07-16)
-- [x] Build: add meal to multiple days (built 2026-07-17). "Add to multiple
-      days" toggle under the servings stepper (add mode only) → button flips
-      "Add to plan" → "Choose days" and the title "Add to {day}" → "Add to
-      plan" → PickDaysSheet (src/components/plan/pick-days-sheet.tsx, title
-      "Which days?", back arrow, subtitle names the recipe when one is
-      selected else "Pick the days for these meals"). Originating day
-      pre-checked. Works for one OR many recipes (cross product via
-      addMealsToDays in meal-plan.tsx; addMeals now delegates to it). Back
-      arrow restores the meal picker with its selection intact via a remount
-      key (avoids a set-state-in-effect the React Compiler rejects).
-      BottomSheet gained an optional onBack chevron. Copy fixed in Figma
-      2026-07-17. Not yet walked on-device.
-- [x] Multi-day feedback round (Thomas, 2026-07-17) – fixed same day:
-      ALL bottom sheets now surface/neutral/lightest (the shared shell and
-      the older hand-rolled ones – white was from the early designs);
-      "Which days?" no longer scrolls (dropped the scroll wrapper, content
-      fits); the DS switchField control swapped for the NATIVE switch (the
-      32×20 web-sized toggle is too small a touch target – layout stays
-      control-left/label-right; swap back when the DS gets a touch-sized
-      switch variant, DS-side task); duplicate shopping lines from
-      multi-day adds fixed (concurrent contributeEntry calls raced past
-      each other's inserts – "6× Avokado"; writes are now serialized per
-      add action).
-- [x] Add-meal sheet v2 (Thomas slept on it, designed + built 2026-07-17,
-      Figma 207:45960): progressive disclosure – servings, day chips and
-      the button appear only once a meal is selected; a row of seven day
-      chips under the counter (originating day pre-active) REPLACES the
-      multi-day toggle + "Which days?" second sheet entirely. One sheet,
-      multi-day = tap more chips. Deleted: pick-days-sheet.tsx,
-      switch-field.tsx, the context's single-day addMeals wrapper. Fixed a
-      WEN → WED typo in the Figma chips. The wider 24px gap before the
-      button is in. Follow-up same day: the shared Chip was rendering 32px
-      tall while the frames specify 24px – chip.tsx now uses
-      px-comp-small/py-comp-xsmall (components/small 8 + components/xsmall
-      4, the correct COMPONENT-scale tokens), shrinking every chip (day
-      chips, All/Favorites on Recipes and in the picker) to the designed
-      size. Root cause per Thomas: the Figma chip component had its padding
-      bound to semantic/layout/* instead of semantic/components/* – same
-      values today (4/8), wrong scale. Thomas rebinds the Figma component;
-      the app already sits on the component scale, so they stay aligned if
-      the scales ever diverge.
-- [ ] DS-side: design a touch-sized switch variant for the switchField –
-      the current 32×20 toggle works on web, not on a phone (Thomas,
-      2026-07-17). No switch in the app right now (the multi-day toggle
-      died with the sheet redesign), so this is for the DS library's sake.
-- [x] Recent recipes in the picker (annotation confirmed by Thomas,
-      built 2026-07-17): the add-meal list orders the household's
-      recently-planned recipes first (latest plan entries, deduped),
-      everything else keeps newest-created order.
-- [x] Disabled past days (designed + built 2026-07-17, Figma 207:47745):
-      past day rows show the day label in text/disabled and – when empty –
-      a quiet "No meal added" instead of the add affordance; past days
-      with meals just show them. The add-meal sheet's day-chip row skips
-      past days entirely (chips are Title-case short names now, stretched
-      equally across the row per the frame). Confirmed by Thomas
-      2026-07-17: past days' existing meals STAY editable (swipe works);
-      only adding is closed.
-- [ ] Day-chip width reality check (2026-07-17): seven chips at the new
-      recipe (12px side padding) need ~398pt but a 393pt iPhone gives the
-      row 361pt – "Mon" wrapped on-device. App deviation (documented in
-      chip.tsx): GROW chips drop side padding one step to components/small
-      (8px) + numberOfLines 1; hugging chips keep the full recipe. Thomas:
-      retune the Figma 7-chip day row (or bless the compressed padding as
-      the official stretched-chip recipe in the DS). Narrow-screen fallback
-      added same day (Thomas asked): below ~388pt window width the day
-      chips switch to 2-letter labels (Mo Tu We…, DAY_TINY in week.ts) so
-      an iPhone SE (375) or small Android (360) still fits seven on one
-      line – improvised behaviour, bless or redesign with the above.
-- [x] Chip aligned for real (2026-07-17): Thomas rebound the Figma chip to
-      component tokens and retuned the DS recipe – now components/medium ×
-      components/small padding with a small-emphasized 12/16 label (32px
-      tall), verified against packages/react Chip.module.css in the DS
-      repo; chip.tsx matches, and a `grow` prop covers the stretched day
-      chips. Token sync run same day: zero token changes (recipe-only).
-- [ ] Build notes to revisit (2026-07-16):
-      - The DS has no button/*/disabled tokens; disabled solid buttons
-        borrow the onboarding convention (neutral-light fill + disabled
-        text) instead of the pale lime in the Plan Figma – add disabled
-        states to the DS button recipe and swap
-      - Marker updates ride refreshes (foreground/reconnect), not realtime
-        – contribution changes alone emit no realtime event on the item
-      - Known A+rails edge: check an item, let the plan contribute to it,
-        uncheck it, then remove the meal – the withdrawal subtracts a share
-        that was never added. Rare; revisit if it bites
-- [x] Revisit recipes once Plan is built (done 2026-07-16): "Add to weekly
-      plan" wired into the recipe detail menu with a day+servings sheet,
-      sharing the exact snapshot/scaling code path with the Plan tab
-      (insertPlanEntry in src/lib/meal-plan.tsx), including the A+rails
-      contribution when the week is already on the shopping list.
-- [x] Manual meals – "Leftovers"/"Eating out" (designed + built 2026-07-18,
-      Figma section 142:15357 "plan – add recipe"). This settles the
-      question left open in the 2026-07-16 review: recipe-less meals ARE
-      allowed. The add-meal sheet gets a Recipes/Manual toggle under the
-      title (the "Pick a meal from your library." subtitle is gone in the
-      new frames – removed in code too); Manual is one "Name of meal"
-      field + "Add to plan", lands on the originating day only, snapshots
-      no ingredients and never touches the shopping list. The "Weekly
-      plan" display-4 title is back above the week switcher (212:59962).
-      Data: migration 0009 (recipe_id nullable + title column on
-      meal_plan_entries); swapping a manual meal to a recipe clears the
-      title again. Improvisations, all BLESSED by Thomas 2026-07-18 after
-      the on-device walk ("I like the design you build"):
-      - Manual meal ROW in the day list: borrows the recipe row –
-        placeholder icon, no servings line; swipe gives move/swap/remove
-        but NOT change-servings (meaningless without ingredients). Tap
-        does nothing (no recipe to open).
-      - The Manual "Add to plan" button disables until a name is typed
-        (frame 213:64576 draws it enabled beside the empty field).
-      - Swap mode stays recipes-only – no Manual tab is designed for the
-        swap sheet.
-      - Placeholder reworded to "E.g. leftovers" (the frame's
-        "Fx Pasta al Pomodoro" is Danish and a recipe-name example;
-        Thomas approved the reword 2026-07-18). Figma copy still says the
-        old text – update the frame when convenient.
-- [x] Back from a plan-opened recipe returns to the plan (Thomas found the
-      inconvenience 2026-07-18, decided for the native fix): the Plan tab
-      is now its own stack – src/app/(plan)/ with the plan at "/", plus
-      /recipe/[id] and /recipe/new re-exporting the Recipes tab's screens.
-      Tapping a meal opens the recipe INSIDE the Plan tab (tab bar keeps
-      Plan active), back pops to the plan, and the Recipes tab's own
-      browsing state is untouched. "Edit recipe" stays in whichever stack
-      the detail is rendered in (pathname check in recipes/[id].tsx).
-      Unchanged, deliberately: "Add recipe" from the add-meal picker's
-      empty state still jumps to the Recipes tab's form – creating a
-      recipe is Recipes-tab work; revisit if the same back-complaint
-      comes up there.
-- [x] Week picker restyled on Shopping (Thomas, 2026-07-18, Figma weekNav
-      163:38970 in the shopping frames): the quiet grey pill retired –
-      Shopping now shows the exact Plan-tab switcher (40px green chevrons,
-      serif date + week number). One shared component again: the Plan
-      screen's inline switcher moved into ui/week-picker.tsx so the two
-      tabs cannot drift; weekPickerLabel deleted from week.ts.
-- [x] Apply migration 0009 in the Supabase dashboard (done 2026-07-18,
-      verifying SELECT returned true/true)
-- [x] Walk the manual-meal flow on-device after 0009 is applied (Thomas,
-      2026-07-18: works, design blessed)
-- [x] Household screen redesign (designed + built 2026-07-18, Figma
-      section 213:65932; reviewed same day – review outcomes: email
-      read-only + sign out added to the design, avatar rule = phone owner
-      outlined / others solid with colors as drawn, invite code behavior
-      unchanged). Decided up front: renaming IS in; every member equal –
-      NO creator privileges; renames reach other phones at next app open,
-      not live. Built: household card (image or primary-gradient home
-      tile, name, member count, edit pencil), member directory with
-      per-member name/email (NEW profiles table, migration 0010, synced
-      from auth by trigger – app never writes it), Edit household sheet
-      (rename + image via the recipe-photos bucket), Edit profile sheet
-      (first name; email read-only), invite code with copy + share, sign
-      out. New shared ClearableInput variant in ui/input.tsx. New native
-      modules: expo-clipboard + expo-linear-gradient (pods refreshed).
-      Improvisations – ALL BLESSED (Thomas, 2026-07-18, after the
-      on-device walk):
-      - Picked household image previews in the sheet (recipe-form
-        pattern) – the frame draws no picked state.
-      - Save buttons disable until the name field is non-empty (frames
-        draw them enabled) – same convention as the other sheets.
-      - Copy feedback: the copy icon flips to a green checkmark for 2s
-        (plan pre-approved by Thomas 2026-07-18).
-      - DS decision (Thomas, 2026-07-18): outline buttons ARE 2px per
-        the DS – every older 1px outline button in the app aligned the
-        same day (recipes detail/form/list, shopping empty state,
-        remove-meal Cancel, add-meal "Add recipe").
-- [x] Apply migration 0010 in the Supabase dashboard (done 2026-07-18,
-      verifying SELECT returned 2 / true).
-- [x] Walk the Household flows on-device after 0010 (Thomas, 2026-07-18:
-      everything works on both phones, design blessed)
-- [x] Add-meal picker polish (Thomas, 2026-07-19, all built + on-device
-      confirmed same day, commit f849a40):
-      - Picking a recipe near the bottom no longer hides behind the
-        servings/day/button block: the list scrolls the picked row to sit
-        just above those controls. The check runs after the block appears
-        (deferred 150ms) and against a fully-visible threshold, so a row
-        already on screen doesn't jump.
-      - Every picker row carries a 2px transparent border so the green
-        selection outline stops nudging its neighbours a couple of pixels.
-      - The Recipes/Manual toggle, search field and All/Favorites chips
-        moved into the list header so they scroll away with the recipes
-        instead of staying pinned (Manual tab keeps them static – nothing
-        to scroll there).
-- [x] Add-meal servings default to the recipe's own count, not last-used
-      (Thomas, 2026-07-19, commit 14ea136): the counter starts from the
-      picked recipe's `servings` (now carried in RecipeSummary) instead of
-      the per-device last-used value, which is dropped. Add mode has one
-      shared counter, so the first pick sets it and later picks in a
-      multi-add keep the shown value; swap keeps the meal's existing count.
-      Open tweak if wanted: re-default the counter to each newly-tapped
-      recipe in a multi-add (one-liner).
-
-- [x] Swipe affordance on every swipeable row (Thomas, 2026-07-23):
-      more_vert at the row end, from the Figma recipe row 147:24404,
-      24px in icon/default #4F4230. Shared component
-      src/components/ui/swipe-hint.tsx, used by the planned-meal row,
-      shopping item row, recipe ingredient + step rows, and the draft
-      ingredient + step rows on the add-recipe form. Done shopping items
-      deliberately have NO hint – those rows can't be swiped.
-      Tapping the dots slides the row open (Thomas's call, after Claude
-      flagged that a three-dot icon reads as a button and would otherwise
-      be a dead control). Wired with a small React context,
-      SwipeRowProvider, so each swipeable hands its openRight() down to
-      the hint without threading a prop through every row's content – the
-      four SwipeActions call sites needed no change at all. The hint's
-      Pressable nests inside the row's own Pressable on purpose: React
-      Native gives the touch to the innermost one, so tapping the dots
-      opens the actions instead of firing the row's press.
-      Ingredient row order confirmed by Thomas: name, amount, three dots.
-      VERIFIED on device 2026-07-23 (Thomas, "looks amazing") via
-      TestFlight build 9. Shipped in commit d2ba64c.
+      known fix if the family's sites need it. STILL OPEN (confirmed
+      2026-07-24): no WebView fallback exists in code (only a comment in
+      recipe-import.ts naming it as the next step; react-native-webview
+      isn't installed). Conditional – only build it if a site the family
+      actually uses gets blocked.
 
 ## In parallel – when it fits
 
-- [ ] Dev build variant so the TestFlight app and a fast cable build can
-      live on ONE phone at once (raised 2026-07-23, when the round-trip to
-      TestFlight – ~8 min compile + 1-45 min Apple upload + processing –
-      proved too slow for iterating on UI). NOT needed yet; only worth it
-      when Thomas wants to hack on the app while ALSO keeping a working
-      build on his own phone. Right now both pipelines already work, they
-      just can't coexist on the same phone: scripts/build-iphone.sh builds
-      bundle id app.prepeat, the SAME as the TestFlight build (confirmed
-      in the script, line ~30), so whichever installs last overwrites the
-      other, and switching between them can force a delete+reinstall
-      because the signing differs (free 7-day dev vs distribution). That
-      wipes device-local state only (active-household pick, cooking-mode
-      checks); recipes/plan/shopping live in Supabase and re-sync.
-      The fix when wanted: a separate identity for the dev build –
-      bundleIdentifier app.prepeat.dev, name "Prep+Eat Dev", a tinted
-      icon – via an app.config variant keyed off an env flag, so it
-      installs as a second icon alongside the TestFlight app. Standard
-      Expo pattern, ~30 min. build-iphone.sh would set the flag; the EAS
-      production profile would leave it off. Two phones (Thomas cable,
-      family TestFlight) is the zero-setup alternative and is what we do
-      today.
-
-- [ ] Apple Developer account ($99/year) + TestFlight so the family can
-      install without cables (also ends the 7-day rebuild ritual on both
-      phones). Path decided 2026-07-20 (Thomas): EAS cloud build → EAS
-      submit → TestFlight. STATUS 2026-07-23: fully working end to end –
-      account active, unattended build+submit, and Thomas's phone installs
-      + runs from TestFlight (builds 4-9 shipped; icon, launch screen and
-      swipe hint all delivered this way). Only remaining piece is Pia
-      accepting her invite; parent stays open until a SECOND phone is on
-      TestFlight, since "both phones without cables" isn't true yet. Steps:
-      - [x] Thomas: enrolled in the Apple Developer Program, $99/yr, as
-            Individual (Apple Developer iPhone app is the fastest route –
-            Face ID + Apple Pay). Apple ID sebell@mac.com; 2FA required.
-            Approval instant–48h. THE LONG POLE.
-      - [x] Thomas: created a free Expo account (username sebell, via GitHub
-            SSO – added an Expo password so the CLI can log in) 2026-07-20.
-      - [x] Claude: wired up EAS in the repo 2026-07-20 – eas.json
-            (development/preview/production build profiles + a production
-            iOS submit profile), owner "sebell" + projectId
-            2bebc2d2-b057-49e0-b992-a20fb1c34614 in app.json (project
-            @sebell/prepeat created on expo.dev). Encryption answer baked in
-            (ios.infoPlist.ITSAppUsesNonExemptEncryption = false).
-      - [x] UNBLOCKED 2026-07-22: Thomas reports the developer account is
-            active (it was "Pending" purchase-processing 2026-07-20 – paid
-            19 July, do NOT re-purchase). Earlier symptom: `eas build -p ios
-            --profile production` reached Apple login fine (2FA via SMS
-            works; device push doesn't fire – known for Thomas) but failed
-            "no team associated". Apple password is in the Mac keychain.
-      - [x] Team ID confirmed 2026-07-22: the paid Individual team kept the
-            SAME id as the free personal team, Z58TG8X9KB. So app.json
-            (ios.appleTeamId) and eas.json (submit.production) were already
-            right – no change needed.
-      - [ ] Thomas: accept the Program License Agreement + any tax/banking
-            agreements in App Store Connect (Business → Agreements).
-      - [x] App Store Connect API key in place 2026-07-22: key UN3YR958DC,
-            issuer 5ba3a44b-c5b2-4447-8120-72fb441faa08, .p8 at
-            credentials/AuthKey_UN3YR958DC.p8 (credentials/ is gitignored).
-            Wired into eas.json submit.production (ascApiKey*) and exported
-            as EXPO_ASC_* by scripts/eas-build-ios.sh. This replaces Apple
-            ID login, so no SMS 2FA on builds or submits.
-      - [x] DONE 2026-07-22 23:36: Thomas ran `./scripts/eas-build-ios.sh`
-            in Terminal, answered Yes to the certificate prompt, and the
-            first signed .ipa built (build number 3, then a second run
-            produced build 4 at 23:54 – both "finished"). The distribution
-            cert now lives on the Expo servers, so Claude can run every
-            later build headless. Kept for the record – why it couldn't be
-            Claude: EAS's
-            SetUpDistributionCertificate.runNonInteractiveAsync throws
-            MissingCredentialsNonInteractiveError when no cert exists – the
-            ASC API key does NOT cover certificate *creation*, only
-            provisioning profiles and submits. Verified 2026-07-22 by
-            reading eas-cli 21.0.3 source after the first non-interactive
-            build failed at "Failed to set up credentials". Once the cert is
-            on the Expo servers, Claude can run every later build headless.
-            Apple caps the account at 2 distribution certs – answer Yes only
-            this once.
-      - [x] App record exists: "Prep+Eat", bundle app.prepeat, ascAppId
-            6793690543 (now pinned in eas.json submit.production so submits
-            don't have to look it up). Verified 2026-07-22 via the ASC API.
-            Same check confirmed only ONE distribution certificate exists
-            (IOS_DISTRIBUTION "THOMAS SEBELL", expires 2027-07-22) – the
-            second build run reused it, so 1 of Apple's 2 slots is free.
-            Handy trick: the .p8 can drive the App Store Connect REST API
-            directly (ES256 JWT, aud "appstoreconnect-v1", sign with
-            dsaEncoding 'ieee-p1363') to read certs/apps without eas-cli's
-            interactive credentials menu.
-      - [x] LANDED 2026-07-23 ~01:00: `eas submit -p ios --latest` finished
-            ("Submitted your app to Apple App Store Connect!") and Apple
-            processed build 4 (id 837bc127-3f00-4009-ac0f-1df136cd5bea) to
-            processingState VALID. It is live at
-            https://appstoreconnect.apple.com/apps/6793690543/testflight/ios
-            Timing note for next time: the upload sat on "Submitting" for
-            ~45 min before completing – that is normal for a first upload
-            on a fresh account, not a hang. Don't kill it and retry.
-      - [x] Build 4 CRASHED ON LAUNCH from TestFlight (2026-07-23 08:07,
-            Thomas's iPhone 16). Cause: EAS cloud builds never see the
-            gitignored .env, so EXPO_PUBLIC_SUPABASE_URL/ANON_KEY were
-            missing and src/lib/supabase.ts threw at module load – which
-            reads as a native EXC_CRASH/SIGABRT (RCTFatal via
-            RCTExceptionsManager) even though the cause is plain JS. The
-            build log had warned: "No environment variables ... found for
-            the 'production' environment on EAS" – treat that line as an
-            error in future. Fixed by pushing both vars to the EAS project
-            (production + preview + development, plaintext) with
-            `npx eas-cli env:set`; build 5 confirms them loading. Any NEW
-            EXPO_PUBLIC_* var added to .env must be pushed to EAS too.
-      - [x] Build 5 (with the Supabase env vars) uploaded and processed to
-            VALID 2026-07-23 ~09:35. Upload took ~1 min this time vs ~45 for
-            the first one, so the slow first upload really was a one-off.
-            PROVEN 2026-07-23: build 5 installed from TestFlight and
-            launched cleanly on Thomas's iPhone. The whole path (EAS cloud
-            build → eas submit → TestFlight → install) now works.
-      - [x] Submit HANG 2026-07-23 ~19:07: build 9's `eas submit` wedged on
-            "Submitting" for 90 min and never handed the build to Apple
-            (builds 4-8 present in ASC, 9 absent). The upload runs on
-            Expo's servers; the CLI only watches, so a server-side stall
-            shows as an endless spinner with no error. Killed the CLI (safe
-            – server-side submission is separate) and re-ran submit; a
-            duplicate upload of an already-present build number is ignored
-            by Apple, so retry is free. FIX going forward (Thomas's call):
-            split the one build+submit script into two –
-            scripts/eas-build-ios.sh (build only) and
-            scripts/eas-submit-ios.sh (submit only), sharing
-            scripts/eas-env.sh. The submit script has a WATCHDOG: no output
-            for 600s → kill + non-zero exit + "safe to retry" message,
-            instead of hanging. A build is now a build and a stuck submit
-            is obvious immediately. NOTE: the old `--submit` flag is gone;
-            build then submit as two commands.
-            TWIST: the retry then exposed a SECOND, different CLI fault –
-            the re-submit's upload actually SUCCEEDED (~25 min, build 9
-            VALID in ASC at 12:02 PT) but the CLI never noticed and kept
-            printing "Submitting" past 30 min. So `eas submit` completion
-            is unreliable in BOTH directions: it can hang when stuck AND
-            hang after success. The trustworthy success signal is Apple's
-            side – the build showing VALID in App Store Connect – NOT the
-            CLI. The 600s-no-output watchdog covers the genuinely-stuck
-            case; the after-success hang would trip it too and a retry is
-            harmless (Apple rejects a duplicate build number).
-            IMPROVEMENT worth doing (not yet built): have
-            eas-submit-ios.sh poll ASC for the build going VALID as the
-            real done-signal, instead of trusting the CLI. The JWT-signed
-            ASC query already exists as a scratchpad script
-            (scratchpad/asc.mjs pattern) and could move into the repo.
-      - [ ] Thomas: add the family as TestFlight testers under TestFlight →
-            Internal Testing (up to 100 internal testers, 30 devices each,
-            no Apple review). Pia invited 2026-07-23, not yet accepted.
-            Internal testers must ALSO be App Store Connect team users, so
-            they get TWO emails – the App Store Connect team invite has to
-            be accepted first or the TestFlight one fails with a useless
-            error. Send them docs/testflight-tester-guide.md, written for
-            a non-technical tester to follow unaided.
-            External testing (up to 10,000, no account access, public
-            link) is the route for anyone outside the household – but the
-            first build needs Beta App Review, and because Prep+Eat gates
-            everything behind sign-in that review WILL need a working demo
-            account with a household and some recipes in it, plus a beta
-            description and contact email. Not needed while it's family
-            only (Thomas, 2026-07-23: internal only for now).
-      - [ ] Keep running scripts/build-iphone.sh on PIA's phone every ~7
-            days until she has installed from TestFlight too. Thomas's
-            phone no longer needs it (TestFlight install confirmed
-            2026-07-23) – see the Recurring item below, which can be
-            closed once Pia is on TestFlight.
-      - [x] DONE: builds 3-9 all built + submitted to TestFlight this way.
-            Routine now via scripts/eas-build-ios.sh then
-            scripts/eas-submit-ios.sh. EAS manages the distribution cert +
-            profile; no per-build Apple interaction.
-- [ ] "Continue with Apple" button once the paid developer account exists
-- [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
-      (2026-07-07) is 402px wide (1x), soft on a Retina screen
-- [ ] Resend-code feedback states ("Sending…" / "New code sent" / retry)
-      are improvised in code – design them if they should look different
-      (2026-07-08)
+- [ ] TestFlight rollout – the pipeline works end to end (EAS cloud build →
+      `eas submit` → TestFlight; builds 3-9 shipped, Thomas's phone installs
+      and runs from TestFlight). Parent stays open until a SECOND phone is on
+      TestFlight, since "both phones without cables" isn't true yet. See the
+      [tester guide](testflight-tester-guide.md). Remaining:
+      - [ ] Thomas: add Pia as a TestFlight internal tester (invited
+            2026-07-23, not yet accepted). Internal testers must accept the
+            App Store Connect team invite FIRST, then the TestFlight one, or
+            it fails with a useless error. Send her the tester guide.
+      - [ ] Keep running scripts/build-iphone.sh on PIA's phone every ~7 days
+            until she's installed from TestFlight (Thomas's phone no longer
+            needs it). Closes with the Recurring item once Pia is on TestFlight.
+      - [ ] Optional: make scripts/eas-submit-ios.sh poll App Store Connect
+            for the build going VALID as the real done-signal – `eas submit`
+            can hang both when stuck AND after success, so the CLI isn't
+            trustworthy. The watchdog already kills a genuinely-stuck submit.
+- [ ] "Continue with Apple" button. STATUS 2026-07-24: not implemented (no
+      Apple sign-in in the app). NOT strictly required by Apple – guideline
+      4.8 only forces it when you also offer a third-party login
+      (Google/Facebook), and Prep+Eat only offers email-code sign-in. Keep
+      as an optional convenience.
+- [ ] Resend-code feedback states ("Sending…" / "New code sent" / retry) are
+      improvised in code – design them if they should look different
+      (2026-07-08). Confirmed still improvised 2026-07-24 (ResendLink in
+      onboarding-flow.tsx; the file flags them as pre-design).
 
 ## Later (v1.1+)
 
-From projektgrundlag "Later (v1.1+)" – committed but deferred past the v1
-ship. Surfaced 2026-07-20 (Thomas) while reviewing the welcome screen.
-
-The whole household journey (switcher, join, leave, invite, delete) was
-**designed AND built 2026-07-22** (Thomas), slice by slice on device, in the
-Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
-052aae0 / f4277cd / 25df0ac.
-
-- [x] **Change household (the switcher)** – built 2026-07-22 (commit 61aa239).
-      A dropdown from the "Household ▾" title lists the households you belong to
-      (checkmark on the active one) + "Join a household"; selecting switches the
-      active household. `fetchMyHouseholds` lists all memberships (scoped to the
-      user + deduped); active id persists in AsyncStorage; RootGate remounts the
-      tabs on switch so meal-plan/shopping re-fetch cleanly.
-- [x] **Join another household** – built 2026-07-22 (commit 61aa239). "Join a
-      household" opens a full-screen invite-code modal; on success the joined
-      household becomes active. The post-join welcome interstitial from the
-      design is deferred. (No "start a NEW household from the switcher" –
-      join-by-code only; revisit if wanted.)
-- [x] **Invite someone** – built 2026-07-22 (commit 052aae0). The card's
-      "Invite someone" opens a sheet with the code (copy) + "Share the code".
-      SIMPLIFIED from the design: the email field was dropped for the simpler
-      old code-sharing (Thomas). Invite-by-email is DROPPED, not deferred.
-- [x] **Leave household (copy-on-leave)** – built 2026-07-22 (commit f4277cd).
-      Migration 0015 `leave_household()` (SECURITY DEFINER) copies live recipes
-      (+ingredients+steps) into a new "[Firstname]'s Kitchen" re-attributed to
-      the leaver, ends the old membership; the client copies recipe photos into
-      the new folder (recipe-photos is public-read, no Edge Function). Red-
-      outline "Leave household" in the Edit-**profile** sheet (only when others
-      exist) + confirm sheet. Spec: [leave-household.md](leave-household.md).
 - [ ] Merge two households / "copy a recipe to my other household" – the
       deferred merge mechanic that later lets a rejoiner bring their parked
       solo-kitchen recipes into the family (leave-household.md, rule A). Also
@@ -536,22 +63,110 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
       "[Firstname]'s Kitchen" (clutter). Better: when you already have a
       household, let the copy-on-leave recipes land in an EXISTING kitchen you
       choose instead of a brand-new one.
-- [x] **Post-join welcome interstitial** – BUILT 2026-07-22 (commit below).
-      Joining with a code now shows the welcome screen (Figma "join a household
-      4") before landing you in the household. Reuses the onboarding
-      WelcomeScreen (now exported with a `buttonLabel` prop) with the label
-      "Take a look around your new household".
-- [x] **Delete household** – BUILT 2026-07-22 (commit below), verified on
-      device. Migration 0017 `delete_household()` (SECURITY DEFINER) refuses
-      unless you are the SOLE member (a shared household uses Leave) and have
-      another household to keep (≥1), then deletes it – cascading its recipes /
-      plans / lists / membership. UI: a red "Delete household" (+ warning) in
-      the Edit-household sheet, shown only when `members.length === 1 &&
-      households.length > 1`, → a confirm sheet with the "type DELETE"
-      fail-safe; on success it switches you to another household. Design Figma
-      276:5359; its two copy strings were fixed in Figma too. Follow-up: recipe
-      photos of the deleted household stay orphaned in storage (same as
-      delete_profile).
+
+## Tech debt (from the 2026-07-18 code review)
+
+All verified still present 2026-07-24.
+
+- [ ] **List/plan open runs its queries twice** – the realtime subscribe
+      refetches immediately after the boot fetch already loaded the same
+      data (src/lib/shopping-list.tsx, same pattern in meal-plan.tsx); and
+      the boot awaits independent queries in series that could run in
+      parallel.
+- [ ] **Reorder saves one row at a time** (src/lib/recipes.ts,
+      `reorderIngredients` / `reorderSteps`) – a 20-item reorder is 20
+      sequential saves and can be left half-done. Batch upsert or a small RPC.
+- [ ] **`swapMeal` duplicates `insertPlanEntry`'s snapshot + contribute
+      blocks** (src/lib/meal-plan.tsx) – extract shared helpers so a meal
+      added by swap can't diverge from one added normally.
+- [ ] **Layout pinned with magic numbers**: per-screen tab-bar clearance
+      hand-computed with a different tail across six screens, the done-section
+      paints ~1000px of overdraw to reach the screen bottom, and the recipe
+      overflow menu is pinned at `top: 52px`. Each breaks on a new device size
+      or spacing-token change. Wants a shared clearance hook and anchored
+      (not pixel-pinned) positioning.
+
+## Security
+
+- [ ] **Invite codes should expire** – DECIDED YES (Thomas, 2026-07-24).
+      Multi-use "one fridge code" stays by design, but a code currently
+      works forever; give it a lifetime with auto-rotation so a leaked code
+      stops working (defense-in-depth on top of the 0012 brute-force
+      throttle). To build: a decision on the lifetime (e.g. 30 days), a new
+      migration to add an expiry/rotation column + regenerate path, and the
+      Invite sheet showing "code refreshes on {date}" with a manual
+      "new code" action. Design the sheet change if it should differ.
+
+## Code debts (small, known, deliberate)
+
+- [ ] **Unused `households.image_url` column** – the household image was
+      dropped from the design 2026-07-22, so the app no longer reads or writes
+      it (Edit household is name-only; `imageUrl` removed from the Household
+      type/lib). The column (added migration 0010) is now dead. Drop it with a
+      migration when convenient – harmless meanwhile.
+- [ ] Onboarding error banners show raw technical messages ("fetch failed:
+      The network connection was lost.") – translate the common cases
+      (offline, wrong code, expired code) to plain language (2026-07-08).
+- [ ] Offline/retry screens are improvised (added 2026-07-18 with the #3 and
+      #6 review fixes): `HouseholdLoadError` in src/app/_layout.tsx (launch)
+      and `LoadFailed` in src/app/shopping.tsx (shopping tab), both a centred
+      title + reassurance + "Try again" button on the lightest surface. No
+      Figma design for these states – design them if they should differ.
+- [ ] Delete an item has no undo – soft delete is wired to the database
+      (migration 0005), so a "Deleted · Undo" toast just needs to clear
+      deleted_at.
+
+## Design QA leftover
+
+- [ ] DS nit: color/text/contrast-text in the DS repo aliases
+      color.text.primary (dark) while Figma renders it near-white – looks
+      like a wiring slip in the DS token source, check on the DS side
+      (spotted 2026-07-12).
+
+## Ideas – not yet committed
+
+- [ ] **Per-store category layouts** (Thomas, 2026-07-06): save the category
+      order per named store ("Netto", "Bilka"…), so entering a store sorts
+      the list to that store's layout. Simple version: pick the store when
+      you start shopping. Stretch: auto-switch by location. Needs a small
+      `store_layouts` table (household_id, name, category_order) on top of
+      the existing single order.
+- [ ] AI first-guess for categories, in front of the learned memory
+      (decision #7 names this as the natural v1.1 upgrade).
+- [ ] Smart quantity parsing when adding items ("Milk 2L" → name + quantity).
+
+## Pre-launch checklist (v1 ship)
+
+- [ ] Proper trademark search for "Prepeat" / "Prep+Eat".
+- [ ] Icon/splash follow-ups (iOS app icon + launch screen shipped
+      2026-07-23): Android adaptiveIcon still on Expo template art – needs
+      an android-foreground (art inside the centre 66% safe zone) and an
+      android-monochrome silhouette; no ios-dark / ios-tinted icon variants
+      yet (iOS 18+ appearance icons); Android splash still uses Expo's
+      splash-icon.png (the Android 12+ centred-icon-in-a-circle system can't
+      reuse the full-bleed iOS launch image). None of this ships while it's
+      iOS-only.
+- [ ] App Store assets: screenshots, description.
+- [ ] Privacy policy (required for accounts + a database).
+
+## Recurring
+
+- [ ] Renew the free signing every ~7 days until TestFlight takes over –
+      now only PIA's phone needs it (Thomas's is on TestFlight). Run
+      `./scripts/build-iphone.sh <UDID>`: it deletes the app's provisioning
+      profile, rebuilds with `xcodebuild -allowProvisioningUpdates
+      -allowProvisioningDeviceRegistration` (mints a fresh 7-day profile),
+      installs the .app with `devicectl`, and prints the new expiry. WATCH
+      the printed expiry – under ~7 days out means the free dev CERTIFICATE
+      (also 7-day) is the limiter and needs regenerating too. Pia re-trusts
+      the profile if prompted (Settings → General → VPN & Device Management →
+      Trust). Pia's iPhone 17 UDID: `00008150-00086D290198401C`. (Note:
+      `expo run:ios` does NOT pass -allowProvisioningUpdates, so xcodebuild
+      must be driven directly – that's what the script does.) Closes once Pia
+      is on TestFlight.
+- [ ] After every DS publish/retune (Thomas says "DS published"): rebuild
+      tokens in the DS repo, `npm run sync-ds-tokens` here, diff
+      ds-theme.cjs and walk the affected screens (agreed 2026-07-12).
 
 ## Decisions log (recent)
 
@@ -570,8 +185,7 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
     back-arrow safe-area fix + solid Delete profile (3299d42).
   - Migrations 0015–0018 applied on Supabase. Walked the whole flow on device.
     Deferred: merge / copy-to-my-other-kitchen (incl. the "extra kitchen on
-    leave" gripe). Detailed entries below and items checked off in "Later
-    (v1.1+)" and the Pre-launch checklist.
+    leave" gripe).
 - Storage hardening (2026-07-22): recipe-photo listing scoped to members
   (migration 0018) – the old broad SELECT let any client enumerate every photo
   path, undermining the "unguessable URL" privacy (Supabase flagged it). Public
@@ -679,13 +293,8 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
     read wrong on other weeks.)
   - **Recipe search filters as you type**; the "No recipe for X yet →
     Add recipe" empty state shows only when zero recipes match.
-  - Figma fixes applied 2026-07-16: round 1 – subtitle typo "you library" +
-    broken "or add is" → "Pick a meal from your library."; nav active tab
-    Recipes → Plan on all frames; stepper "people" → "servings". Round 2 –
-    empty state reworded ("No recipe for X yet" / "…in your library"),
-    week-copy option → "Copy this week's meals", Week 30 frame title →
-    "Next week". Empty-state "Add to plan" disabled + list filtering handled
-    by Thomas.
+  - (Note: the header was later reworked into a segmented day bar, 2026-07-17
+    – the copy-week feature retired then. See git history.)
 - Recipe ingredient quantities are one free-text field per ingredient
   (decided 2026-07-12): parsed into amount + unit like the shopping list;
   unparseable text ("a pinch") passes through and never scales. Servings
@@ -694,20 +303,15 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
   sensible display rounding. Parser to handle "1,5" and "1/2".
 - Recipes list gets one search field matching names AND ingredients – no
   manual tags/filters in v1 (2026-07-12); tags parked on the ideas list.
-
 - DS 7-step colour ramps adopted (2026-07-11): tokens re-synced, existing
   screens remapped one step (old "lighter" tints are now "lightest" etc.)
   so backgrounds/badges kept their look; the brand green retuned
-  (#47A518 → #56C91D). The DS's new Chip component is implemented natively
-  at src/components/ui/chip.tsx (solid + outline, active/pressed/disabled),
-  ready for the recipes milestone's filter rows.
-- Solid buttons follow the DS button recipe now (2026-07-11): light-lime
-  fill + ink label (was green + white). The app consumes button/* tokens
-  from the theme fragment (classes like bg-button-solid-fill-enabled);
-  "button" was added to the DS's NativeWind export list alongside chip.
-  This was the visible piece of the redesign – Thomas flagged the phone
-  still "looking old" when only ramp values had shifted.
-
+  (#47A518 → #56C91D). The DS's Chip component is implemented natively at
+  src/components/ui/chip.tsx (solid + outline, active/pressed/disabled).
+- Solid buttons follow the DS button recipe (2026-07-11): light-lime fill +
+  ink label (was green + white). The app consumes button/* tokens from the
+  theme fragment (classes like bg-button-solid-fill-enabled); "button" was
+  added to the DS's NativeWind export list alongside chip.
 - Recipes before the weekly plan (2026-07-08, Thomas's catch): build the
   dependency first; the backlog gets re-ordered at each milestone boundary.
 - Checked items clear two ways (decided 2026-07-07): a manual "Clear" button
@@ -718,372 +322,3 @@ Prepeat DS brand (Montserrat + lime, `ds-theme.cjs`). Commits 61aa239 /
   animation (tuned down from 1.5s via 0.6s and 0.4s; 0.2s felt right,
   2026-07-08). Accidental taps are undone from the done section instead
   of a linger window.
-
-## Code review findings (2026-07-18)
-
-High-effort multi-agent review of the last two weeks (c09d57d..HEAD: shared
-shopping list, recipes, weekly plan, household). Grouped by severity;
-findings verified against the code. The two security rules were fixed the
-same day – see the checked items below.
-
-### Critical – security & data safety
-
-- [x] **Invite codes were brute-forceable.** PREP-XXXX is ~615k
-      combinations and `join_household_with_code` had no rate limit, so a
-      signed-in user could script their way into a stranger's household.
-      Fixed: migration 0012 throttles redemption to 10 tries/hour per user
-      (the friendly short code and multi-use behaviour stay). Applied to the
-      live database 2026-07-18.
-- [x] **A creator kept access after leaving – and could silently rejoin.**
-      `households_select` (0004) and the bootstrap membership policy (0001)
-      keyed on "did you create it", not "are you still a member". Fixed:
-      migration 0011 limits both to the creation-handshake window (creator,
-      no members yet). Applied to the live database 2026-07-18.
-- [x] **A launch-time network blip can look like lost data.** Fixed
-      2026-07-18: RootGate now keeps a fetch error distinct from a loaded
-      "no household" – a failed `fetchMyHousehold` shows a retry screen
-      ("Can't reach your kitchen", reassures nothing is lost) instead of the
-      create/join onboarding, so an existing member can never be pushed into
-      making a duplicate household. `fetchMyHousehold` also now orders by
-      `joined_at` ascending, so even a stray duplicate can't shadow the real
-      household on later launches. The retry screen is IMPROVISED (no Figma
-      design for the offline state yet) – see the design-gap item below.
-- [x] **Plan→shopping-list push is not atomic.** Fixed in code 2026-07-18:
-      migration 0013 moves the contribute + push paths into server-side
-      Postgres functions (`push_plan_to_list`, `contribute_entry`), each
-      running in one transaction with a per-list advisory lock. That makes
-      a push all-or-nothing per meal (the idempotency guard is now
-      reliable), serialises concurrent pushes so quantities can't lose each
-      other and duplicate lines can't be created, and collapses the whole
-      push to one round trip (also clears the "push is slow" debt below).
-      Migration 0013 applied to the live database 2026-07-18 and the push
-      verified on-device (fresh week: quantities and the shared-ingredient
-      merge correct). withdraw/rescale stay on the client for now – fold
-      them into the same RPC pattern when #5/#10 land.
-- [x] **Recipe "add ingredients to list" lines can be wiped by removing a
-      meal.** Fixed in code 2026-07-18: recipe hand-off lines are now
-      inserted as `added_manually = true`
-      ([src/lib/recipes.ts](../src/lib/recipes.ts)), so the reconciler treats
-      them as user-owned and shrinks instead of deleting when a later meal's
-      share is withdrawn. Migration 0014 applied to the live database
-      2026-07-18; the shared withdraw-shrink path is verified on-device (see
-      #10). Forward-only: hand-off lines created before this keep the old
-      flag (no safe way to tell them apart from plan lines in situ).
-
-### High – correctness bugs a user will hit
-
-- [x] **Shopping tab can get stuck permanently** if the first load fails.
-      Fixed in code 2026-07-18: the boot is now retryable (a `bootAttempt`
-      counter re-runs it), the foreground listener re-runs the boot when
-      there is no listId instead of no-oping in refresh(), and the offline
-      state shows a "Can't load your list / Try again" screen
-      ([src/app/shopping.tsx](../src/app/shopping.tsx) `LoadFailed`) instead
-      of a permanent blank. Client-only. The retry screen is improvised (no
-      Figma design for this offline state – same as the #3 launch screen).
-      Verified on-device 2026-07-18 (wifi launch → other tab → airplane mode
-      → first Shopping visit showed the retry screen → back online + Try
-      again loaded the list). Note: a fully offline launch hits the #3
-      household gate first, so #6's screen only appears when the household
-      loads but the list load fails. #3's launch screen also confirmed
-      on-device in the same session.
-- [x] **A fast device clock drops other phones' edits.** Fixed 2026-07-18,
-      verified two-phone 2026-07-19 (sync works both ways on the list and the
-      plan). The staleness guard now only ever compares SERVER timestamps:
-      shopping stamps a fresh add with 0 instead of the device clock
-      ([src/lib/shopping-list.tsx](../src/lib/shopping-list.tsx)); meal-plan
-      splits the shared apply-entry into `apply-entry` (optimistic – always
-      applies, keeps the entry's last server time or 0) and
-      `apply-remote-entry` (realtime – keeps the stale-drop guard), so an
-      optimistic write can never carry a client clock into the comparison
-      ([src/lib/meal-plan.tsx](../src/lib/meal-plan.tsx)).
-- [x] **Multi-adding meals shows phantom meals on partial failure.** Fixed
-      2026-07-18: `addMealsToDays`
-      ([src/lib/meal-plan.tsx](../src/lib/meal-plan.tsx)) now fetches every
-      recipe snapshot (in parallel, via Promise.all) BEFORE dispatching any
-      optimistic entry, so a mid-list fetch failure bails with nothing on
-      screen instead of leaving meals that were never saved. Also parallelises
-      the fetches (was sequential). Client-only, rides the next device build.
-- [x] **Imported recipes double-count prep time.** Fixed 2026-07-18: a
-      shared `resolveCookMinutes` helper
-      ([src/lib/recipe-import.ts](../src/lib/recipe-import.ts), used by both
-      the JSON-LD and microdata paths) derives cook = total − prep when a
-      page gives a total but no explicit cook, so Total = prep + cook renders
-      as the real total (prep 15 / total 45 now shows 45, not 60). Pure
-      logic, verified against all prep/cook/total combinations. Client-only,
-      no migration – rides the next device build.
-- [x] **"Onions 0" on the list.** Fixed in code 2026-07-18: when the last
-      plan share is pulled out of a user-owned line whose amount came only
-      from the plan, the quantity returns to "no amount" (null) instead of a
-      bare 0. Baked into the atomic `withdraw_entry` (and `rescale_entry`) in
-      migration 0014. Applied to the live database 2026-07-18 and verified
-      on-device (manual unitless "æg" + a "2 æg" recipe: merged to "æg 2",
-      then removing the meal returned it to "æg", not "æg 0"). This migration
-      also finishes moving withdraw/rescale server-side (the atomicity
-      follow-up flagged under #4), so the whole reconciler is now atomic and
-      per-list locked.
-- [x] **Add-to-plan from a recipe allows past days.** Fixed 2026-07-18: the
-      recipe "Add to weekly plan" sheet now disables past days with dimmed
-      text ([src/components/recipes/add-to-plan-sheet.tsx](../src/components/recipes/add-to-plan-sheet.tsx)),
-      the same `date < today` rule the plan's WeekBar/DayRow already use.
-      Client-only, rides the next device build.
-
-### Speed & tech debt (from the same review)
-
-- [x] **Pushing a week to the list is slow** (~100+ serial round trips):
-      resolved by migration 0013 (the atomicity fix above) – the whole push
-      is now a single server-side call instead of a per-meal REST storm.
-- [ ] **List/plan open runs its queries twice** – the realtime subscribe
-      refetches immediately after the boot fetch already loaded the same
-      data ([src/lib/shopping-list.tsx:578](../src/lib/shopping-list.tsx),
-      same in meal-plan); and the boot awaits three independent queries in
-      series that could be parallel (lines 501-503).
-- [ ] **Reorder saves one row at a time** ([src/lib/recipes.ts:368](../src/lib/recipes.ts)
-      and :378) – a 20-item reorder is 20 sequential saves and can be left
-      half-done. Batch upsert or a small RPC.
-- [ ] **`swapMeal` duplicates `insertPlanEntry`'s snapshot + contribute
-      blocks** ([src/lib/meal-plan.tsx:801](../src/lib/meal-plan.tsx)) –
-      extract shared helpers so a meal added by swap can't diverge from one
-      added normally.
-- [x] **Drag-reorder row logic is copy-pasted** between the shopping and
-      recipes reorder sheets. Fixed 2026-07-19: the generic `ReorderSheet`
-      moved to [src/components/ui/reorder-sheet.tsx](../src/components/ui/reorder-sheet.tsx)
-      and shopping's `reorder-categories-sheet` is now a thin wrapper over it
-      (categories map to `{key,label}` items), removing the copied
-      DraggableRow + gesture code (~130 lines).
-- [x] **Hardcoded DS values** instead of tokens. Fixed 2026-07-19: the five
-      `#E7E6E4` dividers in recipes `[id].tsx` and `new.tsx` now use
-      `bg-border-subtle` (the border token IS #E7E6E4, and it matches how
-      meal-row/household do row dividers), and the two white `tintColor`
-      hexes in [src/components/shopping/item-row.tsx](../src/components/shopping/item-row.tsx)
-      use `ds.colors.surface.neutral.white` (ds.ts exists for exactly these
-      native-prop cases). Token values are byte-identical to the old hexes,
-      so no visual change – they now follow the DS on the next retune.
-      (Spotted in passing, NOT fixed: themed-text.tsx hardcodes a #3c87f7
-      link blue – template-derived component with its own colour system,
-      out of scope here; a DS `text.link` token exists if we want it later.)
-- [ ] **Layout pinned with magic numbers**: per-screen tab-bar clearance
-      hand-computed with a different tail in six screens, the done-section
-      paints 1000px of overdraw to reach the screen bottom, and the recipe
-      overflow menu is pinned at `top: 52px`. Each breaks on a new device
-      size or spacing-token change. Wants a shared clearance hook and
-      anchored (not pixel-pinned) positioning.
-
-### Product decision flagged by the review
-
-- [ ] **Should invite codes expire?** Multi-use "one fridge code" is by
-      design, but a code currently works forever. The brute-force fix
-      (0012) holds either way; a lifetime (with auto-rotation) or a longer
-      code would be defense-in-depth. Thomas's call.
-
-## Code debts (small, known, deliberate)
-
-- [ ] **Unused `households.image_url` column** – the household image was dropped
-      from the design 2026-07-22, so the app no longer reads or writes it (Edit
-      household is name-only; `imageUrl` removed from the Household type/lib).
-      The column (added migration 0010) is now dead. Drop it with a migration
-      when convenient – harmless meanwhile.
-- [ ] Onboarding error banners show raw technical messages ("fetch failed:
-      The network connection was lost.") – translate the common cases
-      (offline, wrong code, expired code) to plain language (2026-07-08)
-- [ ] Offline/retry screens are improvised (added 2026-07-18 with the #3 and
-      #6 fixes): `HouseholdLoadError` in src/app/_layout.tsx (launch) and
-      `LoadFailed` in src/app/shopping.tsx (shopping tab), both a centred
-      title + reassurance + "Try again" button on the lightest surface. No
-      Figma design for these states – design them if they should differ.
-- [ ] Delete an item has no undo – soft delete is wired to the database now
-      (migration 0005), so a "Deleted · Undo" toast just needs to clear
-      deleted_at
-- [x] "Fill from weekly plan" loads sample data until the Plan tab exists
-      – real since 2026-07-16 (pushes the current week's plan)
-- [x] Bottom sheets duplicated the KAV + backdrop + white-bleed shell.
-      Fixed 2026-07-19: the four keyboard sheets (recipe
-      ingredient/step/import, shopping edit-item) and the recipe delete
-      ConfirmSheet now use the shared BottomSheet
-      (src/components/ui/bottom-sheet.tsx); edit-item's wrong Done-label token
-      was corrected in the move, and the recipe delete confirm now matches
-      the plan's RemoveMealSheet (both on BottomSheet). The two reorder
-      sheets keep a separate shell BY DESIGN (they need gesture handling and
-      no keyboard, so BottomSheet does not fit) but were deduped to one
-      shared component (see the drag-reorder item under Code review
-      findings). Net ~310 fewer lines.
-
-## Design QA – sign-in + shopping vs Figma (found + fixed 2026-07-12)
-
-Root cause for most of these was the DS `forms/*` tokens missing from the
-DS's NativeWind export list, so the app improvised input colours. Fixed by
-adding `forms` to the export list and re-syncing; the DS-defined active
-border resolved to lime #83E651 (the #47A518 in the Figma file was the
-pre-retune published value).
-
-- [x] Shopping: the "Add an item" field and all edit-sheet fields had no
-      active state – all text inputs now share src/components/ui/input.tsx
-      (grey + #B5B1AB border at rest, white + 2px lime when focused, red
-      on error)
-- [x] Sign-in code boxes: boxes that hold a digit now keep the lime border
-      and white fill (Figma signin 4), not just the box being typed into
-- [x] Empty-state "Fill from weekly plan" border → button outline token
-      (#83E651)
-- [x] Done-list initials: two variants like the design – your own checks
-      outlined (neutral-lighter fill, secondary border), other members
-      filled secondary with an inverse letter, Montserrat display-6; wired
-      checked_by_user_id through to the client for this
-- [x] Live badge (and its connecting/offline siblings) fill: lightest →
-      lighter ramp per the statusBatch component
-- [x] "Add an item" placeholder: keep the disabled grey (Thomas,
-      2026-07-12) – the dark text in the Figma mock is typed-value styling,
-      not placeholder styling
-- [ ] DS nit spotted in passing: color/text/contrast-text in the DS repo
-      aliases color.text.primary (dark), while Figma renders it near-white
-      – looks like a wiring slip in the DS token source, check on the DS
-      side
-
-## Ideas – not yet committed
-
-- [x] **Day picker as a segmented bar** – designed (Figma weekBar
-      211:52272) + built 2026-07-17, together with the header redesign
-      (211:51693). Decisions from that round:
-      - The Plan header IS the week switcher now: ‹ dates + Week N ›. The
-        big title, the relative This/Next-week title and the "+" all
-        retire.
-      - "›" past the last week silently creates a clean next week – the
-        COPY-WEEK feature retires ("our interface is so strong that the
-        copy function is not important", Thomas). add-week-sheet.tsx
-        deleted.
-      - weekBar: seven connected segments, always all 7 days, past days
-        disabled text + no press; selected = active-chip pairing
-        (chip/solid/fill/active + white) per "build it as rendered" – the
-        file's surface/primary/light binding lags the DS (lime) and the
-        unselected labels were bound to a white token; Thomas builds the
-        proper component later, app maps to text/default meanwhile.
-      - Cleanup: chip grow prop + compressed-padding deviation + 2-letter
-        fallback (DAY_TINY) + relativeWeekTitle all deleted – the bar
-        design obsoletes them. Chip is back to the pure DS recipe.
-      - Note: weekBar is still app-local; when Thomas ships it as a DS
-        component, re-verify against the component recipe.
-
-- [ ] **Per-store category layouts** (Thomas, 2026-07-06): save the category
-      order per named store ("Netto", "Bilka"…), so entering a store sorts
-      the list to that store's layout. Simple version: pick the store when
-      you start shopping. Stretch: auto-switch by location. Needs a small
-      `store_layouts` table (household_id, name, category_order) on top of
-      the existing single order.
-- [ ] AI first-guess for categories, in front of the learned memory
-      (decision #7 names this as the natural v1.1 upgrade)
-- [ ] Smart quantity parsing when adding items ("Milk 2L" → name + quantity)
-
-## Recurring
-
-- [ ] Renew the free signing on both iPhones every ~7 days until TestFlight
-      takes over. Now automatic + verified end-to-end 2026-07-16
-      (Thomas's phone renewed to expire Thu Jul 23). build-iphone.sh:
-      deletes the app's provisioning profile, then builds with `xcodebuild
-      -allowProvisioningUpdates -allowProvisioningDeviceRegistration`
-      (mints a fresh 7-day profile), installs the .app with `devicectl`,
-      and prints the new expiry. KEY correction: `expo run:ios` does NOT
-      pass -allowProvisioningUpdates, so the first attempt (delete + expo
-      build) FAILED to sign – must drive xcodebuild directly. Profiles live
-      at `~/Library/Developer/Xcode/UserData/Provisioning Profiles/` on
-      Xcode 16. `devicectl` accepts the hardware UDID directly (no need for
-      the separate CoreDevice id). WATCH the printed expiry – if it ever
-      comes back under ~7 days out, the free dev CERTIFICATE (also 7-day) is
-      the limiter and needs regenerating too. User re-trusts on each phone
-      after a fresh profile if prompted.
-      - **Device UDIDs** (pass as the arg: `./scripts/build-iphone.sh <UDID>`;
-        no arg defaults to Thomas's): Thomas's iPhone 15 Pro
-        `00008130-000C28221489001C`; Pia's iPhone 17 ("PHS work phone")
-        `00008150-00086D290198401C`.
-      - **Both phones on the 2026-07-22 build** (the full household journey).
-        Pia's phone brought current 2026-07-22 – first install, so she must
-        trust the dev profile (Settings → General → VPN & Device Management →
-        Trust) before the app opens. Both now need the weekly renewal.
-- [ ] After every DS publish/retune (Thomas says "DS published"): rebuild
-      tokens in the DS repo, `npm run sync-ds-tokens` here, diff
-      ds-theme.cjs and walk the affected screens (agreed 2026-07-12)
-
-## Pre-launch checklist (v1 ship)
-
-- [x] **Delete profile / wipe my data (GDPR erasure)** – BUILT 2026-07-22
-      (commit 25df0ac), verified on device. Spec: [delete-account.md](delete-account.md).
-      Migration 0016 makes the attribution columns nullable + ON DELETE SET
-      NULL, and `delete_profile()` deletes sole-member households, clears
-      check-off initials, then deletes the auth user – a direct `delete from
-      auth.users` from a SECURITY DEFINER RPC works, so **no Edge Function was
-      needed**. UI: red-outline "Delete profile" in the Edit-profile sheet + a
-      confirm sheet with the design's "type DELETE" fail-safe. Follow-up below.
-- [x] **Photo cleanup on delete** – BUILT 2026-07-22 (commit below). Both
-      deleteHousehold and deleteProfile now clear the recipe-photo folders of
-      the households being wiped from storage first (client-side list+remove,
-      while membership is still intact so the per-household-folder delete policy
-      allows it), before the delete RPC. Best-effort – a failed removal is
-      logged, never blocks the delete. Verified on device (listed 1, removed 1).
-- [ ] Proper trademark search for "Prepeat" / "Prep+Eat"
-- [x] iOS app icon shipped 2026-07-23. Thomas designed "app icon 2" (node
-      296:6786 in nA8SLN8rhdBov97B1IYxnP): Montserrat Bold "prep+eat" in
-      white on #83E651, the + in #476B4A. Exported at 1024x1024 to
-      assets/images/icon.png; the Figma export carries an alpha channel
-      that Apple's validator rejects, so it is re-encoded as RGB colorType
-      2 (verified opaque first – minimum alpha was 255, nothing lost).
-      app.json: removed ios.icon (was the Expo template's
-      assets/expo.icon Icon Composer bundle, now deleted) so iOS uses the
-      top-level expo.icon.
-      BUG, build 6, shipped corrupt (Thomas caught it on the home screen –
-      tiled smear, wrong colours, white band along the bottom). Cause: the
-      alpha-stripping script packed 3 bytes per pixel into pngjs's `data`
-      buffer, which is ALWAYS RGBA/4 bytes per pixel whatever colorType
-      you construct it with – every pixel shifted progressively and the
-      last quarter of the image ran out of data. Correct way: leave `data`
-      as RGBA and pass {colorType: 2} to PNG.sync.write, letting the
-      packer convert. Lesson: spot-checking a few pixels passed on the
-      broken file (the corner happened to be plausible) – LOOK at the
-      exported image before shipping it.
-      OPEN, flagged rather than improvised:
-      - Android adaptiveIcon still points at the EXPO TEMPLATE art
-        (android-icon-foreground/background/monochrome + backgroundColor
-        #E6F4FE). Not designed yet, and Android isn't shipping, so it was
-        left alone rather than approximated. Needs "android-foreground"
-        (art inside the centre 66% safe zone) and "android-monochrome"
-        (single-colour silhouette) frames.
-      - No ios-dark / ios-tinted variants yet (iOS 18+ appearance icons).
-      - iOS launch screen DONE 2026-07-23. Thomas first pointed at the
-        photo version (298:6806 "launch-screen 1"), then designed two
-        more and chose 298:7330 "launch-screen 3" – type only, no photo:
-        "prep. cook. eat. repeat." in Montserrat Bold 56/56, #5F503A with
-        #56C91D full stops, over the tagline in Montserrat Bold 24/32 all
-        in #56C91D. Background: Thomas first had a subtle vertical
-        gradient, then dropped it the same day – it is now a FLAT
-        color/surface/neutral/lightest (#F8F7F7, and ds-theme.cjs
-        colors.surface.neutral.lightest agrees, no drift). Re-read the
-        design and re-exported after that change; the first export had
-        the gradient baked in. Exported at 4x to
-        assets/images/launch-screen.png (1608x3496) and wired into the
-        expo-splash-screen plugin as ios.image, resizeMode cover,
-        backgroundColor #F8F7F7 (the design's base colour).
-        Aspect-ratio note: the frame is 402x874 (0.460), which matches
-        every modern iPhone almost exactly, so `cover` crops
-        imperceptibly. An iPhone SE (0.562) would crop top and bottom
-        and push the type up – not a concern for the family's phones,
-        but it's the failure mode if it ever looks wrong on an older
-        device.
-        Full-bleed on iOS needs ios.enableFullScreenImage_legacy – the
-        SDK 56 docs mark that flag legacy and say it will be REMOVED, so
-        this needs revisiting at some future SDK upgrade.
-        Also removed <AnimatedSplashOverlay /> from src/app/_layout.tsx:
-        Expo template code that flashed a solid #208AEF (Expo blue) over
-        the app for 600ms after the native splash hid – actively wrong
-        against a photo launch screen. Removed rather than recoloured,
-        because the splash→app transition isn't designed; if a transition
-        IS wanted, it needs drawing.
-      - Android splash still uses Expo's splash-icon.png. Left alone: the
-        Android 12+ splash system forces a centred icon in a circle, so
-        the full-bleed photo can't be reused there – it needs its own
-        design. src/components/animated-icon.tsx (now only used for the
-        unused AnimatedIcon export) + web-badge.tsx still reference
-        expo-logo/expo-badge/logo-glow. Leftover template art, separate
-        cleanup.
-      - Legibility: Claude twice warned the wordmark would be an
-        illegible smudge at home-screen size. WRONG – build 7 verified on
-        Thomas's iPhone reads clearly, both lines, and the + clears the
-        squircle mask. Design stands as drawn; no change wanted.
-- [ ] App Store assets: screenshots, description (icon has its own item
-      above)
-- [ ] Privacy policy (required for accounts + a database)
