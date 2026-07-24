@@ -379,6 +379,12 @@ interface MealPlanContextValue {
     servings: number,
   ) => Promise<void>;
   removeEntry: (entryId: string) => void;
+  /** The last-removed meal, offered for undo; null once undone or dismissed. */
+  undoEntry: PlanEntry | null;
+  /** Restore the last-removed meal (revives it, re-links to the list). */
+  undoRemoveEntry: () => void;
+  /** Drop the undo offer without restoring (the toast timed out). */
+  dismissUndoEntry: () => void;
   pushToShoppingList: () => Promise<number>;
 }
 
@@ -402,6 +408,13 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     viewedWeekStart: currentWeekStart,
     ready: false,
   });
+  // The last-removed meal, kept so the undo toast can put it back (replaces
+  // the old confirm dialog). A ref mirrors it for undoRemoveEntry.
+  const [undoEntry, setUndoEntry] = useState<PlanEntry | null>(null);
+  const undoEntryRef = useRef<PlanEntry | null>(null);
+  useEffect(() => {
+    undoEntryRef.current = undoEntry;
+  }, [undoEntry]);
   const [liveStatus, setLive] = useState<LiveStatus>("connecting");
   // Callbacks read the latest state through a ref so they can stay stable.
   const stateRef = useRef(state);
@@ -842,6 +855,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       const entry = stateRef.current.entries.find((e) => e.id === entryId);
       if (!entry) return;
       dispatch({ type: "remove-entry", id: entryId });
+      setUndoEntry(entry);
       guard("remove meal", async () => {
         const pushed =
           stateRef.current.weeks.find((w) => w.id === entry.planId)
@@ -856,6 +870,29 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     },
     [guard],
   );
+
+  const undoRemoveEntry = useCallback(() => {
+    const entry = undoEntryRef.current;
+    if (!entry) return;
+    setUndoEntry(null);
+    // Put it straight back locally (apply-entry re-sorts it into place), then
+    // revive the row and re-contribute to the shopping list if the week was
+    // already pushed – the mirror image of removeEntry.
+    dispatch({ type: "apply-entry", entry });
+    guard("restore meal", async () => {
+      const pushed =
+        stateRef.current.weeks.find((w) => w.id === entry.planId)
+          ?.pushedToListAt != null;
+      const { error } = await supabase
+        .from("meal_plan_entries")
+        .update({ deleted_at: null })
+        .eq("id", entry.id);
+      if (error) throw error;
+      if (pushed) await contributeEntry(entry.id);
+    });
+  }, [guard]);
+
+  const dismissUndoEntry = useCallback(() => setUndoEntry(null), []);
 
   const pushToShoppingList = useCallback(async () => {
     const week = await ensureViewedPlan();
@@ -889,6 +926,9 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       changeServings,
       swapMeal,
       removeEntry,
+      undoEntry,
+      undoRemoveEntry,
+      dismissUndoEntry,
       pushToShoppingList,
     }),
     [
@@ -908,6 +948,9 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       changeServings,
       swapMeal,
       removeEntry,
+      undoEntry,
+      undoRemoveEntry,
+      dismissUndoEntry,
       pushToShoppingList,
     ],
   );

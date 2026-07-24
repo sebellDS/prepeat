@@ -15,8 +15,8 @@ import {
 import { AddMealSheet } from "@/components/plan/add-meal-sheet";
 import { DayRow } from "@/components/plan/day-row";
 import { MoveDaySheet } from "@/components/plan/move-day-sheet";
-import { RemoveMealSheet } from "@/components/plan/remove-meal-sheet";
 import { ServingsSheet } from "@/components/plan/servings-sheet";
+import { UndoToast } from "@/components/ui/undo-toast";
 import { WeekPicker } from "@/components/ui/week-picker";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
@@ -46,8 +46,7 @@ type SheetState =
   | { kind: "add-meal"; date: string }
   | { kind: "move"; entry: PlanEntry }
   | { kind: "swap"; entry: PlanEntry }
-  | { kind: "servings"; entry: PlanEntry }
-  | { kind: "remove"; entry: PlanEntry };
+  | { kind: "servings"; entry: PlanEntry };
 
 function PlanContent() {
   const plan = useMealPlan();
@@ -141,7 +140,9 @@ function PlanContent() {
               onMove={(entry) => setSheet({ kind: "move", entry })}
               onSwap={(entry) => setSheet({ kind: "swap", entry })}
               onServings={(entry) => setSheet({ kind: "servings", entry })}
-              onRemove={(entry) => setSheet({ kind: "remove", entry })}
+              // Remove is instant now, with an undo toast instead of the old
+              // confirm dialog (replaces RemoveMealSheet, 2026-07-24).
+              onRemove={(entry) => plan.removeEntry(entry.id)}
             />
           ))}
           {/* In the flow, not floating (feedback 2026-07-16). After the
@@ -241,11 +242,16 @@ function PlanContent() {
           }
         />
       )}
-      {sheet.kind === "remove" && (
-        <RemoveMealSheet
-          visible
-          onClose={close}
-          onRemove={() => plan.removeEntry(sheet.entry.id)}
+      {/* Keyed on the removed meal so each removal remounts the toast –
+          fresh entrance and a fresh 5s countdown. Sits above the tab bar. */}
+      {plan.undoEntry != null && (
+        <UndoToast
+          key={plan.undoEntry.id}
+          name={plan.undoEntry.recipeTitle}
+          verb="removed"
+          onUndo={plan.undoRemoveEntry}
+          onDismiss={plan.dismissUndoEntry}
+          bottomInset={insets.bottom + BottomTabInset + 4}
         />
       )}
     </SafeAreaView>

@@ -146,6 +146,7 @@ type Action =
       aisle: Category | null;
     }
   | { type: 'remove'; id: string }
+  | { type: 'restore'; item: ShoppingItem }
   | { type: 'set-order'; order: Category[] }
   // Week switch in flight: blank the list so the old week's items never
   // show under the new week's label.
@@ -266,6 +267,12 @@ function reducer(state: State, action: Action): State {
     }
     case 'remove':
       return { ...state, items: state.items.filter((item) => item.id !== action.id) };
+    case 'restore':
+      // Undo of a delete: put the snapshot back. If a realtime echo already
+      // re-added it (deleted_at cleared on the server), leave that one be.
+      return state.items.some((item) => item.id === action.item.id)
+        ? state
+        : { ...state, items: [...state.items, action.item] };
     case 'set-order':
       return { ...state, categoryOrder: action.order };
     case 'begin-load':
@@ -391,6 +398,12 @@ interface ShoppingListApi {
     fields: { name: string; quantity: string | null; aisle: Category | null },
   ) => void;
   removeItem: (id: string) => void;
+  /** The most recently deleted item, offered for undo; null once undone or dismissed. */
+  undoItem: ShoppingItem | null;
+  /** Restore the last-deleted item (clears deleted_at). */
+  undoRemove: () => void;
+  /** Drop the undo offer without restoring (the toast timed out). */
+  dismissUndo: () => void;
   /** Soft-deletes every checked item (the manual "Clear" in the done section). */
   clearCompleted: () => void;
   fillFromWeeklyPlan: () => Promise<number>;
@@ -418,6 +431,13 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const [live, setLive] = useState<LiveStatus>('connecting');
   // Bumped to re-run the boot effect after a launch-time load failure.
   const [bootAttempt, setBootAttempt] = useState(0);
+  // The last-deleted item, kept so the undo toast can put it back. A ref
+  // mirrors it so undoRemove reads the current value without re-memoizing.
+  const [undoItem, setUndoItem] = useState<ShoppingItem | null>(null);
+  const undoItemRef = useRef<ShoppingItem | null>(null);
+  useEffect(() => {
+    undoItemRef.current = undoItem;
+  }, [undoItem]);
   // Week navigation (designed 2026-07-16): every week has its own list.
   // Reachable weeks mirror the plan's rule – existing lists, weeks with a
   // plan, and the current week; two weeks back at most.
@@ -700,7 +720,10 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
 
   const removeItem = useCallback(
     (id: string) => {
+      // Snapshot before dropping it, so undo can put the exact row back.
+      const snapshot = stateRef.current.items.find((item) => item.id === id) ?? null;
       dispatch({ type: 'remove', id });
+      setUndoItem(snapshot);
       guard(
         'remove',
         supabase
@@ -711,6 +734,21 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     },
     [guard],
   );
+
+  const undoRemove = useCallback(() => {
+    const item = undoItemRef.current;
+    if (!item) return;
+    setUndoItem(null);
+    dispatch({ type: 'restore', item });
+    // Clearing deleted_at revives the row; the set_updated_at trigger bumps
+    // updated_at, so the realtime echo re-adds it on the other phones too.
+    guard(
+      'restore',
+      supabase.from('shopping_list_items').update({ deleted_at: null }).eq('id', item.id),
+    );
+  }, [guard]);
+
+  const dismissUndo = useCallback(() => setUndoItem(null), []);
 
   // Shared by the Clear button and fill-from-plan: checked items leave the
   // list together, as one soft-delete on the server.
@@ -807,6 +845,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
+      undoItem,
+      undoRemove,
+      dismissUndo,
       clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,
@@ -827,6 +868,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
+      undoItem,
+      undoRemove,
+      dismissUndo,
       clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,

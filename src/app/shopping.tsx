@@ -15,6 +15,7 @@ import {
 } from '@/components/shopping/inline-reorder-overlay';
 import { LiveBadge } from '@/components/shopping/live-badge';
 import { ReorderCategoriesSheet } from '@/components/shopping/reorder-categories-sheet';
+import { UndoToast } from '@/components/ui/undo-toast';
 import { WeekPicker } from '@/components/ui/week-picker';
 import {
   ShoppingListProvider,
@@ -40,6 +41,9 @@ function ShoppingListScreen() {
     toggleItem,
     updateItem,
     removeItem,
+    undoItem,
+    undoRemove,
+    dismissUndo,
     clearCompleted,
     fillFromWeeklyPlan,
     setCategoryOrder,
@@ -222,6 +226,18 @@ function ShoppingListScreen() {
         onClose={() => setReordering(false)}
         onChange={setCategoryOrder}
       />
+
+      {/* Keyed on the deleted item so each new delete remounts the toast –
+          fresh entrance and a fresh 5s countdown. Sits above the tab bar. */}
+      {undoItem != null && (
+        <UndoToast
+          key={undoItem.id}
+          name={undoItem.name}
+          onUndo={undoRemove}
+          onDismiss={dismissUndo}
+          bottomInset={insets.bottom + BottomTabInset + 4}
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -26,6 +26,7 @@ import { ReorderSheet } from "@/components/ui/reorder-sheet";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { SwipeHint } from "@/components/ui/swipe-hint";
+import { UndoToast } from "@/components/ui/undo-toast";
 import { ds } from "@/constants/ds";
 import { BottomTabInset } from "@/constants/theme";
 import { AddToPlanSheet } from "@/components/recipes/add-to-plan-sheet";
@@ -53,6 +54,12 @@ import {
 } from "@/lib/recipes";
 
 type Dialog = "delete" | "shopping" | null;
+
+// A just-deleted ingredient or step, kept so the undo toast can re-insert it.
+// These are hard deletes (no deleted_at), so undo re-adds from the snapshot.
+type UndoTarget =
+  | { kind: "ingredient"; snapshot: RecipeIngredient }
+  | { kind: "step"; snapshot: RecipeStep };
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -84,6 +91,9 @@ export default function RecipeDetailScreen() {
   const [reordering, setReordering] = useState<"ingredients" | "steps" | null>(
     null,
   );
+  const [undoTarget, setUndoTarget] = useState<UndoTarget | null>(null);
+  // Stable so the toast's auto-dismiss timer doesn't reset on every re-render.
+  const dismissUndo = useCallback(() => setUndoTarget(null), []);
 
   const reload = useCallback(async () => {
     try {
@@ -120,6 +130,29 @@ export default function RecipeDetailScreen() {
     setFavorite(recipe.id, !recipe.isFavorite).catch((error) =>
       console.warn("[recipes] favorite failed", error),
     );
+  };
+
+  // Undo a swipe-delete: re-insert the snapshot (ingredient by sort order,
+  // step at its old position), then reload from the server truth.
+  const undoDelete = async () => {
+    if (undoTarget == null) return;
+    const target = undoTarget;
+    setUndoTarget(null);
+    try {
+      if (target.kind === "ingredient") {
+        await addIngredient(
+          recipe.id,
+          target.snapshot.name,
+          target.snapshot.quantityText,
+          target.snapshot.sortOrder,
+        );
+      } else {
+        await addStep(recipe.id, target.snapshot.stepNumber, target.snapshot.text);
+      }
+    } catch (error) {
+      console.warn("[recipes] undo delete failed", error);
+    }
+    reload();
   };
 
   const confirmDialog = async () => {
@@ -304,6 +337,7 @@ export default function RecipeDetailScreen() {
                   }
                   onEdit={() => setEditingIngredient(ingredient)}
                   onDelete={async () => {
+                    setUndoTarget({ kind: "ingredient", snapshot: ingredient });
                     await deleteIngredient(ingredient.id).catch((error) =>
                       console.warn("[recipes] delete ingredient failed", error),
                     );
@@ -350,6 +384,7 @@ export default function RecipeDetailScreen() {
                   }
                   onEdit={() => setEditingStep(step)}
                   onDelete={async () => {
+                    setUndoTarget({ kind: "step", snapshot: step });
                     await deleteStep(recipe.id, step.id).catch((error) =>
                       console.warn("[recipes] delete step failed", error),
                     );
@@ -580,6 +615,22 @@ export default function RecipeDetailScreen() {
           reload();
         }}
       />
+
+      {/* Keyed on the deleted row so each delete remounts the toast – fresh
+          entrance and a fresh 5s countdown. Sits above the tab bar. */}
+      {undoTarget != null && (
+        <UndoToast
+          key={undoTarget.snapshot.id}
+          name={
+            undoTarget.kind === "ingredient"
+              ? undoTarget.snapshot.name
+              : `Step ${undoTarget.snapshot.stepNumber}`
+          }
+          onUndo={undoDelete}
+          onDismiss={dismissUndo}
+          bottomInset={insets.bottom + BottomTabInset + 4}
+        />
+      )}
     </SafeAreaView>
   );
 }
