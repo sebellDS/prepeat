@@ -105,17 +105,39 @@ All verified still present 2026-07-24.
       it (Edit household is name-only; `imageUrl` removed from the Household
       type/lib). The column (added migration 0010) is now dead. Drop it with a
       migration when convenient – harmless meanwhile.
-- [ ] Onboarding error banners show raw technical messages ("fetch failed:
+- [x] Onboarding error banners show raw technical messages ("fetch failed:
       The network connection was lost.") – translate the common cases
       (offline, wrong code, expired code) to plain language (2026-07-08).
+      DONE 2026-07-24: shared `friendlyError()` in src/lib/error-messages.ts
+      rewrites offline/network drops, wrong-or-expired sign-in codes and
+      Supabase rate-limits; the app's own plain messages (household.ts,
+      auth.ts) pass through unchanged. Wired into the onboarding FormScreen
+      funnel and the join-household modal.
 - [ ] Offline/retry screens are improvised (added 2026-07-18 with the #3 and
       #6 review fixes): `HouseholdLoadError` in src/app/_layout.tsx (launch)
       and `LoadFailed` in src/app/shopping.tsx (shopping tab), both a centred
       title + reassurance + "Try again" button on the lightest surface. No
       Figma design for these states – design them if they should differ.
-- [ ] Delete an item has no undo – soft delete is wired to the database
-      (migration 0005), so a "Deleted · Undo" toast just needs to clear
-      deleted_at.
+- [x] Delete an item has no undo. DONE 2026-07-24, now across ALL three
+      swipe-delete surfaces via one shared toast
+      (src/components/ui/undo-toast.tsx – 5s, name + verb, "Undo" action):
+      - **Shopping list items**: swipe-delete → "{item} deleted · Undo";
+        Undo clears deleted_at (the set_updated_at trigger bumps updated_at
+        so the restore syncs to the other phones). `restore` reducer action
+        + undoItem/undoRemove/dismissUndo on the shopping context.
+      - **Meal-plan "Remove meal"**: the confirm dialog was REPLACED by an
+        undo toast ("{meal} removed · Undo") – instant remove, Undo revives
+        the entry (deleted_at=null) and re-contributes to the list if the
+        week was pushed. remove-meal-sheet.tsx deleted.
+      - **Recipe ingredients + steps** (detail editor [id].tsx): these are
+        HARD deletes (no deleted_at), so Undo re-inserts the snapshot via
+        addIngredient/addStep. NOT added to the recipe CREATE flow (new.tsx)
+        – those rows are local draft state, nothing persisted, so a toast
+        there would be inconsistent.
+      IMPROVISED – no Figma toast/snackbar design yet; built from DS tokens
+      (dark secondary surface + brand-lime action) and flagged in code.
+      Design the real toast before launch. Not covered: the bulk "Clear" in
+      the shopping done section.
 
 ## Design QA leftover
 
@@ -171,6 +193,28 @@ All verified still present 2026-07-24.
 
 ## Decisions log (recent)
 
+- **2026-07-24 – dev vs TestFlight builds now have separate identities**
+  (Thomas). Direct-to-device builds are a distinct "dev" app that installs
+  ALONGSIDE the TestFlight app, so it's obvious which is which. Mechanism:
+  `app.config.js` (new, layered on app.json) switches icon → `icon-dev.png`
+  (Figma node 323:10079, "dev prep+eat" on light grey), bundle id →
+  `app.prepeat.dev`, and home-screen name → "Prep+Eat Dev" when
+  `APP_VARIANT=dev`. That flag is set by scripts/build-iphone.sh and the EAS
+  development/preview profiles; ONLY EAS `production` (→ TestFlight/App
+  Store) leaves it unset and keeps the real Prep+Eat identity. The Expo
+  `name` is intentionally unchanged so the native project/scheme stays
+  "PrepEat" (the build script hardcodes it); the dev label rides on
+  CFBundleDisplayName. build-iphone.sh now runs `expo prebuild` before
+  xcodebuild – this also permanently fixes the old bug where direct builds
+  showed the stale Expo template icon (the local ios/ project was generated
+  Jul 3, before the icon existed, and the direct build never re-ran prebuild).
+- **2026-07-24 – meal-plan "Remove meal" confirm dialog → undo toast**
+  (Thomas). Reverses the 2026-07-16 "remove has a confirm dialog" call: undo
+  is the less-interruptive safety net, consistent with shopping and the
+  recipe editor. Remove is now instant; a 5s "{meal} removed · Undo" toast
+  revives the entry (and re-links it to the shopping list if the week was
+  pushed). RemoveMealSheet deleted. The undo toast itself is still an
+  improvised placeholder pending a Figma design.
 - **2026-07-22 – multi-household journey shipped end to end** (16 commits,
   built slice by slice on device in the Prepeat brand). At a glance:
   - Switcher + join another household + post-join welcome interstitial
