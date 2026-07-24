@@ -105,39 +105,18 @@ All verified still present 2026-07-24.
       it (Edit household is name-only; `imageUrl` removed from the Household
       type/lib). The column (added migration 0010) is now dead. Drop it with a
       migration when convenient – harmless meanwhile.
-- [x] Onboarding error banners show raw technical messages ("fetch failed:
-      The network connection was lost.") – translate the common cases
-      (offline, wrong code, expired code) to plain language (2026-07-08).
-      DONE 2026-07-24: shared `friendlyError()` in src/lib/error-messages.ts
-      rewrites offline/network drops, wrong-or-expired sign-in codes and
-      Supabase rate-limits; the app's own plain messages (household.ts,
-      auth.ts) pass through unchanged. Wired into the onboarding FormScreen
-      funnel and the join-household modal.
 - [ ] Offline/retry screens are improvised (added 2026-07-18 with the #3 and
       #6 review fixes): `HouseholdLoadError` in src/app/_layout.tsx (launch)
       and `LoadFailed` in src/app/shopping.tsx (shopping tab), both a centred
       title + reassurance + "Try again" button on the lightest surface. No
       Figma design for these states – design them if they should differ.
-- [x] Delete an item has no undo. DONE 2026-07-24, now across ALL three
-      swipe-delete surfaces via one shared toast
-      (src/components/ui/undo-toast.tsx – 5s, name + verb, "Undo" action):
-      - **Shopping list items**: swipe-delete → "{item} deleted · Undo";
-        Undo clears deleted_at (the set_updated_at trigger bumps updated_at
-        so the restore syncs to the other phones). `restore` reducer action
-        + undoItem/undoRemove/dismissUndo on the shopping context.
-      - **Meal-plan "Remove meal"**: the confirm dialog was REPLACED by an
-        undo toast ("{meal} removed · Undo") – instant remove, Undo revives
-        the entry (deleted_at=null) and re-contributes to the list if the
-        week was pushed. remove-meal-sheet.tsx deleted.
-      - **Recipe ingredients + steps** (detail editor [id].tsx): these are
-        HARD deletes (no deleted_at), so Undo re-inserts the snapshot via
-        addIngredient/addStep. NOT added to the recipe CREATE flow (new.tsx)
-        – those rows are local draft state, nothing persisted, so a toast
-        there would be inconsistent.
-      IMPROVISED – no Figma toast/snackbar design yet; built from DS tokens
-      (dark secondary surface + brand-lime action) and flagged in code.
-      Design the real toast before launch. Not covered: the bulk "Clear" in
-      the shopping done section.
+- [ ] Undo toast needs a real design. The "{item} deleted / removed · Undo"
+      toast shipped 2026-07-24 (src/components/ui/undo-toast.tsx) across all
+      three swipe-delete surfaces – shopping items, meal-plan "Remove meal"
+      (replaced its confirm dialog) and recipe ingredients/steps – but it is
+      an improvised placeholder (DS dark surface + brand-lime action, 5s, no
+      Figma frame). Design it before launch. Also still uncovered: the bulk
+      "Clear" in the shopping done section has no undo.
 
 ## Design QA leftover
 
