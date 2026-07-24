@@ -88,14 +88,15 @@ All verified still present 2026-07-24.
 
 ## Security
 
-- [ ] **Invite codes should expire** – DECIDED YES (Thomas, 2026-07-24).
-      Multi-use "one fridge code" stays by design, but a code currently
-      works forever; give it a lifetime with auto-rotation so a leaked code
-      stops working (defense-in-depth on top of the 0012 brute-force
-      throttle). To build: a decision on the lifetime (e.g. 30 days), a new
-      migration to add an expiry/rotation column + regenerate path, and the
-      Invite sheet showing "code refreshes on {date}" with a manual
-      "new code" action. Design the sheet change if it should differ.
+- [x] **Invite codes should expire** – DONE 2026-07-24 (Thomas: lifetime
+      **14 days**). Migration 0019 (applied) adds `rotate_invite_code()` (the
+      single mint path: membership-checked, retires every live code for the
+      household, then mints one fresh 14-day code) + a one-time backfill
+      giving existing infinite codes a 14-day expiry. `getOrCreateInvite`
+      rotates lazily on a missing/expired/legacy-null code; the Invite sheet
+      shows "Refreshes on {date}" and a manual "Get a new code" (confirm
+      dialog) that kills a leaked code at once. Sheet rebuilt to the Figma
+      frame "Householde – invite" (271:14935) after review.
 
 ## Code debts (small, known, deliberate)
 

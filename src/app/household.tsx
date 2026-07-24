@@ -20,8 +20,10 @@ import {
   fetchHouseholdMembers,
   getOrCreateInvite,
   leaveHousehold,
+  regenerateInvite,
   type Household,
   type HouseholdMember,
+  type Invite,
 } from "@/lib/household";
 
 // The Household tab (Figma "Household" page, reworked 2026-07-22): the
@@ -43,7 +45,7 @@ export default function HouseholdScreen() {
   } = useHouseholdSwitcher();
 
   const [members, setMembers] = useState<HouseholdMember[]>([]);
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [invite, setInvite] = useState<Invite | null>(null);
   const [sheet, setSheet] = useState<
     | "none"
     | "household"
@@ -69,8 +71,8 @@ export default function HouseholdScreen() {
     let cancelled = false;
     loadMembers(household.id);
     getOrCreateInvite(household.id)
-      .then((code) => {
-        if (!cancelled) setInviteCode(code);
+      .then((next) => {
+        if (!cancelled) setInvite(next);
       })
       .catch((error) => console.warn("[household] invite failed", error));
     return () => {
@@ -136,14 +138,14 @@ export default function HouseholdScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => setSheet("invite")}
-              className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
+              className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium bg-button-solid-fill-enabled px-comp-xlarge py-comp-large"
             >
               <MaterialIcons
-                name="person-add-alt"
+                name="person-add-alt-1"
                 size={24}
-                color={ds.colors.button.outline.label.enabled}
+                color={ds.colors.button.solid.label.enabled}
               />
-              <Text className="font-paragraph text-components-button-label font-default text-button-outline-label-enabled">
+              <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
                 Invite someone
               </Text>
             </Pressable>
@@ -207,7 +209,12 @@ export default function HouseholdScreen() {
         visible={sheet === "invite"}
         onClose={() => setSheet("none")}
         householdName={household.name}
-        inviteCode={inviteCode}
+        invite={invite}
+        onRegenerate={async () => {
+          const next = await regenerateInvite(household.id);
+          setInvite(next);
+          return next;
+        }}
       />
       <LeaveHouseholdSheet
         visible={sheet === "leave"}

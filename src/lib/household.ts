@@ -10,6 +10,13 @@ export interface Household {
   name: string;
 }
 
+/** A household's shareable invite code and when it auto-refreshes (0019). */
+export interface Invite {
+  code: string;
+  /** Epoch ms – the code stops working after this; the sheet shows the date. */
+  expiresAt: number;
+}
+
 /** One row of the Household screen's member directory (profiles, 0010). */
 export interface HouseholdMember {
   userId: string;
@@ -25,17 +32,6 @@ interface HouseholdRow {
 
 function rowToHousehold(row: HouseholdRow): Household {
   return { id: row.id, name: row.name };
-}
-
-// Unambiguous alphabet: no 0/O, 1/I/L or 5/S look-alikes.
-const CODE_ALPHABET = '2346789ACDEFGHJKMNPQRTUVWXYZ';
-
-function generateCode(): string {
-  let suffix = '';
-  for (let i = 0; i < 4; i++) {
-    suffix += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
-  }
-  return `PREP-${suffix}`;
 }
 
 /**
@@ -165,15 +161,18 @@ export async function createHousehold(name: string): Promise<{ household: Househ
     .insert({ user_id: userId, household_id: household.id });
   if (memberError) throw memberError;
 
-  const inviteCode = await createInvite(household.id);
+  const { code: inviteCode } = await regenerateInvite(household.id);
   return { household, inviteCode };
 }
 
 /**
- * The household's shareable invite code – reuses the newest existing one
- * (codes are multi-use as of migration 0003) or mints the first.
+ * The household's shareable invite code (codes are multi-use as of 0003). Shows
+ * the newest code while it is still live, otherwise rotates to a fresh one.
+ * "Live" now means a code with a FUTURE expiry: a missing code, an expired one,
+ * or a legacy never-expiring (null) code all rotate – which is how old
+ * infinite-life codes pick up a 14-day expiry the next time the sheet opens.
  */
-export async function getOrCreateInvite(householdId: string): Promise<string> {
+export async function getOrCreateInvite(householdId: string): Promise<Invite> {
   const { data, error } = await supabase
     .from('household_invites')
     .select('code, expires_at')
@@ -182,29 +181,25 @@ export async function getOrCreateInvite(householdId: string): Promise<string> {
     .limit(1);
   if (error) throw error;
   const invite = data?.[0];
-  if (invite && (invite.expires_at == null || new Date(invite.expires_at) > new Date())) {
-    return invite.code;
+  if (invite && invite.expires_at != null && new Date(invite.expires_at) > new Date()) {
+    return { code: invite.code, expiresAt: Date.parse(invite.expires_at) };
   }
-  return createInvite(householdId);
+  return regenerateInvite(householdId);
 }
 
-/** Mints a fresh invite code for the household. */
-export async function createInvite(householdId: string): Promise<string> {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-
-  // Retry on the unlikely collision with the unique code constraint.
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const code = generateCode();
-    const { error } = await supabase.from('household_invites').insert({
-      household_id: householdId,
-      code,
-      created_by: userData.user.id,
-    });
-    if (!error) return code;
-    if (error.code !== '23505') throw error;
-  }
-  throw new Error('Could not generate an invite code, please try again');
+/**
+ * Mints a fresh 14-day code and retires any current one (rotate_invite_code,
+ * 0019). Used for the first code, lazy auto-rotation, and the sheet's manual
+ * "New code" – all one server path, so a leaked code dies the moment a new one
+ * is minted rather than lingering to its own expiry.
+ */
+export async function regenerateInvite(householdId: string): Promise<Invite> {
+  const { data, error } = await supabase.rpc('rotate_invite_code', {
+    p_household_id: householdId,
+  });
+  if (error) throw error;
+  const row = data as { code: string; expires_at: string };
+  return { code: row.code, expiresAt: Date.parse(row.expires_at) };
 }
 
 /** Redeems an invite code and returns the joined household. */
