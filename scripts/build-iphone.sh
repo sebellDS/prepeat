@@ -23,11 +23,17 @@
 set -e
 export LANG=en_US.UTF-8
 export PATH=/opt/homebrew/bin:$PATH
+# Direct-to-device builds are the "dev" variant: own bundle id, name and icon
+# (app.config.js), so they install ALONGSIDE the TestFlight app instead of
+# overwriting it. TestFlight/App Store builds go through EAS production, which
+# leaves APP_VARIANT unset and keeps the real Prep+Eat identity.
+export APP_VARIANT=dev
 
 SCRIPT_DIR=${0:A:h}
-WORKSPACE="$SCRIPT_DIR/../ios/PrepEat.xcworkspace"
+PROJECT_DIR="$SCRIPT_DIR/.."
+WORKSPACE="$PROJECT_DIR/ios/PrepEat.xcworkspace"
 UDID=${1:-00008130-000C28221489001C}
-BUNDLE_ID=app.prepeat
+BUNDLE_ID=app.prepeat.dev
 # Xcode 16 keeps profiles under UserData; older Xcodes used MobileDevice.
 # Check both so this keeps working across upgrades / machines.
 PROFILE_DIRS=(
@@ -53,6 +59,13 @@ if ! xcrun xctrace list devices 2>/dev/null | grep -q "$UDID"; then
   echo "[build-iphone] Device $UDID not found – cable and unlock the phone." >&2
   exit 1
 fi
+
+echo "[build-iphone] $(date +%H:%M:%S) syncing the dev app config (dev icon + app.prepeat.dev)…"
+# Regenerate the native project from app.config.js so the dev icon and bundle
+# id are actually baked in. The direct build compiles the existing ios/ folder
+# and never re-runs prebuild on its own, so without this the icon/id drift from
+# the config (that is exactly why direct builds used to show the Expo icon).
+( cd "$PROJECT_DIR" && npx expo prebuild -p ios >/dev/null )
 
 echo "[build-iphone] $(date +%H:%M:%S) renewing signing (removing the stale profile so a fresh 7-day one is minted)…"
 prepeat_profiles | while read -r p; do
