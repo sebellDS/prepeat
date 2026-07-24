@@ -316,8 +316,8 @@ the family can start collecting favourites immediately.
       Native gives the touch to the innermost one, so tapping the dots
       opens the actions instead of firing the row's press.
       Ingredient row order confirmed by Thomas: name, amount, three dots.
-      NOT yet verified on a device – it's behind sign-in, so the web
-      preview can't reach it.
+      VERIFIED on device 2026-07-23 (Thomas, "looks amazing") via
+      TestFlight build 9. Shipped in commit d2ba64c.
 
 ## In parallel – when it fits
 
@@ -346,8 +346,13 @@ the family can start collecting favourites immediately.
 - [ ] Apple Developer account ($99/year) + TestFlight so the family can
       install without cables (also ends the 7-day rebuild ritual on both
       phones). Path decided 2026-07-20 (Thomas): EAS cloud build → EAS
-      submit → TestFlight. Steps:
-      - [ ] Thomas: enrol in the Apple Developer Program, $99/yr, as
+      submit → TestFlight. STATUS 2026-07-23: fully working end to end –
+      account active, unattended build+submit, and Thomas's phone installs
+      + runs from TestFlight (builds 4-9 shipped; icon, launch screen and
+      swipe hint all delivered this way). Only remaining piece is Pia
+      accepting her invite; parent stays open until a SECOND phone is on
+      TestFlight, since "both phones without cables" isn't true yet. Steps:
+      - [x] Thomas: enrolled in the Apple Developer Program, $99/yr, as
             Individual (Apple Developer iPhone app is the fastest route –
             Face ID + Apple Pay). Apple ID sebell@mac.com; 2FA required.
             Approval instant–48h. THE LONG POLE.
@@ -480,8 +485,10 @@ the family can start collecting favourites immediately.
             phone no longer needs it (TestFlight install confirmed
             2026-07-23) – see the Recurring item below, which can be
             closed once Pia is on TestFlight.
-      - [ ] Joint, after activation: first `eas build` (EAS manages the
-            distribution cert + profile), then `eas submit` to TestFlight.
+      - [x] DONE: builds 3-9 all built + submitted to TestFlight this way.
+            Routine now via scripts/eas-build-ios.sh then
+            scripts/eas-submit-ios.sh. EAS manages the distribution cert +
+            profile; no per-build Apple interaction.
 - [ ] "Continue with Apple" button once the paid developer account exists
 - [ ] Re-export the splash photo at 3x someday – Thomas's reframed copy
       (2026-07-07) is 402px wide (1x), soft on a Retina screen
