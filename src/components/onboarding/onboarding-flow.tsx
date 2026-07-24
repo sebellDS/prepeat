@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '@/components/ui/input';
 import { ds } from '@/constants/ds';
 import { useAuth } from '@/lib/auth';
+import { friendlyError } from '@/lib/error-messages';
 import {
   createHousehold,
   joinHousehold,
@@ -497,13 +498,7 @@ function FormScreen({
     try {
       await onSubmit();
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === 'object' && err != null && 'message' in err
-            ? String((err as { message: unknown }).message)
-            : 'Something went wrong – please try again';
-      setError(message);
+      setError(friendlyError(err));
     } finally {
       setBusy(false);
     }

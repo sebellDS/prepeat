@@ -23,6 +23,7 @@ import {
 import { WelcomeScreen } from '@/components/onboarding/onboarding-flow';
 import { Input } from '@/components/ui/input';
 import { ds } from '@/constants/ds';
+import { friendlyError } from '@/lib/error-messages';
 import { joinHousehold, type Household } from '@/lib/household';
 
 export function JoinHouseholdModal({
@@ -61,9 +62,7 @@ export function JoinHouseholdModal({
       setBusy(false);
       setJoined(result);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Something went wrong – please try again';
-      setError(message);
+      setError(friendlyError(err));
       setBusy(false);
     }
   };
