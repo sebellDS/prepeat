@@ -30,7 +30,6 @@ import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household-context";
 import {
   contributeEntry,
-  pushPlanToList,
   rescaleEntry,
   withdrawEntry,
 } from "@/lib/plan-shopping";
@@ -284,11 +283,10 @@ async function snapshotEntryIngredients(
   if (error) throw error;
 }
 
-/** The shared write: entry + ingredient snapshot (+ list share if pushed). */
+/** The shared write: entry + ingredient snapshot + its share of the list. */
 async function insertPlanEntry(options: {
   entryId: string;
   planId: string;
-  planPushed: boolean;
   weekStart: string;
   householdId: string;
   userId: string;
@@ -306,11 +304,10 @@ async function insertPlanEntry(options: {
   });
   if (error) throw error;
   await snapshotEntryIngredients(options.entryId, options.recipe);
-  // A + rails: once the week is on the list, new meals flow in. The server
-  // resolves and locks the week's list itself.
-  if (options.planPushed) {
-    await contributeEntry(options.entryId);
-  }
+  // A + rails: every meal flows straight onto its week's shopping list – the
+  // server resolves the list, creating it for a brand-new week (decision #8,
+  // 2026-07-25: no opt-in step, planning a week IS asking for its list).
+  await contributeEntry(options.entryId);
 }
 
 /**
@@ -331,7 +328,6 @@ export async function addRecipeToPlan(
   await insertPlanEntry({
     entryId: Crypto.randomUUID(),
     planId: plan.id,
-    planPushed: plan.pushedToListAt != null,
     weekStart,
     householdId,
     userId,
@@ -396,7 +392,6 @@ interface MealPlanContextValue {
   undoRemoveEntry: () => void;
   /** Drop the undo offer without restoring (the toast timed out). */
   dismissUndoEntry: () => void;
-  pushToShoppingList: () => Promise<number>;
 }
 
 const MealPlanContext = createContext<MealPlanContextValue | null>(null);
@@ -706,7 +701,6 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
           await insertPlanEntry({
             entryId: write.entryId,
             planId: week.id,
-            planPushed: week.pushedToListAt != null,
             weekStart: week.weekStart,
             householdId: household.id,
             userId,
@@ -794,10 +788,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
           .update({ servings })
           .eq("id", entryId);
         if (error) throw error;
-        if (stateRef.current.weeks.find((w) => w.id === entry.planId)
-          ?.pushedToListAt != null) {
-          await rescaleEntry(entryId, oldServings, servings);
-        }
+        await rescaleEntry(entryId, oldServings, servings);
       });
     },
     [guard],
@@ -825,12 +816,8 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
         },
       });
       guard("swap meal", async () => {
-        const entryWeek = stateRef.current.weeks.find(
-          (w) => w.id === entry.planId,
-        );
-        const pushed = entryWeek?.pushedToListAt != null;
         // Pull the old meal's share out, replace the snapshot, put the new in.
-        if (pushed) await withdrawEntry(entryId);
+        await withdrawEntry(entryId);
         const { error: clearError } = await supabase
           .from("meal_plan_entry_ingredients")
           .delete()
@@ -849,9 +836,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
           .eq("id", entryId);
         if (error) throw error;
         await snapshotEntryIngredients(entryId, recipe);
-        if (pushed) {
-          await contributeEntry(entryId);
-        }
+        await contributeEntry(entryId);
       });
     },
     [guard],
@@ -864,10 +849,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "remove-entry", id: entryId });
       setUndoEntry(entry);
       guard("remove meal", async () => {
-        const pushed =
-          stateRef.current.weeks.find((w) => w.id === entry.planId)
-            ?.pushedToListAt != null;
-        if (pushed) await withdrawEntry(entryId);
+        await withdrawEntry(entryId);
         const { error } = await supabase
           .from("meal_plan_entries")
           .update({ deleted_at: new Date().toISOString() })
@@ -883,37 +865,20 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     if (!entry) return;
     setUndoEntry(null);
     // Put it straight back locally (apply-entry re-sorts it into place), then
-    // revive the row and re-contribute to the shopping list if the week was
-    // already pushed – the mirror image of removeEntry.
+    // revive the row and re-contribute to the shopping list – the mirror image
+    // of removeEntry.
     dispatch({ type: "apply-entry", entry });
     guard("restore meal", async () => {
-      const pushed =
-        stateRef.current.weeks.find((w) => w.id === entry.planId)
-          ?.pushedToListAt != null;
       const { error } = await supabase
         .from("meal_plan_entries")
         .update({ deleted_at: null })
         .eq("id", entry.id);
       if (error) throw error;
-      if (pushed) await contributeEntry(entry.id);
+      await contributeEntry(entry.id);
     });
   }, [guard]);
 
   const dismissUndoEntry = useCallback(() => setUndoEntry(null), []);
-
-  const pushToShoppingList = useCallback(async () => {
-    const week = await ensureViewedPlan();
-    const touched = await pushPlanToList(week.id);
-    dispatch({
-      type: "upsert-week",
-      week: {
-        ...week,
-        pushedToListAt: week.pushedToListAt ?? Date.now(),
-        updatedAt: Date.now(),
-      },
-    });
-    return touched;
-  }, [ensureViewedPlan]);
 
   const value = useMemo<MealPlanContextValue>(
     () => ({
@@ -936,7 +901,6 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       undoEntry,
       undoRemoveEntry,
       dismissUndoEntry,
-      pushToShoppingList,
     }),
     [
       state.ready,
@@ -958,7 +922,6 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       undoEntry,
       undoRemoveEntry,
       dismissUndoEntry,
-      pushToShoppingList,
     ],
   );
 

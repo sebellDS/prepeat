@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   Text,
   View,
@@ -53,7 +52,6 @@ function PlanContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [sheet, setSheet] = useState<SheetState>({ kind: "none" });
-  const [pushed, setPushed] = useState(false);
 
   const todayKey = toDateKey(new Date());
   const dates = useMemo(
@@ -71,18 +69,6 @@ function PlanContent() {
   }, [plan.entries]);
 
   const close = () => setSheet({ kind: "none" });
-
-  const pushToList = async () => {
-    try {
-      await plan.pushToShoppingList();
-      setPushed(true);
-      setTimeout(() => setPushed(false), 2500);
-    } catch (error) {
-      console.warn("[plan] push to shopping list failed", error);
-    }
-  };
-
-  const canPush = plan.entries.length > 0;
 
   return (
     <SafeAreaView
@@ -145,36 +131,14 @@ function PlanContent() {
               onRemove={(entry) => plan.removeEntry(entry.id)}
             />
           ))}
-          {/* In the flow, not floating (feedback 2026-07-16). After the
-              first push the week live-syncs, so the label flips to a
-              re-sweep. */}
-          <Pressable
-            accessibilityRole="button"
-            disabled={!canPush || pushed}
-            onPress={pushToList}
-            className={
-              // No button/*/disabled token in the DS yet (flagged in backlog).
-              "mt-layout-small w-full items-center rounded-medium py-comp-large " +
-              (canPush
-                ? "bg-button-solid-fill-enabled"
-                : "bg-surface-neutral-light")
-            }
-          >
-            <Text
-              className={
-                "font-paragraph text-components-button-label font-default " +
-                (canPush
-                  ? "text-button-solid-label-enabled"
-                  : "text-text-disabled")
-              }
-            >
-              {pushed
-                ? "Shopping list updated"
-                : plan.viewedWeek?.pushedToListAt != null
-                  ? "Update shopping list"
-                  : "Add all to shopping list"}
-            </Text>
-          </Pressable>
+          {/* Sits where the "Add all to shopping list" button used to, and
+              says what that button only implied: the link exists and needs no
+              press (decision #8, 2026-07-25). Shown on an empty week too –
+              that is when it sets the expectation. IMPROVISED placement and
+              copy, both Thomas's call, no Figma frame. */}
+          <Text className="mt-comp-small font-paragraph text-paragraph font-default text-text-subtle">
+            Your shopping list updates as you plan.
+          </Text>
         </ScrollView>
       )}
 

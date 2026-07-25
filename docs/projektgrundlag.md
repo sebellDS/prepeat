@@ -141,11 +141,14 @@ set of constants in app code, not a table. AI-assisted first guesses are a
 possible v1.1 upgrade that would slot in front of the same memory table
 without redesign.
 
-### 8. PROPOSED: every week's list follows its plan (retire the "link" step)
+### 8. Every week's list follows its plan (no "link" step)
 
-**Status: proposal awaiting Thomas's decision.** Raised by Thomas after seeing
+**DECIDED 2026-07-25 (Thomas): delete the button entirely – no button at all.
+Adding a week to the plan adds it to the shopping list.** Raised after seeing
 the shopping list update live on two phones: *"why do we need the button
-'Update shopping list'? It might actually confuse the user."*
+'Update shopping list'? It might actually confuse the user."* Then, on learning
+a week stays unlinked until somebody presses it once: *"I want to delete the
+button all together."*
 
 **How it works today.** A week's plan only reaches its shopping list once
 somebody presses **"Add all to shopping list"**, which stamps
@@ -174,29 +177,29 @@ from the moment the plan has anything in it. Plan a meal → it is on that week'
 list. Keep a quiet repair/reset action (see consequence 2), but never a primary
 button implying the list is stale.
 
-**Three consequences to settle before building:**
+**The three consequences, as settled:**
 
-1. **After you have shopped** – THE ONE REAL ARGUMENT FOR KEEPING AN OPT-IN,
-   and the call Thomas has to make. You tick everything off, then swap
-   Thursday's dinner. The new ingredients appear on a list you considered
-   finished. Claude's view: that is correct – you *do* need to buy them, and
-   A + rails already protects checked and hand-edited lines from being
-   rewritten. But it is a genuine behaviour change and should be chosen, not
-   inherited.
-2. **The Shopping empty state changes.** "Time to prep / Fill from weekly
-   plan" only makes sense while a list can sit empty despite a plan existing.
-   Remove the gate and that button has no job; the empty state needs new copy,
-   probably pointing at the Plan tab. A quiet "reset this week's list" escape
-   hatch (option B in the A + rails decision) is still worth keeping somewhere
-   secondary – it is also the only repair path if a contribution ever fails
-   mid-write (offline at the wrong moment); nothing retries it today.
-3. **Existing weeks need a one-time reconcile**, or any week left unlinked
-   would sit stale forever.
+1. **After you have shopped: new ingredients DO get added** (Thomas,
+   2026-07-25). You tick everything off, then swap Thursday's dinner – the new
+   recipe's ingredients appear on that finished list, unchecked. You genuinely
+   still need to buy them, and A + rails already protects checked and
+   hand-edited lines from being rewritten, so nothing you did gets undone.
+2. **The Shopping empty state lost its button.** "Fill from weekly plan" had no
+   job left (with auto-sync, a week with meals is never empty). Dropped, and the
+   copy now says the list fills itself and you can add anything else you need –
+   IMPROVISED, no Figma frame, flagged in the backlog to bless or redesign.
+3. **Existing weeks reconciled once** by migration 0021, or anything planned
+   before this would have sat stale with no button left to fix it.
 
-**What it touches:** the Plan screen's primary CTA and the Shopping empty
-state – both designed screens, so they want drawing rather than improvising;
-the `pushed_to_list_at` gate in `src/lib/meal-plan.tsx` (contribute / withdraw
-/ rescale all check it); and a migration for consequence 3.
+**Kept deliberately:** `fillFromWeeklyPlan` stays in the shopping context
+though nothing calls it now. It is the "reset this week's list" escape hatch
+from the A + rails decision, and the only repair path if a contribution ever
+fails mid-write (offline at the wrong moment – nothing retries it today). If a
+repair affordance is ever wanted, the plumbing is already there.
+
+**Vestigial:** `meal_plans.pushed_to_list_at` is no longer read by the app.
+Migration 0021 uses it once to find weeks needing the backfill. Drop the column
+with the other dead-column cleanups when convenient.
 
 ## Data model
 
@@ -323,11 +326,6 @@ the `pushed_to_list_at` gate in `src/lib/meal-plan.tsx` (contribute / withdraw
 
 Things to decide before coding, but not necessarily before project setup:
 
-- **Should a week's shopping list follow its plan automatically, with no
-  "Add all to shopping list" step?** Full proposal in decision #8 above. The
-  one call that needs making: after you have shopped and ticked everything
-  off, should a later plan change put new ingredients back on that list?
-  (Raised 2026-07-25.)
 - Should the shopping list be kept after the week is over (history), or
   archived/deleted?
 - How is portion adjustment handled on the weekly plan? (the servings_override

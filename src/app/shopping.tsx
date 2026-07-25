@@ -45,7 +45,6 @@ function ShoppingListScreen() {
     undoRemove,
     dismissUndo,
     clearCompleted,
-    fillFromWeeklyPlan,
     setCategoryOrder,
     retry,
   } = useShoppingList();
@@ -170,7 +169,7 @@ function ShoppingListScreen() {
             ) : (
               // While the first fetch is in flight the list area stays blank –
               // flashing the empty state at a household with items would lie.
-              !loading && <EmptyState onFillFromPlan={fillFromWeeklyPlan} />
+              !loading && <EmptyState />
             )
           ) : (
             <>

@@ -169,18 +169,32 @@ All verified still present 2026-07-24.
       dialog) that kills a leaked code at once. Sheet rebuilt to the Figma
       frame "Householde – invite" (271:14935) after review.
 
-## Awaiting a decision from Thomas
-
-- [ ] **Retire the "Add all to shopping list" / "Update shopping list" step?**
-      Thomas raised it 2026-07-25 after seeing the list update live on two
-      phones: once a week is linked the button is a no-op (the re-push is
-      idempotent) while implying the list is stale – it teaches the wrong model
-      of the app's core feature. Written up as PROPOSED decision #8 in
-      [projektgrundlag.md](projektgrundlag.md), with the three consequences and
-      the one call Thomas has to make (after you have shopped, should a later
-      plan change put new ingredients back on the list?). Touches two designed
-      screens (Plan CTA, Shopping empty state) so they want drawing first.
-      Don't start pulling the gate out until it's settled.
+- [x] **Plan→list "link" step retired** – DECIDED + BUILT 2026-07-25
+      (projektgrundlag decision #8). Thomas: "delete the button all together –
+      no button at all. So when you add a week to plan, a week is also added to
+      shopping list." The button did two jobs under one label: a real opt-in
+      before linking, a no-op after (the re-push is idempotent) that implied the
+      list was stale. Built: the `pushed_to_list_at` gate is gone from all six
+      write paths in meal-plan.tsx (add, multi-add, swap, servings, remove,
+      undo-remove) – every meal contributes on write, and resolve_week_list
+      (0013) creates a brand-new week's list on demand. The Plan CTA and
+      `pushToShoppingList` are deleted; the Shopping empty state lost its dead
+      "Fill from weekly plan" button and got new copy. Migration 0021 sweeps in
+      weeks planned before the change.
+      - [ ] Thomas: apply migration 0021 in the Supabase dashboard (verifying
+            SELECT should return unlinked_weeks = 0).
+      - [ ] Walk it on device once 0021 is applied: plan a meal on a BRAND-NEW
+            week → its shopping list should exist with the ingredients, with
+            nothing pressed.
+      - [ ] Two IMPROVISED copy/layout bits from this change, both approved by
+            Thomas 2026-07-25 but with NO Figma frame – bless or redesign:
+            the Shopping empty state ("Meals you plan for this week land here
+            on their own. Add anything else you need above."), and a status
+            line under the Plan tab's week switcher, "Your shopping list
+            updates as you plan." (paragraph / text-subtle, Thomas's call;
+            shown on empty weeks too, since that is when it sets the
+            expectation). The status line is what tells the user the link
+            exists now that the button is gone.
 
 ## Code debts (small, known, deliberate)
 
