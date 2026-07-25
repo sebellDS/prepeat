@@ -28,12 +28,12 @@ below is open.
       and runs from it). **Build 10 (2026-07-25) is the current one** and
       carries everything from that day – point Pia at it once she accepts.
       Closing this also closes the weekly-signing chore below.
-      - [ ] Thomas: install build 10 from TestFlight and check it LAUNCHES.
-            The dev variant cannot prove this – a production build is signed
-            and packaged differently, and has broken twice before (build 4
+      - [x] Build 10 installed from TestFlight and verified working (Thomas,
+            2026-07-25: "seems to work as intended"). The production build
+            boots and behaves – so the only thing left on this item is Pia
+            accepting. Worth keeping as a habit: the dev variant cannot prove
+            a production build boots, and it has broken twice before (build 4
             crashed on missing env vars, build 6 shipped a corrupt icon).
-            This build's log confirms the Supabase vars loaded, so it should
-            be fine, but check before telling Pia to accept.
 
 ## Known bugs (open)
 
