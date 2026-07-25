@@ -139,6 +139,24 @@ below is open.
 
 ## Decisions log (recent)
 
+- **2026-07-25 – the tab bar was being counted twice** (commit af982ae).
+  Chasing a toast that floated too high turned into a real find: every scroll
+  screen carried ~50pt of dead space at the bottom. `tabBarClearance` was
+  `insets.bottom + BottomTabInset(50) + tail`, but the tab bar is a NATIVE iOS
+  one (expo-router NativeTabs) and a native tab bar already contributes its
+  height to the safe-area inset of the screens inside it – so the 50 was pure
+  double-count and should never have existed. `BottomTabInset` is deleted, not
+  retuned; `tabBarClearance` is now `insets.bottom + extra`, which makes each
+  screen's tail an honest gap in points. The undo toast folds back into the
+  same helper (its verified position is exactly `insets.bottom + 16`), so
+  there is one model instead of two.
+  How it was settled, and the reusable bit: Thomas measured the gap at three
+  different offsets (+54pt → 82px, +74pt → 112px, +16pt → 24px; his px are
+  1.5× points). Each gap equalled exactly what was added on top of
+  insets.bottom, which pinned the model down with no guessing. Claude had
+  first tried to *reason* the number out and made it worse – three
+  measurements beat an argument. The numbers now live in the helper's comment
+  so the next person sees where they came from.
 - **2026-07-25 – undo now covers the bulk clear too.** "Clear done items" was
   the last delete without a safety net, and the most destructive one. It now
   shows "N items cleared · Undo" and one tap brings the whole batch back. Two
@@ -166,9 +184,9 @@ below is open.
   noting for the future: this is the opposite of the 2026-07-17 rule ("build
   the design, never an approximation"), and it worked here only because each
   piece was small, shown on-device within minutes, and explicitly flagged as
-  improvised rather than passed off as designed. NOT blessed, because it is a
-  missing feature rather than an undesigned one: the bulk "Clear done items"
-  still has no undo (moved to Code debts).
+  improvised rather than passed off as designed. Held back from the blessing
+  because it was a missing feature rather than an undesigned one: the bulk
+  "Clear done items" had no undo – built the same evening, see above.
 - **2026-07-25 – the plan→list link step retired** (projektgrundlag decision
   #8, commit 6a251e3). Started as a product question from Thomas, not a bug:
   *"why do we need the button 'Update shopping list'?"* – then, on learning a
