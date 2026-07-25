@@ -9,6 +9,7 @@ import {
 import { Fragment, useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   Text,
@@ -45,6 +46,7 @@ import {
   scaledQuantityText,
   setFavorite,
   softDeleteRecipe,
+  sourceLabel,
   totalMinutes,
   updateIngredient,
   updateStep,
@@ -139,6 +141,9 @@ export default function RecipeDetailScreen() {
 
   const chosenServings = servings ?? recipe.servings;
   const total = totalMinutes(recipe.prepMinutes, recipe.cookMinutes);
+  // Pulled out of `recipe` so the press handler below closes over a value
+  // TypeScript knows is non-null.
+  const sourceUrl = recipe.sourceUrl;
 
   const toggleFavorite = () => {
     setRecipe({ ...recipe, isFavorite: !recipe.isFavorite });
@@ -414,6 +419,31 @@ export default function RecipeDetailScreen() {
               )}
             </View>
           </View>
+
+          {/* Credit the page a URL-imported recipe came from. The importer has
+              stored this since 2026-07-12; nothing read it back until now
+              (Thomas, 2026-07-26 – placement and style his call: same quiet
+              paragraph as the Plan tab's status line). Hand-typed recipes have
+              no source and show nothing. */}
+          {sourceUrl != null && (
+            <Pressable
+              // Opens the phone's browser rather than an in-app one: it is
+              // somebody else's site, and leaving the app makes that plain
+              // (Thomas, 2026-07-26).
+              onPress={() =>
+                Linking.openURL(sourceUrl).catch((error) =>
+                  console.warn("[recipes] could not open source", error),
+                )
+              }
+              accessibilityRole="link"
+              accessibilityLabel={`Open the original recipe on ${sourceLabel(sourceUrl)}`}
+              hitSlop={8}
+            >
+              <Text className="font-paragraph text-paragraph font-default text-text-subtle underline">
+                {`From ${sourceLabel(sourceUrl)}`}
+              </Text>
+            </Pressable>
+          )}
 
           {/* Edit the recipe's facts (name, photo, times, servings) –
               requested back after the menu item was removed (2026-07-12). */}

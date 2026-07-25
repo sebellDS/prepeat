@@ -101,15 +101,6 @@ below is open.
 - [ ] AI first-guess for categories, in front of the learned memory
       (decision #7 names this as the natural v1.1 upgrade).
 - [ ] Smart quantity parsing when adding items ("Milk 2L" → name + quantity).
-- [ ] **Show where an imported recipe came from** (Thomas, 2026-07-25).
-      SMALLER THAN IT LOOKS – the data is already there: the importer captures
-      the page it read (`sourceUrl`, `recipe-import.ts`) and `saveRecipe`
-      writes it to `recipes.source_url`, but `fetchRecipe` never selects it
-      back, so nothing in the app can show it. Every URL-imported recipe since
-      2026-07-12 has quietly been storing its origin. To build: add the column
-      to the fetch, surface it on the recipe detail ("From valdemarsro.dk",
-      tappable to open the original), and decide whether the edit form should
-      let you clear or change it. Wants a small design.
 - [ ] **Share a recipe** (Thomas, 2026-07-25): send one out of the household –
       to a friend, or to your own other kitchen. Questions to settle before
       building: does the recipient need Prep+Eat (deep link into the app) or
@@ -172,6 +163,21 @@ below is open.
 
 ## Decisions log (recent)
 
+- **2026-07-26 – imported recipes credit their source.** Raised as an idea the
+  night before and built the same session, because the data turned out to be
+  there already: the importer has stored `recipes.source_url` since
+  2026-07-12, but `fetchRecipe` never selected it back, so it had been
+  accumulating invisibly for two weeks. The whole job was reading the column
+  and showing it.
+  A quiet underlined "From justonecookbook.com" sits between the instructions
+  and the Edit recipe button – placement and style Thomas's call (the same
+  paragraph / text-subtle as the Plan tab's status line), then made a link on
+  his follow-up. It opens the phone's browser rather than an in-app one: it is
+  somebody else's site, and leaving the app makes that plain. Hand-typed
+  recipes have no source and show nothing.
+  Still open if wanted: the edit form cannot clear or change a source, and
+  `sourceLabel()` shows the host only – the full URL would wrap over several
+  lines in that style.
 - **2026-07-25 – build 10 shipped to TestFlight, and the submit script now
   ends with a fact.** Everything from the day went up in one build: decision
   #8, the undo toasts (including the bulk clear), the reorder gap animation,

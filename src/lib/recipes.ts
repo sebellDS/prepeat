@@ -54,8 +54,27 @@ export interface Recipe {
   imageUrl: string | null;
   isFavorite: boolean;
   createdByUserId: string;
+  /**
+   * The page a URL-imported recipe was read from. Saved since 2026-07-12 but
+   * only surfaced on the detail screen from 2026-07-26 – null for anything
+   * typed by hand.
+   */
+  sourceUrl: string | null;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
+}
+
+/**
+ * "valdemarsro.dk" from a full URL – what the recipe detail credits. Falls
+ * back to the raw string if it will not parse, so a stored oddity still shows
+ * something rather than crashing the screen.
+ */
+export function sourceLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
 }
 
 export function totalMinutes(
@@ -119,7 +138,7 @@ export async function fetchRecipe(id: string): Promise<Recipe> {
   const { data, error } = await supabase
     .from("recipes")
     .select(
-      "id, title, description, servings, prep_minutes, cook_minutes, image_url, is_favorite, created_by_user_id, recipe_ingredients(id, name, quantity, unit, sort_order), recipe_steps(id, step_number, text)",
+      "id, title, description, servings, prep_minutes, cook_minutes, image_url, is_favorite, created_by_user_id, source_url, recipe_ingredients(id, name, quantity, unit, sort_order), recipe_steps(id, step_number, text)",
     )
     .eq("id", id)
     .single();
@@ -164,6 +183,7 @@ export async function fetchRecipe(id: string): Promise<Recipe> {
     imageUrl: data.image_url,
     isFavorite: data.is_favorite,
     createdByUserId: data.created_by_user_id,
+    sourceUrl: data.source_url,
     ingredients,
     steps,
   };
