@@ -11,227 +11,88 @@ deliver value by themselves come before things that depend on them – and
 when a milestone finishes, the order gets a fresh look before starting the
 next one.
 
-Pruned 2026-07-24: the recipes, weekly-plan and multi-household milestones
-all shipped (on TestFlight); their finished items were removed. Only open
-threads remain below.
+Pruned 2026-07-25 (second pass): the 2026-07-18 tech-debt track, the
+dev-build bug round and decision #8 all landed and were removed. Everything
+below is open.
 
-## Recipes & weekly plan (shipped – leftover)
+## Blocked on other people
 
-- [ ] Import fallback for bot-blocking sites (madensverden.dk, allrecipes
-      refused non-browser fetches in testing): hidden-WebView fetch is the
-      known fix if the family's sites need it. STILL OPEN (confirmed
-      2026-07-24): no WebView fallback exists in code (only a comment in
-      recipe-import.ts naming it as the next step; react-native-webview
-      isn't installed). Conditional – only build it if a site the family
-      actually uses gets blocked.
+- [ ] **Pia on TestFlight** – the last thing standing between the family and
+      cable-free updates. She was invited 2026-07-23 and has not accepted.
+      Internal testers must accept the App Store Connect team invite FIRST,
+      then the TestFlight one, or it fails with a useless error. Send her
+      [the tester guide](testflight-tester-guide.md), written for a
+      non-technical tester to follow unaided.
+      Everything else in the TestFlight pipeline works end to end (EAS cloud
+      build → `eas submit` → TestFlight; builds 3-9 shipped, Thomas installs
+      and runs from it). Closing this also closes the weekly-signing chore
+      below.
 
-## In parallel – when it fits
+## Known bugs (open)
 
-- [ ] TestFlight rollout – the pipeline works end to end (EAS cloud build →
-      `eas submit` → TestFlight; builds 3-9 shipped, Thomas's phone installs
-      and runs from TestFlight). Parent stays open until a SECOND phone is on
-      TestFlight, since "both phones without cables" isn't true yet. See the
-      [tester guide](testflight-tester-guide.md). Remaining:
-      - [ ] Thomas: add Pia as a TestFlight internal tester (invited
-            2026-07-23, not yet accepted). Internal testers must accept the
-            App Store Connect team invite FIRST, then the TestFlight one, or
-            it fails with a useless error. Send her the tester guide.
-      - [ ] Keep running scripts/build-iphone.sh on PIA's phone every ~7 days
-            until she's installed from TestFlight (Thomas's phone no longer
-            needs it). Closes with the Recurring item once Pia is on TestFlight.
-      - [ ] Optional: make scripts/eas-submit-ios.sh poll App Store Connect
-            for the build going VALID as the real done-signal – `eas submit`
-            can hang both when stuck AND after success, so the CLI isn't
-            trustworthy. The watchdog already kills a genuinely-stuck submit.
-- [ ] "Continue with Apple" button. STATUS 2026-07-24: not implemented (no
-      Apple sign-in in the app). NOT strictly required by Apple – guideline
-      4.8 only forces it when you also offer a third-party login
-      (Google/Facebook), and Prep+Eat only offers email-code sign-in. Keep
-      as an optional convenience.
-- [ ] Resend-code feedback states ("Sending…" / "New code sent" / retry) are
-      improvised in code – design them if they should look different
-      (2026-07-08). Confirmed still improvised 2026-07-24 (ResendLink in
-      onboarding-flow.tsx; the file flags them as pre-design).
-
-## Later (v1.1+)
-
-- [ ] Merge two households / "copy a recipe to my other household" – the
-      deferred merge mechanic that later lets a rejoiner bring their parked
-      solo-kitchen recipes into the family (leave-household.md, rule A). Also
-      covers a UX gripe Thomas hit 2026-07-22 walking the flow: leaving a
-      household when you ALREADY have another spawns yet another solo
-      "[Firstname]'s Kitchen" (clutter). Better: when you already have a
-      household, let the copy-on-leave recipes land in an EXISTING kitchen you
-      choose instead of a brand-new one.
-
-## Tech debt (from the 2026-07-18 code review)
-
-All verified still present 2026-07-24.
-
-- [x] **List/plan open runs its queries twice** – DONE 2026-07-24. (1) The
-      realtime `SUBSCRIBED` handler no longer refetches on the FIRST subscribe
-      of a channel (boot / viewWeek already loaded that list/week) – a
-      per-channel `subscribedBefore` flag means only a RE-subscribe (reconnect)
-      refetches, so opening the tab no longer re-runs items+prefs+weekOptions a
-      second time. Reconnect catch-up is fully preserved. (2) Shopping's boot
-      ran `getOrCreateListId` then `fetchPrefs` in series though they're
-      independent – now `Promise.all`'d (meal-plan's boot is genuinely
-      dependent, weeks→entries, so left serial). Client-only, typecheck + lint
-      clean, rides the next build.
-      Trade-off (disclosed): skipping the first-subscribe refetch reintroduces
-      a tiny [boot-fetch → channel-live] gap where a concurrent edit from
-      another phone could be missed until the next realtime event or a
-      foreground refetch – seconds, self-healing, and easily reverted if it
-      ever bites. Not yet walked two-phone on-device.
-- [x] **Reorder saves one row at a time** – DONE 2026-07-24 (migration 0020).
-      `reorderIngredients` / `reorderSteps` now call one atomic RPC
-      (`reorder_recipe_ingredients` / `reorder_recipe_steps`) that renumbers
-      the whole list in a single UPDATE via `array_position`, so an
-      interrupted reorder can't leave it half-saved – and it's one round trip
-      instead of ~20. SECURITY INVOKER (rides the caller's RLS). Typecheck +
-      lint clean; not yet walked on-device.
-      - [x] Thomas: applied migration 0020 in the Supabase dashboard
-            2026-07-24 (verifying SELECT returned true / true).
-- [x] **`swapMeal` duplicates `insertPlanEntry`'s snapshot + contribute
-      blocks** – DONE 2026-07-24. Extracted the ingredient-snapshot insert
-      into a shared `snapshotEntryIngredients(entryId, recipe)` helper that
-      both paths call, so a swapped meal can't snapshot differently from a
-      normally-added one. The `contributeEntry` call was already the shared
-      function (only a one-line `if (pushed)` guard, left inline), and the
-      rest of swapMeal (withdraw → delete old snapshot → update-in-place) is
-      genuinely different from insert, so only the snapshot needed sharing.
-      Behaviour-preserving (identical SQL); typecheck + lint clean, client-only
-      (no migration), rides the next build.
-- [x] **Layout pinned with magic numbers** – DONE 2026-07-24. (1) Added a
-      shared `tabBarClearance(insets, extra)` helper in constants/theme.ts; the
-      six scroll screens (shopping, household, plan, recipes list/new/[id]) now
-      call it instead of hand-repeating `insets.bottom + BottomTabInset`, with
-      the tails expressed as `Spacing` tokens (24→four, 32→five, 4→one; only
-      shopping's off-scale 56 stays a commented literal). (2) The recipe
-      overflow menu is now anchored to the header's measured height (onLayout →
-      `headerHeight`) instead of a fixed `top: 52px` (52 kept only as the
-      pre-measure fallback). (3) The done-section's 1000px bleed is now a named
-      `BOTTOM_BLEED` constant with the technique documented.
-      Clearances + bleed are numerically byte-identical (zero visual change);
-      the overflow menu now tracks the real header, so it may sit a few px off
-      the old fixed 52 – worth an on-device glance. Typecheck + lint clean,
-      client-only, rides the next build.
-
-## Known bugs
-
-- [x] **Undo toast invisible when the keyboard is up** – FIXED 2026-07-25,
-      verified on device. Looked like "no toast on a new week", but the week
-      was a red herring: adding an item by hand leaves the KEYBOARD UP, and the
-      toast sits at the bottom of the screen, behind it. Thomas spotted the
-      real cause from the screen; Claude's code-only theory (a stale-ref
-      snapshot) was wrong. Fix: the toast rides above the keyboard while it is
-      open. Two rounds – the first attempt still failed because
-      `keyboardWillShow` only fires on a TRANSITION, and the toast mounts after
-      the keyboard is already up, so it measured 0; the hook now seeds from
-      `Keyboard.metrics()` (the current state) as well as listening. The shared
-      `useKeyboardHeight` hook moved out of add-meal-sheet to
-      src/hooks/use-keyboard-height.ts so both callers use one copy.
-      LESSON: a mount-time subscriber misses events that already fired – seed
-      from current state, don't only listen for changes.
-- [x] **Swapped meal didn't reach the other phone** – FIXED 2026-07-25 (found
-      in the two-phone test; the shopping list DID update, which is what
-      pinned it down). A realtime payload is the raw row with no recipe join,
-      and a swap also clears the manual `title`, so `rowToEntry` fell back to
-      `prev.recipeTitle` / `prev.recipeImageUrl` – the OLD recipe. The other
-      phone updated `recipeId` but kept showing the old name and photo, so the
-      meal looked unswapped. The shopping list was right because that
-      reconciliation runs server-side. Fix: the realtime handler now only
-      applies a cached-title update when `prev.recipeId === row.recipe_id`;
-      a changed recipe takes the same refetch-with-join path as an unknown row.
-      Needs a two-phone re-test.
-- [ ] Live/Offline badge lags the data (Thomas, 2026-07-25, two-phone test):
-      coming back from airplane mode, the items sync visibly BEFORE the badge
+- [ ] **Live/Offline badge lags the data** (two-phone test 2026-07-25):
+      coming back from airplane mode the items sync visibly BEFORE the badge
       returns to "Live". Expected – the badge follows the realtime channel's
       status, which takes a while to notice a dropped socket, while the
       foreground refetch repairs the data at once – but it reads as wrong.
       Fix would be to drive the badge off the last successful fetch as well as
       the socket state. Cosmetic, not urgent.
-- [ ] Row content may render BLANK while swiped open (spotted in Thomas's
+- [ ] **Row content may render BLANK while swiped open** – spotted in a
       2026-07-25 screenshot: the swiped shopping row showed the ⋯/edit/trash
-      actions but no item name or checkbox). Unconfirmed – may just be the
-      swipe shifting content out of view. Watch for it; if it recurs, dig into
-      ItemRow/ReanimatedSwipeable.
+      actions but no item name or checkbox. UNCONFIRMED, may just be the swipe
+      shifting content out of view. Watch for it; if it recurs, dig into
+      ItemRow / ReanimatedSwipeable.
 
-## Security
+## Conditional – only if it bites
 
-- [x] **Invite codes should expire** – DONE 2026-07-24 (Thomas: lifetime
-      **14 days**). Migration 0019 (applied) adds `rotate_invite_code()` (the
-      single mint path: membership-checked, retires every live code for the
-      household, then mints one fresh 14-day code) + a one-time backfill
-      giving existing infinite codes a 14-day expiry. `getOrCreateInvite`
-      rotates lazily on a missing/expired/legacy-null code; the Invite sheet
-      shows "Refreshes on {date}" and a manual "Get a new code" (confirm
-      dialog) that kills a leaked code at once. Sheet rebuilt to the Figma
-      frame "Householde – invite" (271:14935) after review.
+- [ ] **Import fallback for bot-blocking sites** (madensverden.dk, allrecipes
+      refused non-browser fetches in testing). A hidden-WebView fetch is the
+      known fix; nothing exists in code today (only a comment in
+      recipe-import.ts naming it, and react-native-webview isn't installed).
+      Only build it if a site the family actually uses gets blocked.
+- [ ] **"Continue with Apple"** – not implemented. NOT required by Apple:
+      guideline 4.8 only forces it when you also offer a third-party login
+      (Google/Facebook), and Prep+Eat only offers email-code sign-in. An
+      optional convenience.
+- [ ] **Poll App Store Connect from `scripts/eas-submit-ios.sh`** for the
+      build going VALID, as the real done-signal – `eas submit` can hang both
+      when stuck AND after success, so the CLI isn't trustworthy. The 600s
+      watchdog already kills a genuinely-stuck submit, so this is polish.
 
-- [x] **Plan→list "link" step retired** – DECIDED + BUILT 2026-07-25
-      (projektgrundlag decision #8). Thomas: "delete the button all together –
-      no button at all. So when you add a week to plan, a week is also added to
-      shopping list." The button did two jobs under one label: a real opt-in
-      before linking, a no-op after (the re-push is idempotent) that implied the
-      list was stale. Built: the `pushed_to_list_at` gate is gone from all six
-      write paths in meal-plan.tsx (add, multi-add, swap, servings, remove,
-      undo-remove) – every meal contributes on write, and resolve_week_list
-      (0013) creates a brand-new week's list on demand. The Plan CTA and
-      `pushToShoppingList` are deleted; the Shopping empty state lost its dead
-      "Fill from weekly plan" button and got new copy. Migration 0021 sweeps in
-      weeks planned before the change.
-      - [ ] Thomas: apply migration 0021 in the Supabase dashboard (verifying
-            SELECT should return unlinked_weeks = 0).
-      - [ ] Walk it on device once 0021 is applied: plan a meal on a BRAND-NEW
-            week → its shopping list should exist with the ingredients, with
-            nothing pressed.
-      - [ ] Two IMPROVISED copy/layout bits from this change, both approved by
-            Thomas 2026-07-25 but with NO Figma frame – bless or redesign:
-            the Shopping empty state ("Meals you plan for this week land here
-            on their own. Add anything else you need above."), and a status
-            line under the Plan tab's week switcher, "Your shopping list
-            updates as you plan." (paragraph / text-subtle, Thomas's call;
-            shown on empty weeks too, since that is when it sets the
-            expectation). The status line is what tells the user the link
-            exists now that the button is gone.
+## Later (v1.1+)
+
+- [ ] **Merge two households / "copy a recipe to my other household"** – the
+      deferred merge mechanic that later lets a rejoiner bring their parked
+      solo-kitchen recipes into the family (leave-household.md, rule A). Also
+      covers a UX gripe from 2026-07-22: leaving a household when you ALREADY
+      have another spawns yet another solo "[Firstname]'s Kitchen" (clutter).
+      Better: let the copy-on-leave recipes land in an EXISTING kitchen you
+      choose.
 
 ## Code debts (small, known, deliberate)
 
-- [ ] **Unused `households.image_url` column** – the household image was
-      dropped from the design 2026-07-22, so the app no longer reads or writes
-      it (Edit household is name-only; `imageUrl` removed from the Household
-      type/lib). The column (added migration 0010) is now dead. Drop it with a
-      migration when convenient – harmless meanwhile.
-- [ ] Offline/retry screens are improvised (added 2026-07-18 with the #3 and
-      #6 review fixes): `HouseholdLoadError` in src/app/_layout.tsx (launch)
-      and `LoadFailed` in src/app/shopping.tsx (shopping tab), both a centred
-      title + reassurance + "Try again" button on the lightest surface. No
-      Figma design for these states – design them if they should differ.
-- [ ] Undo toast needs a real design. The "{item} deleted / removed · Undo"
-      toast shipped 2026-07-24 (src/components/ui/undo-toast.tsx) across all
-      three swipe-delete surfaces – shopping items, meal-plan "Remove meal"
-      (replaced its confirm dialog) and recipe ingredients/steps – but it is
-      an improvised placeholder (DS dark surface + brand-lime action, 5s, no
-      Figma frame). Design it before launch. Also still uncovered: the bulk
-      "Clear" in the shopping done section has no undo.
-      Note for whoever designs it: the pill now sits above the keyboard when
-      one is open, and above the tab bar otherwise – both positions need to
-      look right.
-
-- [ ] Edit-item sheet height + pinned CTA is IMPROVISED (2026-07-25, no Figma
-      frame for this state). Thomas asked for the sheet to cover more screen so
-      the CTA stays visible; built as a 55% minimum height plus a "Done" button
-      pinned below the scroll area (BottomSheet gained an optional `footer`).
-      Only the edit-item sheet uses the scroll variant, so nothing else moved.
-      Design it properly, or bless it.
-
-## Design QA leftover
-
-- [ ] DS nit: color/text/contrast-text in the DS repo aliases
-      color.text.primary (dark) while Figma renders it near-white – looks
-      like a wiring slip in the DS token source, check on the DS side
-      (spotted 2026-07-12).
+- [ ] **Two dead columns to drop in one migration when convenient** – both
+      harmless meanwhile:
+      - `households.image_url` – the household image was dropped from the
+        design 2026-07-22; nothing reads or writes it (added migration 0010).
+      - `meal_plans.pushed_to_list_at` – vestigial since decision #8
+        (2026-07-25); migration 0021 used it once to find weeks needing the
+        backfill, and nothing reads it now.
+- [ ] **`fillFromWeeklyPlan` is unreachable from the UI** (since decision #8
+      removed the empty state's button). KEPT DELIBERATELY: it is the "reset
+      this week's list" escape hatch from the A + rails decision, and the only
+      repair path if a contribution ever fails mid-write (offline at the wrong
+      moment – nothing retries it). If a repair affordance is ever wanted, the
+      plumbing is already there.
+- [ ] **The bulk "Clear done items" has no undo.** Every single-item delete
+      got a Deleted · Undo toast 2026-07-24, but clearing the whole done
+      section at once – the most destructive action on the shopping list –
+      still has none. Kept out of the design blessing 2026-07-25 because it is
+      a missing feature, not an undesigned one. The soft delete is already
+      wired (`deleted_at`), so an undo just has to clear it for the batch.
+- [ ] **DS nit**: color/text/contrast-text in the DS repo aliases
+      color.text.primary (dark) while Figma renders it near-white – looks like
+      a wiring slip in the DS token source, check on the DS side (2026-07-12).
 
 ## Ideas – not yet committed
 
@@ -248,6 +109,8 @@ All verified still present 2026-07-24.
 ## Pre-launch checklist (v1 ship)
 
 - [ ] Proper trademark search for "Prepeat" / "Prep+Eat".
+- [ ] Privacy policy (required for accounts + a database).
+- [ ] App Store assets: screenshots, description.
 - [ ] Icon/splash follow-ups (iOS app icon + launch screen shipped
       2026-07-23): Android adaptiveIcon still on Expo template art – needs
       an android-foreground (art inside the centre 66% safe zone) and an
@@ -256,30 +119,69 @@ All verified still present 2026-07-24.
       splash-icon.png (the Android 12+ centred-icon-in-a-circle system can't
       reuse the full-bleed iOS launch image). None of this ships while it's
       iOS-only.
-- [ ] App Store assets: screenshots, description.
-- [ ] Privacy policy (required for accounts + a database).
 
 ## Recurring
 
-- [ ] Renew the free signing every ~7 days until TestFlight takes over –
-      now only PIA's phone needs it (Thomas's is on TestFlight). Run
-      `./scripts/build-iphone.sh <UDID>`: it deletes the app's provisioning
-      profile, rebuilds with `xcodebuild -allowProvisioningUpdates
-      -allowProvisioningDeviceRegistration` (mints a fresh 7-day profile),
-      installs the .app with `devicectl`, and prints the new expiry. WATCH
-      the printed expiry – under ~7 days out means the free dev CERTIFICATE
-      (also 7-day) is the limiter and needs regenerating too. Pia re-trusts
-      the profile if prompted (Settings → General → VPN & Device Management →
-      Trust). Pia's iPhone 17 UDID: `00008150-00086D290198401C`. (Note:
-      `expo run:ios` does NOT pass -allowProvisioningUpdates, so xcodebuild
-      must be driven directly – that's what the script does.) Closes once Pia
-      is on TestFlight.
+- [ ] **Renew the free signing every ~7 days.** BOTH phones now run the dev
+      app ("Prep+Eat Dev", bundle app.prepeat.dev) from
+      `./scripts/build-iphone.sh <UDID>` – no arg defaults to Thomas's. The
+      2026-07-25 builds expire around **2026-08-01**; when the app stops
+      opening, rebuild. The script deletes the provisioning profile, rebuilds
+      with `xcodebuild -allowProvisioningUpdates
+      -allowProvisioningDeviceRegistration` (minting a fresh 7-day profile),
+      installs with `devicectl`, and prints the new expiry. WATCH that expiry –
+      under ~7 days out means the free dev CERTIFICATE (also 7-day) is the
+      limiter and needs regenerating too. Re-trust on the phone if prompted
+      (Settings → General → VPN & Device Management → Trust).
+      Thomas's iPhone 15 Pro `00008130-000C28221489001C`; Pia's iPhone 17
+      `00008150-00086D290198401C`. (Note: `expo run:ios` does NOT pass
+      -allowProvisioningUpdates, so xcodebuild must be driven directly – that
+      is what the script does.) Thomas's TestFlight app is separate and
+      unaffected; this chore shrinks to Pia's phone alone once she is on
+      TestFlight, and ends entirely if both stop needing cable builds.
 - [ ] After every DS publish/retune (Thomas says "DS published"): rebuild
       tokens in the DS repo, `npm run sync-ds-tokens` here, diff
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12).
 
 ## Decisions log (recent)
 
+- **2026-07-25 – every improvised screen blessed as designed** (Thomas, after
+  walking them on device: *"every designed-block is approved and looks
+  great"*). These stop being improvisations and become the design: the **undo
+  toast** in both its resting positions (above the keyboard, above the tab
+  bar); the **edit-item sheet** at 55% minimum height with "Done" pinned below
+  the scroll; the **Plan status line** "Your shopping list updates as you
+  plan." at the bottom of the day list and the **Shopping empty state** that
+  pairs with it; the **offline/retry screens** (`HouseholdLoadError`,
+  `LoadFailed`); and the **resend-code feedback states**. No Figma frames were
+  drawn for any of them – the on-device build was the review surface. Worth
+  noting for the future: this is the opposite of the 2026-07-17 rule ("build
+  the design, never an approximation"), and it worked here only because each
+  piece was small, shown on-device within minutes, and explicitly flagged as
+  improvised rather than passed off as designed. NOT blessed, because it is a
+  missing feature rather than an undesigned one: the bulk "Clear done items"
+  still has no undo (moved to Code debts).
+- **2026-07-25 – the plan→list link step retired** (projektgrundlag decision
+  #8, commit 6a251e3). Started as a product question from Thomas, not a bug:
+  *"why do we need the button 'Update shopping list'?"* – then, on learning a
+  week stayed unlinked until someone pressed it once, *"I want to delete the
+  button all together."* The button was working as designed; the design had
+  quietly been outdated by two changes from 2026-07-16 (per-week lists 0008 +
+  live A + rails reconciliation), which removed the problem the opt-in solved.
+  Every meal now contributes on write, `resolve_week_list` creates a new
+  week's list on demand, migration 0021 swept in the three existing weeks, and
+  a status line replaced the CTA. Net −23 lines. Worth remembering: nothing in
+  the tests, types or lint could have flagged this – only asking whether the
+  UI still matched the model.
+- **2026-07-25 – two-phone realtime testing, finally possible.** Both phones
+  got the dev app, all six tests passed, and one real bug fell out that a
+  single phone could never have shown: a **swapped meal did not reach the
+  other phone**. Realtime payloads carry no recipe join, so the receiving
+  phone fell back to the cached title/image – it updated `recipeId` while
+  still showing the OLD recipe's name and photo. The shopping list WAS
+  correct (that reconciliation is server-side), and that asymmetry is what
+  pinned it down. Lesson: sync bugs need two devices; "it works on my phone"
+  is not evidence.
 - **2026-07-25 – first dev-variant test round** (Prep+Eat Dev on Thomas's
   phone, six build/test cycles). Tested the tech-debt work from 2026-07-24;
   reorder + swap passed. Fixed from the feedback:
