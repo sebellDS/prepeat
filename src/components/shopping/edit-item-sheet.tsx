@@ -1,5 +1,10 @@
 import { SymbolView } from "expo-symbols";
-import { useState } from "react";
+import {
+  type MutableRefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Keyboard, Pressable, ScrollView, Text, View } from "react-native";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -22,15 +27,35 @@ interface EditItemSheetProps {
 }
 
 export function EditItemSheet({ item, onClose, onSave }: EditItemSheetProps) {
+  // Save lives in a ref so the pinned footer button can fire the form's own
+  // save without lifting all the field state out of SheetContent.
+  const saveRef = useRef<(() => void) | null>(null);
   return (
     <BottomSheet
       visible={item != null}
       title="Edit item"
       onClose={onClose}
       scroll
+      footer={
+        <Pressable
+          onPress={() => saveRef.current?.()}
+          accessibilityRole="button"
+          className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
+        >
+          <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
+            Done
+          </Text>
+        </Pressable>
+      }
     >
       {item != null && (
-        <SheetContent key={item.id} item={item} onClose={onClose} onSave={onSave} />
+        <SheetContent
+          key={item.id}
+          item={item}
+          onClose={onClose}
+          onSave={onSave}
+          saveRef={saveRef}
+        />
       )}
     </BottomSheet>
   );
@@ -44,9 +69,10 @@ interface SheetContentProps {
     quantity: string | null;
     aisle: Category | null;
   }) => void;
+  saveRef: MutableRefObject<(() => void) | null>;
 }
 
-function SheetContent({ item, onClose, onSave }: SheetContentProps) {
+function SheetContent({ item, onClose, onSave, saveRef }: SheetContentProps) {
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity ?? "");
   const [aisle, setAisle] = useState<Category | null>(item.aisle);
@@ -56,6 +82,14 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
     onSave({ name, quantity: quantity.trim() || null, aisle });
     onClose();
   };
+  // No dep array on purpose: re-point the ref after every render so the footer
+  // button always fires the CURRENT field values, never a stale closure.
+  useEffect(() => {
+    saveRef.current = save;
+    return () => {
+      saveRef.current = null;
+    };
+  });
 
   return (
     <>
@@ -144,16 +178,6 @@ function SheetContent({ item, onClose, onSave }: SheetContentProps) {
           </ScrollView>
         )}
       </View>
-
-      <Pressable
-        onPress={save}
-        accessibilityRole="button"
-        className="w-full items-center rounded-medium bg-button-solid-fill-enabled py-comp-large"
-      >
-        <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
-          Done
-        </Text>
-      </Pressable>
     </>
   );
 }

@@ -133,6 +133,24 @@ All verified still present 2026-07-24.
       src/hooks/use-keyboard-height.ts so both callers use one copy.
       LESSON: a mount-time subscriber misses events that already fired – seed
       from current state, don't only listen for changes.
+- [x] **Swapped meal didn't reach the other phone** – FIXED 2026-07-25 (found
+      in the two-phone test; the shopping list DID update, which is what
+      pinned it down). A realtime payload is the raw row with no recipe join,
+      and a swap also clears the manual `title`, so `rowToEntry` fell back to
+      `prev.recipeTitle` / `prev.recipeImageUrl` – the OLD recipe. The other
+      phone updated `recipeId` but kept showing the old name and photo, so the
+      meal looked unswapped. The shopping list was right because that
+      reconciliation runs server-side. Fix: the realtime handler now only
+      applies a cached-title update when `prev.recipeId === row.recipe_id`;
+      a changed recipe takes the same refetch-with-join path as an unknown row.
+      Needs a two-phone re-test.
+- [ ] Live/Offline badge lags the data (Thomas, 2026-07-25, two-phone test):
+      coming back from airplane mode, the items sync visibly BEFORE the badge
+      returns to "Live". Expected – the badge follows the realtime channel's
+      status, which takes a while to notice a dropped socket, while the
+      foreground refetch repairs the data at once – but it reads as wrong.
+      Fix would be to drive the badge off the last successful fetch as well as
+      the socket state. Cosmetic, not urgent.
 - [ ] Row content may render BLANK while swiped open (spotted in Thomas's
       2026-07-25 screenshot: the swiped shopping row showed the ⋯/edit/trash
       actions but no item name or checkbox). Unconfirmed – may just be the
@@ -173,6 +191,13 @@ All verified still present 2026-07-24.
       Note for whoever designs it: the pill now sits above the keyboard when
       one is open, and above the tab bar otherwise – both positions need to
       look right.
+
+- [ ] Edit-item sheet height + pinned CTA is IMPROVISED (2026-07-25, no Figma
+      frame for this state). Thomas asked for the sheet to cover more screen so
+      the CTA stays visible; built as a 55% minimum height plus a "Done" button
+      pinned below the scroll area (BottomSheet gained an optional `footer`).
+      Only the edit-item sheet uses the scroll variant, so nothing else moved.
+      Design it properly, or bless it.
 
 ## Design QA leftover
 

@@ -30,6 +30,7 @@ export function BottomSheet({
   onClose,
   onBack,
   scroll = false,
+  footer,
   children,
 }: {
   visible: boolean;
@@ -42,8 +43,18 @@ export function BottomSheet({
    * inline title + close row.
    */
   onBack?: () => void;
-  /** Wrap the body in a ScrollView capped at 90% height (long content). */
+  /**
+   * Wrap the body in a ScrollView capped at 90% height (long content). The
+   * sheet also takes a minimum height then, so it uses the screen rather than
+   * hugging a short form.
+   */
   scroll?: boolean;
+  /**
+   * Pinned below the scroll area – for a CTA that must stay reachable however
+   * long the body is, or however much of the screen the keyboard takes
+   * (Thomas, 2026-07-25: the edit-item "Done" fell below the fold).
+   */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -68,7 +79,9 @@ export function BottomSheet({
             style={{
               marginBottom: -80,
               paddingBottom: 120,
-              ...(scroll ? { maxHeight: "90%" as const } : null),
+              ...(scroll
+                ? { maxHeight: "90%" as const, minHeight: "55%" as const }
+                : null),
             }}
             className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-lightest p-layout-small"
           >
@@ -128,6 +141,7 @@ export function BottomSheet({
             </View>
             {scroll ? (
               <ScrollView
+                style={{ flexShrink: 1 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
@@ -136,6 +150,7 @@ export function BottomSheet({
             ) : (
               children
             )}
+            {footer}
           </View>
         </KeyboardAvoidingView>
       )}

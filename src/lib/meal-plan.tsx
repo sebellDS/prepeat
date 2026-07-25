@@ -544,13 +544,18 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
             return;
           }
           const prev = stateRef.current.entries.find((e) => e.id === row.id);
-          if (prev) {
+          if (prev && prev.recipeId === row.recipe_id) {
+            // Same recipe, cheap change (servings, date): the cached title and
+            // image still describe this meal, so apply without a round trip.
             dispatch({
               type: "apply-remote-entry",
               entry: rowToEntry(row, prev),
             });
           } else {
-            // New meal from another phone – fetch with the recipe join.
+            // A new meal from another phone, OR a SWAP – the payload carries no
+            // recipe join, so rowToEntry would fall back to the PREVIOUS
+            // recipe's title and image and the meal would look unswapped
+            // (Thomas, two-phone test 2026-07-25). Refetch with the join.
             refresh();
           }
         },
