@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 
+import { useKeyboardHeight } from '@/hooks/use-keyboard-height';
+
 // IMPROVISED – no Figma design for a toast/snackbar yet (flagged in the
 // backlog). Built from DS tokens (dark secondary surface + brand-lime action)
 // so it reads as intentional, but the final look is Thomas's to design. Shown
@@ -33,12 +35,19 @@ export function UndoToast({
     return () => clearTimeout(timer);
   }, [onDismiss]);
 
+  // Deleting an item right after typing one leaves the keyboard up, and the
+  // pill sat behind it – it read as "no toast at all" (Thomas, 2026-07-25).
+  // Ride above the keyboard while it's open; the tab bar is covered by it
+  // anyway, so the usual clearance isn't needed then.
+  const keyboardHeight = useKeyboardHeight();
+  const bottom = keyboardHeight > 0 ? keyboardHeight + 8 : bottomInset;
+
   return (
     <Animated.View
       entering={FadeInDown.duration(200)}
       exiting={FadeOutDown.duration(150)}
       pointerEvents="box-none"
-      style={{ position: 'absolute', left: 16, right: 16, bottom: bottomInset }}>
+      style={{ position: 'absolute', left: 16, right: 16, bottom }}>
       <View className="w-full flex-row items-center justify-between gap-comp-large rounded-large bg-surface-secondary-darkest px-layout-small py-comp-large">
         {/* The name shrinks and truncates; the verb stays whole beside it. */}
         <View className="min-w-0 flex-1 flex-row items-center">

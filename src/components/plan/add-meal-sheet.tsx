@@ -11,8 +11,6 @@ import {
 } from "react";
 import {
   FlatList,
-  Keyboard,
-  Platform,
   Pressable,
   Text,
   TextInput,
@@ -26,6 +24,7 @@ import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { ds } from "@/constants/ds";
+import { useKeyboardHeight } from "@/hooks/use-keyboard-height";
 import { useHousehold } from "@/lib/household-context";
 import { fetchRecentlyPlannedRecipeIds } from "@/lib/meal-plan";
 import {
@@ -613,24 +612,6 @@ function EmptySearch({
   );
 }
 
-function useKeyboardHeight(): number {
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  useEffect(() => {
-    const show = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (event) => setKeyboardHeight(event.endCoordinates.height),
-    );
-    const hide = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => setKeyboardHeight(0),
-    );
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  return keyboardHeight;
-}
 
 /** Same search input as the recipes list, plus a clear button. */
 function SearchField({

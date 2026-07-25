@@ -6,7 +6,7 @@ import {
   usePathname,
   useRouter,
 } from "expo-router";
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -80,9 +80,21 @@ export default function RecipeDetailScreen() {
   );
   const [doneSteps, setDoneSteps] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState(false);
-  // The actions dropdown hangs just below the header row; measure it instead of
-  // pinning a magic offset (52 is only the pre-measure fallback).
-  const [headerHeight, setHeaderHeight] = useState(52);
+  // The actions dropdown top-aligns with the "⋯" icon. The dropdown is
+  // absolutely positioned from the SCREEN frame, so we need the icon's window
+  // Y (measureInWindow), not its offset inside the header – measuring the
+  // latter put it up in the status bar (Thomas, 2026-07-25). 52 is the
+  // pre-measure fallback.
+  const moreButtonRef = useRef<View>(null);
+  const [menuTop, setMenuTop] = useState(52);
+  const toggleMenu = () => {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+    moreButtonRef.current?.measureInWindow((_x, y) => setMenuTop(y));
+    setMenuOpen(true);
+  };
   const [dialog, setDialog] = useState<Dialog>(null);
   const [editingIngredient, setEditingIngredient] = useState<
     RecipeIngredient | "new" | null
@@ -214,9 +226,7 @@ export default function RecipeDetailScreen() {
       edges={["top"]}
       className="flex-1 bg-surface-neutral-lightest"
     >
-      <View
-        onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
-        className="w-full flex-row items-center justify-between px-layout-small py-comp-small">
+      <View className="w-full flex-row items-center justify-between px-layout-small py-comp-small">
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}
@@ -230,7 +240,8 @@ export default function RecipeDetailScreen() {
           />
         </Pressable>
         <Pressable
-          onPress={() => setMenuOpen((open) => !open)}
+          ref={moreButtonRef}
+          onPress={toggleMenu}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Recipe actions"
@@ -439,8 +450,17 @@ export default function RecipeDetailScreen() {
       )}
       {menuOpen && (
         <View
-          style={{ top: headerHeight }}
-          className="absolute right-layout-small w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg">
+          // Soft drop shadow (Thomas, 2026-07-25) – iOS reads shadow*, Android
+          // needs elevation. NativeWind's shadow-lg alone renders flat here.
+          style={{
+            top: menuTop,
+            shadowColor: "#000",
+            shadowOpacity: 0.18,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 8,
+          }}
+          className="absolute right-layout-small w-[260px] rounded-large bg-surface-neutral-white">
           {menuItems.map((item, index) => (
             <Pressable
               key={item.label}

@@ -1,14 +1,23 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import {
   Gesture,
   GestureDetector,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   runOnJS,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -43,6 +52,26 @@ export function ReorderSheet({
   onClose: () => void;
   onChange: (orderedKeys: string[]) => void;
 }) {
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  // While a row is being dragged, freeze the scroll so the two vertical
+  // gestures don't fight for the touch.
+  const [dragging, setDragging] = useState(false);
+  // Shared drag state so the OTHER rows can slide aside and open a gap where
+  // the dragged row will land (Thomas, 2026-07-25). -1 = nothing is dragging.
+  // The rows only READ these; writes go through setDrag, because the React
+  // Compiler forbids a child mutating a shared value it received as a prop.
+  const activeIndex = useSharedValue(-1);
+  const hoverIndex = useSharedValue(-1);
+  const setDrag = (active: number, hover: number) => {
+    "worklet";
+    activeIndex.value = active;
+    hoverIndex.value = hover;
+  };
+  // Cap the sheet below the status bar / notch so a long ingredient list can't
+  // push the title and close button off the top of the screen; the rows scroll
+  // inside instead (Thomas, 2026-07-25: close was unreachable on a long list).
+  const sheetMaxHeight = windowHeight - insets.top - 24;
   return (
     <Modal
       visible={visible}
@@ -56,7 +85,10 @@ export function ReorderSheet({
           onPress={onClose}
           accessibilityLabel="Close"
         />
-        <View className="w-full gap-layout-xsmall rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large">
+        <View
+          style={{ maxHeight: sheetMaxHeight }}
+          className="w-full gap-layout-xsmall rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large"
+        >
           <View className="w-full flex-row items-center">
             <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">
               {title}
@@ -77,9 +109,11 @@ export function ReorderSheet({
           <Text className="font-paragraph text-small font-default text-text-subtle">
             {hint}
           </Text>
-          <View
-            style={{ height: items.length * ROW_HEIGHT }}
-            className="w-full"
+          <ScrollView
+            scrollEnabled={!dragging}
+            showsVerticalScrollIndicator={false}
+            style={{ flexShrink: 1 }}
+            contentContainerStyle={{ height: items.length * ROW_HEIGHT }}
           >
             {items.map((item, index) => (
               <DraggableRow
@@ -87,6 +121,10 @@ export function ReorderSheet({
                 item={item}
                 index={index}
                 count={items.length}
+                activeIndex={activeIndex}
+                hoverIndex={hoverIndex}
+                setDrag={setDrag}
+                onDragChange={setDragging}
                 onMove={(from, to) => {
                   const next = [...items];
                   next.splice(to, 0, ...next.splice(from, 1));
@@ -94,7 +132,7 @@ export function ReorderSheet({
                 }}
               />
             ))}
-          </View>
+          </ScrollView>
         </View>
       </GestureHandlerRootView>
     </Modal>
@@ -106,14 +144,28 @@ function DraggableRow({
   index,
   count,
   onMove,
+  onDragChange,
+  activeIndex,
+  hoverIndex,
+  setDrag,
 }: {
   item: ReorderItem;
   index: number;
   count: number;
   onMove: (from: number, to: number) => void;
+  onDragChange: (dragging: boolean) => void;
+  activeIndex: SharedValue<number>;
+  hoverIndex: SharedValue<number>;
+  setDrag: (active: number, hover: number) => void;
 }) {
   const translationY = useSharedValue(0);
   const [dragging, setDragging] = useState(false);
+
+  // Keep the row's own lifted look and the sheet's scroll-freeze in step.
+  const updateDragging = (value: boolean) => {
+    setDragging(value);
+    onDragChange(value);
+  };
 
   const commitMove = (from: number, to: number) => {
     translationY.value = 0;
@@ -122,21 +174,29 @@ function DraggableRow({
 
   const pan = Gesture.Pan()
     .onStart(() => {
-      runOnJS(setDragging)(true);
+      setDrag(index, index);
+      runOnJS(updateDragging)(true);
     })
     .onUpdate((event) => {
       const min = -index * ROW_HEIGHT;
       const max = (count - 1 - index) * ROW_HEIGHT;
       translationY.value = Math.max(min, Math.min(max, event.translationY));
+      // Which slot the row would drop into right now – the other rows watch
+      // this to open the gap.
+      const hover = Math.max(
+        0,
+        Math.min(count - 1, index + Math.round(translationY.value / ROW_HEIGHT)),
+      );
+      setDrag(index, hover);
     })
     .onEnd(() => {
-      const target = index + Math.round(translationY.value / ROW_HEIGHT);
-      const to = Math.max(0, Math.min(count - 1, target));
+      const to = hoverIndex.value;
       translationY.value = withTiming(
         (to - index) * ROW_HEIGHT,
         { duration: 120 },
         () => {
-          runOnJS(setDragging)(false);
+          setDrag(-1, -1);
+          runOnJS(updateDragging)(false);
           if (to !== index) {
             runOnJS(commitMove)(index, to);
           } else {
@@ -146,9 +206,24 @@ function DraggableRow({
       );
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translationY.value }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    // The row under the finger follows it 1:1.
+    if (activeIndex.value === index) {
+      return { transform: [{ translateY: translationY.value }] };
+    }
+    // Everyone between the dragged row's origin and its hover slot steps one
+    // place towards the origin, which opens the gap the row will drop into.
+    let shift = 0;
+    if (activeIndex.value !== -1) {
+      const from = activeIndex.value;
+      const to = hoverIndex.value;
+      if (from < index && index <= to) shift = -ROW_HEIGHT;
+      else if (to <= index && index < from) shift = ROW_HEIGHT;
+    }
+    return {
+      transform: [{ translateY: withTiming(shift, { duration: 140 }) }],
+    };
+  });
 
   return (
     <Animated.View

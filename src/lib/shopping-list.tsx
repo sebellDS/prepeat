@@ -122,6 +122,11 @@ interface State {
   // Display order of category groups – the household's walk through the
   // store, stored on the household row.
   categoryOrder: Category[];
+  // The last swipe-deleted item, kept so the undo toast can put it back. Lives
+  // in reducer state (not a ref) because the reducer always sees the true
+  // current items – reading a ref could miss a just-added item and silently
+  // drop the toast (Thomas, 2026-07-25: no toast on a fresh week's new item).
+  removedItem: ShoppingItem | null;
 }
 
 type Action =
@@ -146,7 +151,8 @@ type Action =
       aisle: Category | null;
     }
   | { type: 'remove'; id: string }
-  | { type: 'restore'; item: ShoppingItem }
+  | { type: 'restore' }
+  | { type: 'dismiss-undo' }
   | { type: 'set-order'; order: Category[] }
   // Week switch in flight: blank the list so the old week's items never
   // show under the new week's label.
@@ -168,6 +174,9 @@ function reducer(state: State, action: Action): State {
         items: mergeRows(state.items, action.rows),
         memory: action.memory,
         categoryOrder: action.categoryOrder,
+        // A week switch clears the pending undo in 'begin-load'; a plain
+        // (re)load must not swallow a toast the shopper is still looking at.
+        removedItem: state.removedItem,
       };
     case 'refresh':
       return {
@@ -265,18 +274,35 @@ function reducer(state: State, action: Action): State {
         ),
       };
     }
-    case 'remove':
-      return { ...state, items: state.items.filter((item) => item.id !== action.id) };
-    case 'restore':
+    case 'remove': {
+      // Snapshot from the live state here, so undo always has the exact row.
+      const removed = state.items.find((item) => item.id === action.id) ?? null;
+      return {
+        ...state,
+        items: state.items.filter((item) => item.id !== action.id),
+        removedItem: removed,
+      };
+    }
+    case 'restore': {
       // Undo of a delete: put the snapshot back. If a realtime echo already
       // re-added it (deleted_at cleared on the server), leave that one be.
-      return state.items.some((item) => item.id === action.item.id)
-        ? state
-        : { ...state, items: [...state.items, action.item] };
+      const item = state.removedItem;
+      if (!item) return state;
+      return {
+        ...state,
+        items: state.items.some((existing) => existing.id === item.id)
+          ? state.items
+          : [...state.items, item],
+        removedItem: null,
+      };
+    }
+    case 'dismiss-undo':
+      return state.removedItem == null ? state : { ...state, removedItem: null };
     case 'set-order':
       return { ...state, categoryOrder: action.order };
     case 'begin-load':
-      return { ...state, loading: true, listId: null, items: [] };
+      // A pending undo belongs to the week we're leaving – drop it.
+      return { ...state, loading: true, listId: null, items: [], removedItem: null };
   }
 }
 
@@ -427,17 +453,11 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     items: [],
     memory: {},
     categoryOrder: [...CATEGORIES],
+    removedItem: null,
   });
   const [live, setLive] = useState<LiveStatus>('connecting');
   // Bumped to re-run the boot effect after a launch-time load failure.
   const [bootAttempt, setBootAttempt] = useState(0);
-  // The last-deleted item, kept so the undo toast can put it back. A ref
-  // mirrors it so undoRemove reads the current value without re-memoizing.
-  const [undoItem, setUndoItem] = useState<ShoppingItem | null>(null);
-  const undoItemRef = useRef<ShoppingItem | null>(null);
-  useEffect(() => {
-    undoItemRef.current = undoItem;
-  }, [undoItem]);
   // Week navigation (designed 2026-07-16): every week has its own list.
   // Reachable weeks mirror the plan's rule – existing lists, weeks with a
   // plan, and the current week; two weeks back at most.
@@ -727,10 +747,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
 
   const removeItem = useCallback(
     (id: string) => {
-      // Snapshot before dropping it, so undo can put the exact row back.
-      const snapshot = stateRef.current.items.find((item) => item.id === id) ?? null;
+      // The reducer snapshots the row as it drops it, so the undo toast can
+      // never miss an item that is on screen but not yet mirrored into a ref.
       dispatch({ type: 'remove', id });
-      setUndoItem(snapshot);
       guard(
         'remove',
         supabase
@@ -743,10 +762,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   );
 
   const undoRemove = useCallback(() => {
-    const item = undoItemRef.current;
+    const item = stateRef.current.removedItem;
     if (!item) return;
-    setUndoItem(null);
-    dispatch({ type: 'restore', item });
+    dispatch({ type: 'restore' });
     // Clearing deleted_at revives the row; the set_updated_at trigger bumps
     // updated_at, so the realtime echo re-adds it on the other phones too.
     guard(
@@ -755,7 +773,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     );
   }, [guard]);
 
-  const dismissUndo = useCallback(() => setUndoItem(null), []);
+  const dismissUndo = useCallback(() => dispatch({ type: 'dismiss-undo' }), []);
 
   // Shared by the Clear button and fill-from-plan: checked items leave the
   // list together, as one soft-delete on the server.
@@ -852,7 +870,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
-      undoItem,
+      undoItem: state.removedItem,
       undoRemove,
       dismissUndo,
       clearCompleted,
@@ -875,7 +893,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
-      undoItem,
+      state.removedItem,
       undoRemove,
       dismissUndo,
       clearCompleted,

@@ -117,6 +117,28 @@ All verified still present 2026-07-24.
       the old fixed 52 – worth an on-device glance. Typecheck + lint clean,
       client-only, rides the next build.
 
+## Known bugs
+
+- [x] **Undo toast invisible when the keyboard is up** – FIXED 2026-07-25,
+      verified on device. Looked like "no toast on a new week", but the week
+      was a red herring: adding an item by hand leaves the KEYBOARD UP, and the
+      toast sits at the bottom of the screen, behind it. Thomas spotted the
+      real cause from the screen; Claude's code-only theory (a stale-ref
+      snapshot) was wrong. Fix: the toast rides above the keyboard while it is
+      open. Two rounds – the first attempt still failed because
+      `keyboardWillShow` only fires on a TRANSITION, and the toast mounts after
+      the keyboard is already up, so it measured 0; the hook now seeds from
+      `Keyboard.metrics()` (the current state) as well as listening. The shared
+      `useKeyboardHeight` hook moved out of add-meal-sheet to
+      src/hooks/use-keyboard-height.ts so both callers use one copy.
+      LESSON: a mount-time subscriber misses events that already fired – seed
+      from current state, don't only listen for changes.
+- [ ] Row content may render BLANK while swiped open (spotted in Thomas's
+      2026-07-25 screenshot: the swiped shopping row showed the ⋯/edit/trash
+      actions but no item name or checkbox). Unconfirmed – may just be the
+      swipe shifting content out of view. Watch for it; if it recurs, dig into
+      ItemRow/ReanimatedSwipeable.
+
 ## Security
 
 - [x] **Invite codes should expire** – DONE 2026-07-24 (Thomas: lifetime
@@ -148,6 +170,9 @@ All verified still present 2026-07-24.
       an improvised placeholder (DS dark surface + brand-lime action, 5s, no
       Figma frame). Design it before launch. Also still uncovered: the bulk
       "Clear" in the shopping done section has no undo.
+      Note for whoever designs it: the pill now sits above the keyboard when
+      one is open, and above the tab bar otherwise – both positions need to
+      look right.
 
 ## Design QA leftover
 
@@ -202,6 +227,25 @@ All verified still present 2026-07-24.
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12).
 
 ## Decisions log (recent)
+
+- **2026-07-25 – first dev-variant test round** (Prep+Eat Dev on Thomas's
+  phone, six build/test cycles). Tested the tech-debt work from 2026-07-24;
+  reorder + swap passed. Fixed from the feedback:
+  - **Reorder sheet** was unusable on a long ingredient list – it grew past the
+    notch and the close button was unreachable. Now capped below the safe area
+    with the rows scrolling inside (scroll freezes while a row is dragged).
+    Thomas then asked for the surrounding rows to slide aside and open a gap
+    where the dragged row will land – built, so you can see the target slot.
+  - **Recipe ⋯ menu** was pinned at a magic `top: 52px`; anchoring it to the
+    measured header put it too high (the header offset is not the screen
+    offset), so it now uses `measureInWindow` on the icon itself. Plus a soft
+    drop shadow (needs explicit iOS shadow* + Android elevation; NativeWind's
+    shadow-lg renders flat, and `overflow-hidden` KILLS an iOS shadow).
+  - **Undo toast behind the keyboard** – see Known bugs. Worth remembering as
+    a process point: Claude reasoned from code to a confident but WRONG
+    conclusion ("provably a stale-ref snapshot"); Thomas found the real cause
+    by looking at the screen. Read the device before trusting a code-only
+    theory.
 
 - **2026-07-24 – dev vs TestFlight builds now have separate identities**
   (Thomas). Direct-to-device builds are a distinct "dev" app that installs
