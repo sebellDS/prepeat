@@ -28,7 +28,7 @@ import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { SwipeHint } from "@/components/ui/swipe-hint";
 import { UndoToast } from "@/components/ui/undo-toast";
 import { ds } from "@/constants/ds";
-import { BottomTabInset } from "@/constants/theme";
+import { Spacing, tabBarClearance } from "@/constants/theme";
 import { AddToPlanSheet } from "@/components/recipes/add-to-plan-sheet";
 import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household-context";
@@ -80,6 +80,9 @@ export default function RecipeDetailScreen() {
   );
   const [doneSteps, setDoneSteps] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState(false);
+  // The actions dropdown hangs just below the header row; measure it instead of
+  // pinning a magic offset (52 is only the pre-measure fallback).
+  const [headerHeight, setHeaderHeight] = useState(52);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [editingIngredient, setEditingIngredient] = useState<
     RecipeIngredient | "new" | null
@@ -211,7 +214,9 @@ export default function RecipeDetailScreen() {
       edges={["top"]}
       className="flex-1 bg-surface-neutral-lightest"
     >
-      <View className="w-full flex-row items-center justify-between px-layout-small py-comp-small">
+      <View
+        onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+        className="w-full flex-row items-center justify-between px-layout-small py-comp-small">
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}
@@ -240,7 +245,7 @@ export default function RecipeDetailScreen() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{
-          paddingBottom: insets.bottom + BottomTabInset + 32,
+          paddingBottom: tabBarClearance(insets, Spacing.five),
         }}
         onScrollBeginDrag={() => setMenuOpen(false)}
       >
@@ -433,7 +438,9 @@ export default function RecipeDetailScreen() {
         />
       )}
       {menuOpen && (
-        <View className="absolute right-layout-small top-[52px] w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg">
+        <View
+          style={{ top: headerHeight }}
+          className="absolute right-layout-small w-[260px] overflow-hidden rounded-large bg-surface-neutral-white shadow-lg">
           {menuItems.map((item, index) => (
             <Pressable
               key={item.label}
@@ -628,7 +635,7 @@ export default function RecipeDetailScreen() {
           }
           onUndo={undoDelete}
           onDismiss={dismissUndo}
-          bottomInset={insets.bottom + BottomTabInset + 4}
+          bottomInset={tabBarClearance(insets, Spacing.one)}
         />
       )}
     </SafeAreaView>

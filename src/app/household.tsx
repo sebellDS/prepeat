@@ -11,7 +11,7 @@ import { InviteSomeoneSheet } from "@/components/household/invite-someone-sheet"
 import { JoinHouseholdModal } from "@/components/household/join-household-modal";
 import { LeaveHouseholdSheet } from "@/components/household/leave-household-sheet";
 import { ds } from "@/constants/ds";
-import { BottomTabInset } from "@/constants/theme";
+import { Spacing, tabBarClearance } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { useHouseholdSwitcher } from "@/lib/household-context";
 import {
@@ -102,7 +102,7 @@ export default function HouseholdScreen() {
         contentContainerStyle={{
           gap: 16,
           paddingHorizontal: 16,
-          paddingBottom: insets.bottom + BottomTabInset + 24,
+          paddingBottom: tabBarClearance(insets, Spacing.four),
         }}
       >
         {/* Household card + invite */}

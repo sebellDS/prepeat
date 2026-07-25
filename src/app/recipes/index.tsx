@@ -17,7 +17,7 @@ import {
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Chip } from "@/components/ui/chip";
 import { ds } from "@/constants/ds";
-import { BottomTabInset } from "@/constants/theme";
+import { Spacing, tabBarClearance } from "@/constants/theme";
 import { useHousehold } from "@/lib/household-context";
 import {
   fetchRecipes,
@@ -127,7 +127,7 @@ export default function RecipesListScreen() {
           columnWrapperStyle={{ gap: 16, paddingHorizontal: 16 }}
           contentContainerStyle={{
             gap: 16,
-            paddingBottom: insets.bottom + BottomTabInset + 24,
+            paddingBottom: tabBarClearance(insets, Spacing.four),
           }}
           renderItem={({ item }) => (
             <RecipeCard

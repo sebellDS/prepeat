@@ -9,6 +9,12 @@ import { ds } from '@/constants/ds';
 import { ItemRow } from '@/components/shopping/item-row';
 import type { ShoppingItem } from '@/lib/shopping-list';
 
+// The done band paints its darker background this far past its layout box so it
+// runs to the bottom of the viewport and through bottom overscroll; an equal
+// negative margin cancels the layout effect so it pushes nothing. Any value
+// taller than a phone screen works – 1000 clears every device.
+const BOTTOM_BLEED = 1000;
+
 interface DoneSectionProps {
   items: ShoppingItem[];
   /** The signed-in member, to tell "your" checkmarks from the family's. */
@@ -33,12 +39,9 @@ export function DoneSection({
   const label = `${items.length} ${items.length === 1 ? 'item' : 'items'} done`;
   return (
     <Animated.View layout={LinearTransition.duration(250)} exiting={FadeOut.duration(150)}>
-      {/* The band paints far past its layout box (padding + negative margin
-          cancel out) so the darker background runs to the bottom of the
-          viewport and through bottom overscroll. */}
       <View
         className="w-full gap-layout-small bg-surface-neutral-lighter px-layout-small pt-layout-xsmall"
-        style={{ paddingBottom: 1000, marginBottom: -1000 }}>
+        style={{ paddingBottom: BOTTOM_BLEED, marginBottom: -BOTTOM_BLEED }}>
         <View className="w-full gap-layout-xsmall">
           <Pressable
             accessibilityRole="button"

@@ -102,12 +102,20 @@ All verified still present 2026-07-24.
       genuinely different from insert, so only the snapshot needed sharing.
       Behaviour-preserving (identical SQL); typecheck + lint clean, client-only
       (no migration), rides the next build.
-- [ ] **Layout pinned with magic numbers**: per-screen tab-bar clearance
-      hand-computed with a different tail across six screens, the done-section
-      paints ~1000px of overdraw to reach the screen bottom, and the recipe
-      overflow menu is pinned at `top: 52px`. Each breaks on a new device size
-      or spacing-token change. Wants a shared clearance hook and anchored
-      (not pixel-pinned) positioning.
+- [x] **Layout pinned with magic numbers** – DONE 2026-07-24. (1) Added a
+      shared `tabBarClearance(insets, extra)` helper in constants/theme.ts; the
+      six scroll screens (shopping, household, plan, recipes list/new/[id]) now
+      call it instead of hand-repeating `insets.bottom + BottomTabInset`, with
+      the tails expressed as `Spacing` tokens (24→four, 32→five, 4→one; only
+      shopping's off-scale 56 stays a commented literal). (2) The recipe
+      overflow menu is now anchored to the header's measured height (onLayout →
+      `headerHeight`) instead of a fixed `top: 52px` (52 kept only as the
+      pre-measure fallback). (3) The done-section's 1000px bleed is now a named
+      `BOTTOM_BLEED` constant with the technique documented.
+      Clearances + bleed are numerically byte-identical (zero visual change);
+      the overflow menu now tracks the real header, so it may sit a few px off
+      the old fixed 52 – worth an on-device glance. Typecheck + lint clean,
+      client-only, rides the next build.
 
 ## Security
 

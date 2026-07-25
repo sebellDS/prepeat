@@ -61,3 +61,13 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+/**
+ * Clearance for scroll content to sit clear of the bottom tab bar: the
+ * safe-area inset + the tab bar's own height, plus an optional per-screen tail
+ * (pass a `Spacing` value). Centralised so the six scroll screens stop
+ * hand-repeating `insets.bottom + BottomTabInset` – change the model here once.
+ */
+export function tabBarClearance(insets: { bottom: number }, extra = 0): number {
+  return insets.bottom + BottomTabInset + extra;
+}

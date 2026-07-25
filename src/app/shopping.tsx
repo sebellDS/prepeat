@@ -23,7 +23,7 @@ import {
   type Category,
   type ShoppingItem,
 } from '@/lib/shopping-list';
-import { BottomTabInset } from '@/constants/theme';
+import { Spacing, tabBarClearance } from '@/constants/theme';
 
 function ShoppingListScreen() {
   const {
@@ -156,7 +156,9 @@ function ShoppingListScreen() {
           // feedback, 2026-07-09).
           keyboardDismissMode="on-drag"
           contentContainerStyle={{
-            paddingBottom: insets.bottom + BottomTabInset + 56,
+            // 56 (off the Spacing scale): the list wants extra breathing room
+            // under the last row before the tab bar.
+            paddingBottom: tabBarClearance(insets, 56),
             gap: 16,
           }}>
           {items.length === 0 ? (
@@ -235,7 +237,7 @@ function ShoppingListScreen() {
           name={undoItem.name}
           onUndo={undoRemove}
           onDismiss={dismissUndo}
-          bottomInset={insets.bottom + BottomTabInset + 4}
+          bottomInset={tabBarClearance(insets, Spacing.one)}
         />
       )}
     </SafeAreaView>

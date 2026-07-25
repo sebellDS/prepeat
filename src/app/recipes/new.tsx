@@ -25,7 +25,7 @@ import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { SwipeHint } from "@/components/ui/swipe-hint";
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
-import { BottomTabInset } from "@/constants/theme";
+import { Spacing, tabBarClearance } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household-context";
 import {
@@ -239,7 +239,7 @@ export default function AddRecipeScreen() {
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         contentContainerStyle={{
-          paddingBottom: insets.bottom + BottomTabInset + 32,
+          paddingBottom: tabBarClearance(insets, Spacing.five),
           gap: 16,
         }}
       >
