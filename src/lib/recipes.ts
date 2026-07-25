@@ -367,26 +367,27 @@ export async function deleteIngredient(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Persists a drag-reorder of ingredients (sort_order follows the array). */
+/**
+ * Persists a drag-reorder of ingredients (sort_order follows the array).
+ * One atomic RPC (migration 0020) renumbers every row in a single write, so
+ * an interrupted reorder can't leave the list half-saved – the old per-row
+ * loop could.
+ */
 export async function reorderIngredients(orderedIds: string[]): Promise<void> {
-  for (const [index, id] of orderedIds.entries()) {
-    const { error } = await supabase
-      .from("recipe_ingredients")
-      .update({ sort_order: index })
-      .eq("id", id);
-    if (error) throw error;
-  }
+  if (orderedIds.length === 0) return;
+  const { error } = await supabase.rpc("reorder_recipe_ingredients", {
+    p_ids: orderedIds,
+  });
+  if (error) throw error;
 }
 
 /** Persists a drag-reorder of steps (step_number follows the array). */
 export async function reorderSteps(orderedIds: string[]): Promise<void> {
-  for (const [index, id] of orderedIds.entries()) {
-    const { error } = await supabase
-      .from("recipe_steps")
-      .update({ step_number: index + 1 })
-      .eq("id", id);
-    if (error) throw error;
-  }
+  if (orderedIds.length === 0) return;
+  const { error } = await supabase.rpc("reorder_recipe_steps", {
+    p_ids: orderedIds,
+  });
+  if (error) throw error;
 }
 
 // ── Steps ────────────────────────────────────────────────────────────────

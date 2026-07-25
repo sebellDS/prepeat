@@ -73,9 +73,15 @@ All verified still present 2026-07-24.
       data (src/lib/shopping-list.tsx, same pattern in meal-plan.tsx); and
       the boot awaits independent queries in series that could run in
       parallel.
-- [ ] **Reorder saves one row at a time** (src/lib/recipes.ts,
-      `reorderIngredients` / `reorderSteps`) – a 20-item reorder is 20
-      sequential saves and can be left half-done. Batch upsert or a small RPC.
+- [x] **Reorder saves one row at a time** – DONE 2026-07-24 (migration 0020).
+      `reorderIngredients` / `reorderSteps` now call one atomic RPC
+      (`reorder_recipe_ingredients` / `reorder_recipe_steps`) that renumbers
+      the whole list in a single UPDATE via `array_position`, so an
+      interrupted reorder can't leave it half-saved – and it's one round trip
+      instead of ~20. SECURITY INVOKER (rides the caller's RLS). Typecheck +
+      lint clean; not yet walked on-device.
+      - [x] Thomas: applied migration 0020 in the Supabase dashboard
+            2026-07-24 (verifying SELECT returned true / true).
 - [ ] **`swapMeal` duplicates `insertPlanEntry`'s snapshot + contribute
       blocks** (src/lib/meal-plan.tsx) – extract shared helpers so a meal
       added by swap can't diverge from one added normally.
