@@ -68,11 +68,21 @@ threads remain below.
 
 All verified still present 2026-07-24.
 
-- [ ] **List/plan open runs its queries twice** – the realtime subscribe
-      refetches immediately after the boot fetch already loaded the same
-      data (src/lib/shopping-list.tsx, same pattern in meal-plan.tsx); and
-      the boot awaits independent queries in series that could run in
-      parallel.
+- [x] **List/plan open runs its queries twice** – DONE 2026-07-24. (1) The
+      realtime `SUBSCRIBED` handler no longer refetches on the FIRST subscribe
+      of a channel (boot / viewWeek already loaded that list/week) – a
+      per-channel `subscribedBefore` flag means only a RE-subscribe (reconnect)
+      refetches, so opening the tab no longer re-runs items+prefs+weekOptions a
+      second time. Reconnect catch-up is fully preserved. (2) Shopping's boot
+      ran `getOrCreateListId` then `fetchPrefs` in series though they're
+      independent – now `Promise.all`'d (meal-plan's boot is genuinely
+      dependent, weeks→entries, so left serial). Client-only, typecheck + lint
+      clean, rides the next build.
+      Trade-off (disclosed): skipping the first-subscribe refetch reintroduces
+      a tiny [boot-fetch → channel-live] gap where a concurrent edit from
+      another phone could be missed until the next realtime event or a
+      foreground refetch – seconds, self-healing, and easily reverted if it
+      ever bites. Not yet walked two-phone on-device.
 - [x] **Reorder saves one row at a time** – DONE 2026-07-24 (migration 0020).
       `reorderIngredients` / `reorderSteps` now call one atomic RPC
       (`reorder_recipe_ingredients` / `reorder_recipe_steps`) that renumbers

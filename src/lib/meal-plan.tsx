@@ -519,6 +519,9 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const planId = viewedWeek?.id;
     if (!planId) return;
+    // First subscribe skips the refetch (boot/viewWeek already loaded this
+    // week's entries); a reconnect refetches to catch up on what was missed.
+    let subscribedBefore = false;
     const channel = supabase
       .channel(`meal-plan-entries-${planId}`)
       .on(
@@ -555,7 +558,8 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
           setLive("live");
-          refresh();
+          if (subscribedBefore) refresh();
+          subscribedBefore = true;
         } else if (
           status === "CHANNEL_ERROR" ||
           status === "TIMED_OUT" ||

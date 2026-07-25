@@ -533,8 +533,12 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const listId = await getOrCreateListId(household.id, userId, currentWeekStart);
-      const serverPrefs = await fetchPrefs(household.id);
+      // getOrCreateListId and fetchPrefs are independent – run them together
+      // (migrateDevicePrefs still has to wait for serverPrefs).
+      const [listId, serverPrefs] = await Promise.all([
+        getOrCreateListId(household.id, userId, currentWeekStart),
+        fetchPrefs(household.id),
+      ]);
       const prefs = await migrateDevicePrefs(household.id, serverPrefs);
       const [rows, weeks] = await Promise.all([fetchItems(listId), fetchWeekOptions()]);
       if (cancelled) return;
@@ -578,11 +582,13 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   );
 
   // Realtime: stream the other phones' item changes into local state. The
-  // subscribe status doubles as the Live badge; every (re)subscribe refetches
-  // to cover anything missed while disconnected.
+  // subscribe status doubles as the Live badge; a RE-subscribe (reconnect)
+  // refetches to cover anything missed while disconnected – the first subscribe
+  // skips it, since the boot (or viewWeek) already loaded this list.
   useEffect(() => {
     const listId = state.listId;
     if (!listId) return;
+    let subscribedBefore = false;
     const channel = supabase
       .channel(`shopping-list-${listId}`)
       .on(
@@ -610,7 +616,8 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setLive('live');
-          refresh();
+          if (subscribedBefore) refresh();
+          subscribedBefore = true;
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setLive('offline');
         }
