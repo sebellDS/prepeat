@@ -82,9 +82,16 @@ All verified still present 2026-07-24.
       lint clean; not yet walked on-device.
       - [x] Thomas: applied migration 0020 in the Supabase dashboard
             2026-07-24 (verifying SELECT returned true / true).
-- [ ] **`swapMeal` duplicates `insertPlanEntry`'s snapshot + contribute
-      blocks** (src/lib/meal-plan.tsx) – extract shared helpers so a meal
-      added by swap can't diverge from one added normally.
+- [x] **`swapMeal` duplicates `insertPlanEntry`'s snapshot + contribute
+      blocks** – DONE 2026-07-24. Extracted the ingredient-snapshot insert
+      into a shared `snapshotEntryIngredients(entryId, recipe)` helper that
+      both paths call, so a swapped meal can't snapshot differently from a
+      normally-added one. The `contributeEntry` call was already the shared
+      function (only a one-line `if (pushed)` guard, left inline), and the
+      rest of swapMeal (withdraw → delete old snapshot → update-in-place) is
+      genuinely different from insert, so only the snapshot needed sharing.
+      Behaviour-preserving (identical SQL); typecheck + lint clean, client-only
+      (no migration), rides the next build.
 - [ ] **Layout pinned with magic numbers**: per-screen tab-bar clearance
       hand-computed with a different tail across six screens, the done-section
       paints ~1000px of overdraw to reach the screen bottom, and the recipe

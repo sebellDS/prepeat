@@ -260,6 +260,30 @@ async function getOrCreatePlan(
   throw insertError;
 }
 
+/**
+ * Snapshot a recipe's ingredients onto a plan entry. Shared by insertPlanEntry
+ * (adding a meal) and swapMeal (replacing a meal's recipe) so the two snapshot
+ * paths cannot drift – if the snapshot columns ever change, they change in one
+ * place. No-op for a recipe with no ingredients (an empty recipe, or a manual
+ * meal that carries none).
+ */
+async function snapshotEntryIngredients(
+  entryId: string,
+  recipe: Recipe,
+): Promise<void> {
+  if (recipe.ingredients.length === 0) return;
+  const { error } = await supabase.from("meal_plan_entry_ingredients").insert(
+    recipe.ingredients.map((ingredient, index) => ({
+      entry_id: entryId,
+      name: ingredient.name,
+      quantity: ingredient.quantity,
+      unit: ingredient.unit,
+      sort_order: ingredient.sortOrder ?? index,
+    })),
+  );
+  if (error) throw error;
+}
+
 /** The shared write: entry + ingredient snapshot (+ list share if pushed). */
 async function insertPlanEntry(options: {
   entryId: string;
@@ -281,20 +305,7 @@ async function insertPlanEntry(options: {
     recipe_servings: options.recipe.servings,
   });
   if (error) throw error;
-  if (options.recipe.ingredients.length > 0) {
-    const { error: snapshotError } = await supabase
-      .from("meal_plan_entry_ingredients")
-      .insert(
-        options.recipe.ingredients.map((ingredient, index) => ({
-          entry_id: options.entryId,
-          name: ingredient.name,
-          quantity: ingredient.quantity,
-          unit: ingredient.unit,
-          sort_order: ingredient.sortOrder ?? index,
-        })),
-      );
-    if (snapshotError) throw snapshotError;
-  }
+  await snapshotEntryIngredients(options.entryId, options.recipe);
   // A + rails: once the week is on the list, new meals flow in. The server
   // resolves and locks the week's list itself.
   if (options.planPushed) {
@@ -828,20 +839,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
           })
           .eq("id", entryId);
         if (error) throw error;
-        if (recipe.ingredients.length > 0) {
-          const { error: snapshotError } = await supabase
-            .from("meal_plan_entry_ingredients")
-            .insert(
-              recipe.ingredients.map((ingredient, index) => ({
-                entry_id: entryId,
-                name: ingredient.name,
-                quantity: ingredient.quantity,
-                unit: ingredient.unit,
-                sort_order: ingredient.sortOrder ?? index,
-              })),
-            );
-          if (snapshotError) throw snapshotError;
-        }
+        await snapshotEntryIngredients(entryId, recipe);
         if (pushed) {
           await contributeEntry(entryId);
         }
