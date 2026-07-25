@@ -23,7 +23,7 @@ import {
   type Category,
   type ShoppingItem,
 } from '@/lib/shopping-list';
-import { tabBarClearance, toastBottomInset } from '@/constants/theme';
+import { Spacing, tabBarClearance } from '@/constants/theme';
 
 function ShoppingListScreen() {
   const {
@@ -243,7 +243,7 @@ function ShoppingListScreen() {
           verb={undoItems.length === 1 ? 'deleted' : 'cleared'}
           onUndo={undoRemove}
           onDismiss={dismissUndo}
-          bottomInset={toastBottomInset(insets)}
+          bottomInset={tabBarClearance(insets, Spacing.three)}
         />
       )}
     </SafeAreaView>

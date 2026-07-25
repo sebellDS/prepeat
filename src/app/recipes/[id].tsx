@@ -28,7 +28,7 @@ import { SwipeActions } from "@/components/recipes/swipe-actions";
 import { SwipeHint } from "@/components/ui/swipe-hint";
 import { UndoToast } from "@/components/ui/undo-toast";
 import { ds } from "@/constants/ds";
-import { Spacing, tabBarClearance, toastBottomInset } from "@/constants/theme";
+import { Spacing, tabBarClearance } from "@/constants/theme";
 import { AddToPlanSheet } from "@/components/recipes/add-to-plan-sheet";
 import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household-context";
@@ -655,7 +655,7 @@ export default function RecipeDetailScreen() {
           }
           onUndo={undoDelete}
           onDismiss={dismissUndo}
-          bottomInset={toastBottomInset(insets)}
+          bottomInset={tabBarClearance(insets, Spacing.three)}
         />
       )}
     </SafeAreaView>

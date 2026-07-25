@@ -59,31 +59,29 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
 
 /**
- * Clearance for scroll content to sit clear of the bottom tab bar: the
- * safe-area inset + the tab bar's own height, plus an optional per-screen tail
- * (pass a `Spacing` value). Centralised so the six scroll screens stop
- * hand-repeating `insets.bottom + BottomTabInset` – change the model here once.
+ * Distance from the screen bottom that keeps content clear of the tab bar,
+ * plus an optional gap on top (pass a `Spacing` value).
+ *
+ * `insets.bottom` is ALL that is needed: the tab bar is a native iOS one
+ * (expo-router NativeTabs), and a native tab bar contributes its own height to
+ * the safe-area inset of the screens inside it. There used to be a
+ * `BottomTabInset` (50) added here as well, which double-counted the bar and
+ * left ~50pt of dead space at the bottom of every scroll screen.
+ *
+ * Measured on device to settle it (Thomas, 2026-07-25 – his px are 1.5× points):
+ *   insets.bottom + 54pt → 82px gap   (54.7pt)
+ *   insets.bottom + 74pt → 112px gap  (74.7pt)
+ *   insets.bottom + 16pt → 24px gap   (16pt)
+ * In each case the visible gap equals exactly what is added ON TOP of
+ * insets.bottom, so insets.bottom is the tab bar's top edge. `extra` is
+ * therefore a real gap in points, not a fudge factor.
+ *
+ * Untested on a phone with no home indicator (insets.bottom 0), which has a
+ * different tab bar again.
  */
 export function tabBarClearance(insets: { bottom: number }, extra = 0): number {
-  return insets.bottom + BottomTabInset + extra;
-}
-
-/**
- * Bottom offset for the floating undo toast, so it clears the tab bar with a
- * ~24px gap (Thomas, 2026-07-25).
- *
- * Deliberately NOT tabBarClearance(): the tab bar is a NATIVE iOS component
- * (expo-router NativeTabs) whose real height the app cannot read, and
- * BottomTabInset (50) turns out to overshoot it badly – measuring on device
- * gave an 82px gap at +4 and 112px at +24, i.e. the toast was floating far too
- * high. This value is tuned from those measurements instead of derived.
- * Re-measure if the tab bar design changes; a phone with no home indicator
- * (insets.bottom 0) has a different tab bar again and is untested.
- */
-export function toastBottomInset(insets: { bottom: number }): number {
-  return insets.bottom + Spacing.three;
+  return insets.bottom + extra;
 }
