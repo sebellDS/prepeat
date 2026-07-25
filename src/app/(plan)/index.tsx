@@ -18,7 +18,7 @@ import { ServingsSheet } from "@/components/plan/servings-sheet";
 import { UndoToast } from "@/components/ui/undo-toast";
 import { WeekPicker } from "@/components/ui/week-picker";
 import { ds } from "@/constants/ds";
-import { Spacing, tabBarClearance } from "@/constants/theme";
+import { Spacing, tabBarClearance, toastBottomInset } from "@/constants/theme";
 import {
   MealPlanProvider,
   useMealPlan,
@@ -215,7 +215,7 @@ function PlanContent() {
           verb="removed"
           onUndo={plan.undoRemoveEntry}
           onDismiss={plan.dismissUndoEntry}
-          bottomInset={tabBarClearance(insets, Spacing.one)}
+          bottomInset={toastBottomInset(insets)}
         />
       )}
     </SafeAreaView>

@@ -122,11 +122,13 @@ interface State {
   // Display order of category groups – the household's walk through the
   // store, stored on the household row.
   categoryOrder: Category[];
-  // The last swipe-deleted item, kept so the undo toast can put it back. Lives
-  // in reducer state (not a ref) because the reducer always sees the true
-  // current items – reading a ref could miss a just-added item and silently
-  // drop the toast (Thomas, 2026-07-25: no toast on a fresh week's new item).
-  removedItem: ShoppingItem | null;
+  // What the last delete took away, kept so the undo toast can put it back:
+  // one item for a swipe-delete, the whole batch for "Clear done items"
+  // (2026-07-25 – bulk clear is the most destructive action on the list and
+  // was the only one without an undo). Empty = nothing to undo. Lives in
+  // reducer state, not a ref, so the snapshot always sees the true current
+  // items rather than a render-behind copy.
+  removed: ShoppingItem[];
 }
 
 type Action =
@@ -151,6 +153,7 @@ type Action =
       aisle: Category | null;
     }
   | { type: 'remove'; id: string }
+  | { type: 'clear-completed' }
   | { type: 'restore' }
   | { type: 'dismiss-undo' }
   | { type: 'set-order'; order: Category[] }
@@ -176,7 +179,7 @@ function reducer(state: State, action: Action): State {
         categoryOrder: action.categoryOrder,
         // A week switch clears the pending undo in 'begin-load'; a plain
         // (re)load must not swallow a toast the shopper is still looking at.
-        removedItem: state.removedItem,
+        removed: state.removed,
       };
     case 'refresh':
       return {
@@ -276,33 +279,43 @@ function reducer(state: State, action: Action): State {
     }
     case 'remove': {
       // Snapshot from the live state here, so undo always has the exact row.
-      const removed = state.items.find((item) => item.id === action.id) ?? null;
+      const removed = state.items.find((item) => item.id === action.id);
       return {
         ...state,
         items: state.items.filter((item) => item.id !== action.id),
-        removedItem: removed,
+        removed: removed ? [removed] : [],
+      };
+    }
+    case 'clear-completed': {
+      // The whole done section leaves at once – snapshot every row it took so
+      // one Undo brings them all back, not just the last.
+      const cleared = state.items.filter((item) => item.isChecked);
+      if (cleared.length === 0) return state;
+      return {
+        ...state,
+        items: state.items.filter((item) => !item.isChecked),
+        removed: cleared,
       };
     }
     case 'restore': {
-      // Undo of a delete: put the snapshot back. If a realtime echo already
-      // re-added it (deleted_at cleared on the server), leave that one be.
-      const item = state.removedItem;
-      if (!item) return state;
+      // Undo: put the snapshot(s) back. Anything a realtime echo already
+      // re-added (deleted_at cleared on the server) is left alone.
+      if (state.removed.length === 0) return state;
+      const present = new Set(state.items.map((item) => item.id));
+      const missing = state.removed.filter((item) => !present.has(item.id));
       return {
         ...state,
-        items: state.items.some((existing) => existing.id === item.id)
-          ? state.items
-          : [...state.items, item],
-        removedItem: null,
+        items: missing.length > 0 ? [...state.items, ...missing] : state.items,
+        removed: [],
       };
     }
     case 'dismiss-undo':
-      return state.removedItem == null ? state : { ...state, removedItem: null };
+      return state.removed.length === 0 ? state : { ...state, removed: [] };
     case 'set-order':
       return { ...state, categoryOrder: action.order };
     case 'begin-load':
       // A pending undo belongs to the week we're leaving – drop it.
-      return { ...state, loading: true, listId: null, items: [], removedItem: null };
+      return { ...state, loading: true, listId: null, items: [], removed: [] };
   }
 }
 
@@ -425,7 +438,8 @@ interface ShoppingListApi {
   ) => void;
   removeItem: (id: string) => void;
   /** The most recently deleted item, offered for undo; null once undone or dismissed. */
-  undoItem: ShoppingItem | null;
+  /** What the last delete took: one item, or the whole cleared done section. */
+  undoItems: ShoppingItem[];
   /** Restore the last-deleted item (clears deleted_at). */
   undoRemove: () => void;
   /** Drop the undo offer without restoring (the toast timed out). */
@@ -453,7 +467,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     items: [],
     memory: {},
     categoryOrder: [...CATEGORIES],
-    removedItem: null,
+    removed: [],
   });
   const [live, setLive] = useState<LiveStatus>('connecting');
   // Bumped to re-run the boot effect after a launch-time load failure.
@@ -762,14 +776,16 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   );
 
   const undoRemove = useCallback(() => {
-    const item = stateRef.current.removedItem;
-    if (!item) return;
+    const ids = stateRef.current.removed.map((item) => item.id);
+    if (ids.length === 0) return;
     dispatch({ type: 'restore' });
-    // Clearing deleted_at revives the row; the set_updated_at trigger bumps
-    // updated_at, so the realtime echo re-adds it on the other phones too.
+    // Clearing deleted_at revives the rows; the set_updated_at trigger bumps
+    // updated_at, so the realtime echo re-adds them on the other phones too.
+    // One statement whether it is a single swipe-delete or a whole cleared
+    // done section.
     guard(
       'restore',
-      supabase.from('shopping_list_items').update({ deleted_at: null }).eq('id', item.id),
+      supabase.from('shopping_list_items').update({ deleted_at: null }).in('id', ids),
     );
   }, [guard]);
 
@@ -780,19 +796,19 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const clearCompleted = useCallback(() => {
     const listId = stateRef.current.listId;
     if (!listId) return;
-    const checked = stateRef.current.items.filter((item) => item.isChecked);
-    if (checked.length === 0) return;
-    for (const item of checked) {
-      dispatch({ type: 'remove', id: item.id });
-    }
+    const ids = stateRef.current.items.filter((item) => item.isChecked).map((item) => item.id);
+    if (ids.length === 0) return;
+    // One action, so the reducer can snapshot the whole batch for undo.
+    dispatch({ type: 'clear-completed' });
+    // Delete exactly the rows we just took off screen, by id: a blanket
+    // "every checked row in this list" could also sweep away something the
+    // other phone ticked a second ago, which undo would then not bring back.
     guard(
       'clear completed',
       supabase
         .from('shopping_list_items')
         .update({ deleted_at: new Date().toISOString() })
-        .eq('list_id', listId)
-        .eq('is_checked', true)
-        .is('deleted_at', null),
+        .in('id', ids),
     );
   }, [guard]);
 
@@ -870,7 +886,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
-      undoItem: state.removedItem,
+      undoItems: state.removed,
       undoRemove,
       dismissUndo,
       clearCompleted,
@@ -893,7 +909,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       toggleItem,
       updateItem,
       removeItem,
-      state.removedItem,
+      state.removed,
       undoRemove,
       dismissUndo,
       clearCompleted,

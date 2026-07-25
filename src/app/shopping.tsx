@@ -23,7 +23,7 @@ import {
   type Category,
   type ShoppingItem,
 } from '@/lib/shopping-list';
-import { Spacing, tabBarClearance } from '@/constants/theme';
+import { tabBarClearance, toastBottomInset } from '@/constants/theme';
 
 function ShoppingListScreen() {
   const {
@@ -41,7 +41,7 @@ function ShoppingListScreen() {
     toggleItem,
     updateItem,
     removeItem,
-    undoItem,
+    undoItems,
     undoRemove,
     dismissUndo,
     clearCompleted,
@@ -228,15 +228,22 @@ function ShoppingListScreen() {
         onChange={setCategoryOrder}
       />
 
-      {/* Keyed on the deleted item so each new delete remounts the toast –
-          fresh entrance and a fresh 5s countdown. Sits above the tab bar. */}
-      {undoItem != null && (
+      {/* Keyed on what was deleted so each new delete remounts the toast –
+          fresh entrance and a fresh 5s countdown. Sits above the tab bar (or
+          the keyboard, which the toast handles itself). One item reads
+          "Milk deleted"; a cleared done section reads "4 items cleared". */}
+      {undoItems.length > 0 && (
         <UndoToast
-          key={undoItem.id}
-          name={undoItem.name}
+          key={undoItems.map((item) => item.id).join(',')}
+          name={
+            undoItems.length === 1
+              ? undoItems[0].name
+              : `${undoItems.length} items`
+          }
+          verb={undoItems.length === 1 ? 'deleted' : 'cleared'}
           onUndo={undoRemove}
           onDismiss={dismissUndo}
-          bottomInset={tabBarClearance(insets, Spacing.one)}
+          bottomInset={toastBottomInset(insets)}
         />
       )}
     </SafeAreaView>

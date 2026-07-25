@@ -84,12 +84,6 @@ below is open.
       repair path if a contribution ever fails mid-write (offline at the wrong
       moment – nothing retries it). If a repair affordance is ever wanted, the
       plumbing is already there.
-- [ ] **The bulk "Clear done items" has no undo.** Every single-item delete
-      got a Deleted · Undo toast 2026-07-24, but clearing the whole done
-      section at once – the most destructive action on the shopping list –
-      still has none. Kept out of the design blessing 2026-07-25 because it is
-      a missing feature, not an undesigned one. The soft delete is already
-      wired (`deleted_at`), so an undo just has to clear it for the batch.
 - [ ] **DS nit**: color/text/contrast-text in the DS repo aliases
       color.text.primary (dark) while Figma renders it near-white – looks like
       a wiring slip in the DS token source, check on the DS side (2026-07-12).
@@ -145,6 +139,20 @@ below is open.
 
 ## Decisions log (recent)
 
+- **2026-07-25 – undo now covers the bulk clear too.** "Clear done items" was
+  the last delete without a safety net, and the most destructive one. It now
+  shows "N items cleared · Undo" and one tap brings the whole batch back. Two
+  things surfaced while building it:
+  - The earlier reducer refactor (same day) had quietly given bulk clear a
+    BROKEN undo: `clearCompleted` dispatched one `remove` per item, so the
+    snapshot ended up as whichever item happened to be last, and a toast
+    appeared naming one arbitrary row that Undo alone restored. Claude's own
+    regression, caught while implementing the real feature. Bulk clear is now
+    a single `clear-completed` action so the reducer snapshots the batch.
+  - The server delete now targets the exact ids taken off screen instead of
+    "every checked row in this list". The blanket version could also sweep
+    away something the OTHER phone ticked a second earlier – which undo would
+    then not bring back, because it was never in the snapshot.
 - **2026-07-25 – every improvised screen blessed as designed** (Thomas, after
   walking them on device: *"every designed-block is approved and looks
   great"*). These stop being improvisations and become the design: the **undo

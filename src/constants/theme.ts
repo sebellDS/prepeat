@@ -71,3 +71,19 @@ export const MaxContentWidth = 800;
 export function tabBarClearance(insets: { bottom: number }, extra = 0): number {
   return insets.bottom + BottomTabInset + extra;
 }
+
+/**
+ * Bottom offset for the floating undo toast, so it clears the tab bar with a
+ * ~24px gap (Thomas, 2026-07-25).
+ *
+ * Deliberately NOT tabBarClearance(): the tab bar is a NATIVE iOS component
+ * (expo-router NativeTabs) whose real height the app cannot read, and
+ * BottomTabInset (50) turns out to overshoot it badly – measuring on device
+ * gave an 82px gap at +4 and 112px at +24, i.e. the toast was floating far too
+ * high. This value is tuned from those measurements instead of derived.
+ * Re-measure if the tab bar design changes; a phone with no home indicator
+ * (insets.bottom 0) has a different tab bar again and is untested.
+ */
+export function toastBottomInset(insets: { bottom: number }): number {
+  return insets.bottom + Spacing.three;
+}
