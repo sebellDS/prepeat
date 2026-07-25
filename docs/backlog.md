@@ -24,9 +24,16 @@ below is open.
       [the tester guide](testflight-tester-guide.md), written for a
       non-technical tester to follow unaided.
       Everything else in the TestFlight pipeline works end to end (EAS cloud
-      build → `eas submit` → TestFlight; builds 3-9 shipped, Thomas installs
-      and runs from it). Closing this also closes the weekly-signing chore
-      below.
+      build → `eas submit` → TestFlight; builds 3-10 shipped, Thomas installs
+      and runs from it). **Build 10 (2026-07-25) is the current one** and
+      carries everything from that day – point Pia at it once she accepts.
+      Closing this also closes the weekly-signing chore below.
+      - [ ] Thomas: install build 10 from TestFlight and check it LAUNCHES.
+            The dev variant cannot prove this – a production build is signed
+            and packaged differently, and has broken twice before (build 4
+            crashed on missing env vars, build 6 shipped a corrupt icon).
+            This build's log confirms the Supabase vars loaded, so it should
+            be fine, but check before telling Pia to accept.
 
 ## Known bugs (open)
 
@@ -54,11 +61,6 @@ below is open.
       guideline 4.8 only forces it when you also offer a third-party login
       (Google/Facebook), and Prep+Eat only offers email-code sign-in. An
       optional convenience.
-- [ ] **Poll App Store Connect from `scripts/eas-submit-ios.sh`** for the
-      build going VALID, as the real done-signal – `eas submit` can hang both
-      when stuck AND after success, so the CLI isn't trustworthy. The 600s
-      watchdog already kills a genuinely-stuck submit, so this is polish.
-
 ## Later (v1.1+)
 
 - [ ] **Merge two households / "copy a recipe to my other household"** – the
@@ -139,6 +141,20 @@ below is open.
 
 ## Decisions log (recent)
 
+- **2026-07-25 – build 10 shipped to TestFlight, and the submit script now
+  ends with a fact.** Everything from the day went up in one build: decision
+  #8, the undo toasts (including the bulk clear), the reorder gap animation,
+  the recipe menu, the keyboard-aware toast, the swap sync fix and the tab-bar
+  spacing. Confirmed VALID via Apple's own API, not the CLI.
+  That confirmation is now built in. `scripts/asc-build-state.mjs` asks App
+  Store Connect for the newest build's processingState, and
+  `eas-submit-ios.sh` ends by polling it for up to 20 minutes – so a submit
+  finishes by telling you what Apple actually has, instead of a hopeful
+  message. This closes the "poll ASC for VALID" item: `eas submit` has been
+  seen spinning long AFTER a successful upload as well as during a stuck one,
+  so its own output proves nothing either way. The 600s watchdog still handles
+  the genuinely-stuck case; the ES256 JWT details (aud, and dsaEncoding
+  'ieee-p1363' – node's default DER is rejected) are in the script.
 - **2026-07-25 – the tab bar was being counted twice** (commit af982ae).
   Chasing a toast that floated too high turned into a real find: every scroll
   screen carried ~50pt of dead space at the bottom. `tabBarClearance` was

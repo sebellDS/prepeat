@@ -13,6 +13,11 @@
 # killed and the script exits non-zero, telling you to check and retry –
 # rather than hanging forever. Retrying is free: the build is unchanged and
 # Apple ignores a duplicate upload of a build number it already has.
+#
+# The run then ends by asking App Store Connect directly whether the build is
+# VALID (scripts/asc-build-state.mjs) – added 2026-07-25 after `eas submit`
+# was seen spinning long AFTER a successful upload as well as during a stuck
+# one. Apple's answer is the only trustworthy one.
 
 set -e
 
@@ -62,4 +67,9 @@ if (( STATUS != 0 )); then
   exit $STATUS
 fi
 
-echo "==> Uploaded. Apple now processes it (5-15 min) before it shows in TestFlight."
+echo "==> Uploaded. Waiting for Apple to finish processing it."
+echo "    (The CLI's success message is not proof – it has spun long after a"
+echo "     successful upload AND during a stuck one. Apple's own answer is.)"
+
+# The real done-signal: the build showing VALID in App Store Connect.
+node scripts/asc-build-state.mjs --wait 20
