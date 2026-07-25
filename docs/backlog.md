@@ -101,6 +101,37 @@ below is open.
 - [ ] AI first-guess for categories, in front of the learned memory
       (decision #7 names this as the natural v1.1 upgrade).
 - [ ] Smart quantity parsing when adding items ("Milk 2L" → name + quantity).
+- [ ] **Show where an imported recipe came from** (Thomas, 2026-07-25).
+      SMALLER THAN IT LOOKS – the data is already there: the importer captures
+      the page it read (`sourceUrl`, `recipe-import.ts`) and `saveRecipe`
+      writes it to `recipes.source_url`, but `fetchRecipe` never selects it
+      back, so nothing in the app can show it. Every URL-imported recipe since
+      2026-07-12 has quietly been storing its origin. To build: add the column
+      to the fetch, surface it on the recipe detail ("From valdemarsro.dk",
+      tappable to open the original), and decide whether the edit form should
+      let you clear or change it. Wants a small design.
+- [ ] **Share a recipe** (Thomas, 2026-07-25): send one out of the household –
+      to a friend, or to your own other kitchen. Questions to settle before
+      building: does the recipient need Prep+Eat (deep link into the app) or
+      should it be readable by anyone (a web page or plain text/PDF)? Does the
+      recipe get COPIED to them (their own editable version, matching how
+      copy-on-leave already works) or merely displayed? Photos are in a
+      members-only bucket, so a public share needs a story for the image.
+      Note the overlap with the deferred merge item under Later (v1.1+) –
+      "copy a recipe to my other household" is the same mechanic pointed
+      inward, so they are probably one feature and should be designed together.
+- [ ] **Statistics on the plan – the app learns your habits** (Thomas,
+      2026-07-25): the household has been building a real history in
+      `meal_plan_entries` since July (every meal, its day and its servings),
+      and today nothing reads it back except the "recently planned" ordering
+      in the picker. Ideas it could support: what you actually cook most; what
+      has not appeared in a while ("you haven't made X since May"); which day
+      each meal tends to land on; seasonal patterns once there is a year of
+      data; a nudge when a week looks like a repeat of the last one. Could
+      feed planning directly – suggesting a week from your own rotation rather
+      than a blank slate. No new data collection needed for the first version,
+      which makes it cheap to try. Worth deciding early how much is a screen
+      you visit versus quiet suggestions inside the existing flow.
 
 ## Pre-launch checklist (v1 ship)
 
