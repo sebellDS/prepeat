@@ -141,6 +141,63 @@ set of constants in app code, not a table. AI-assisted first guesses are a
 possible v1.1 upgrade that would slot in front of the same memory table
 without redesign.
 
+### 8. PROPOSED: every week's list follows its plan (retire the "link" step)
+
+**Status: proposal awaiting Thomas's decision.** Raised by Thomas after seeing
+the shopping list update live on two phones: *"why do we need the button
+'Update shopping list'? It might actually confuse the user."*
+
+**How it works today.** A week's plan only reaches its shopping list once
+somebody presses **"Add all to shopping list"**, which stamps
+`meal_plans.pushed_to_list_at`. Before that stamp, nothing flows – adding,
+swapping or removing a meal changes no list. After it, everything reconciles
+automatically (A + rails, decision below), and the button relabels to
+**"Update shopping list"** while calling the same function, which is
+idempotent – *a re-push adds nothing*. So the button does two unrelated jobs
+under one label: a meaningful opt-in before linking, and a no-op after it.
+
+**Why the opt-in existed.** Originally there was ONE shopping list per
+household, filled from the plan by an explicit action (2026-07-07). The gate
+did real work: it stopped a future week's ingredients landing in the list you
+were shopping from today.
+
+**Why it no longer earns its keep.** Migration 0008 made lists **per week**
+and A + rails made them **live** (both 2026-07-16). Ingredients planned for
+week 33 now land on *week 33's* list, behind its own week picker – they cannot
+pollute this week's shop. The problem the gate solved no longer exists, but the
+gate survived. What remains is a "moment of intent", and with per-week lists
+that moment is simply opening the Shopping tab for that week: the list being
+ready when you arrive is the product working, not something to authorise.
+
+**The proposal.** Drop the unlinked state. Every week's list follows its plan
+from the moment the plan has anything in it. Plan a meal → it is on that week's
+list. Keep a quiet repair/reset action (see consequence 2), but never a primary
+button implying the list is stale.
+
+**Three consequences to settle before building:**
+
+1. **After you have shopped** – THE ONE REAL ARGUMENT FOR KEEPING AN OPT-IN,
+   and the call Thomas has to make. You tick everything off, then swap
+   Thursday's dinner. The new ingredients appear on a list you considered
+   finished. Claude's view: that is correct – you *do* need to buy them, and
+   A + rails already protects checked and hand-edited lines from being
+   rewritten. But it is a genuine behaviour change and should be chosen, not
+   inherited.
+2. **The Shopping empty state changes.** "Time to prep / Fill from weekly
+   plan" only makes sense while a list can sit empty despite a plan existing.
+   Remove the gate and that button has no job; the empty state needs new copy,
+   probably pointing at the Plan tab. A quiet "reset this week's list" escape
+   hatch (option B in the A + rails decision) is still worth keeping somewhere
+   secondary – it is also the only repair path if a contribution ever fails
+   mid-write (offline at the wrong moment); nothing retries it today.
+3. **Existing weeks need a one-time reconcile**, or any week left unlinked
+   would sit stale forever.
+
+**What it touches:** the Plan screen's primary CTA and the Shopping empty
+state – both designed screens, so they want drawing rather than improvising;
+the `pushed_to_list_at` gate in `src/lib/meal-plan.tsx` (contribute / withdraw
+/ rescale all check it); and a migration for consequence 3.
+
 ## Data model
 
 ### Users and households
@@ -266,6 +323,11 @@ without redesign.
 
 Things to decide before coding, but not necessarily before project setup:
 
+- **Should a week's shopping list follow its plan automatically, with no
+  "Add all to shopping list" step?** Full proposal in decision #8 above. The
+  one call that needs making: after you have shopped and ticked everything
+  off, should a later plan change put new ingredients back on that list?
+  (Raised 2026-07-25.)
 - Should the shopping list be kept after the week is over (history), or
   archived/deleted?
 - How is portion adjustment handled on the weekly plan? (the servings_override

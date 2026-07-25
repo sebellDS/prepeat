@@ -169,6 +169,19 @@ All verified still present 2026-07-24.
       dialog) that kills a leaked code at once. Sheet rebuilt to the Figma
       frame "Householde – invite" (271:14935) after review.
 
+## Awaiting a decision from Thomas
+
+- [ ] **Retire the "Add all to shopping list" / "Update shopping list" step?**
+      Thomas raised it 2026-07-25 after seeing the list update live on two
+      phones: once a week is linked the button is a no-op (the re-push is
+      idempotent) while implying the list is stale – it teaches the wrong model
+      of the app's core feature. Written up as PROPOSED decision #8 in
+      [projektgrundlag.md](projektgrundlag.md), with the three consequences and
+      the one call Thomas has to make (after you have shopped, should a later
+      plan change put new ingredients back on the list?). Touches two designed
+      screens (Plan CTA, Shopping empty state) so they want drawing first.
+      Don't start pulling the gate out until it's settled.
+
 ## Code debts (small, known, deliberate)
 
 - [ ] **Unused `households.image_url` column** – the household image was
