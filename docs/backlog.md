@@ -64,23 +64,12 @@ sliding out of view).
 
 ## Code debts (small, known, deliberate)
 
-- [ ] **Two dead columns** – migration
-      `0022_drop_dead_columns.sql` is WRITTEN AND COMMITTED but NOT YET
-      APPLIED on Supabase. Thomas runs it in the SQL editor (click once to
-      clear any selection first, or only the highlighted text runs). Drops
-      `households.image_url` and `meal_plans.pushed_to_list_at`.
-      Not as mechanical as it looked: `pushed_to_list_at` was still SELECTed
-      in four meal-plan queries and still STAMPED by `push_plan_to_list`, so
-      the migration replaces that function first and the client stopped
-      reading the column in the same commit. Dropping a column is
-      irreversible – but the app no longer touches either one, so applying it
-      late is harmless.
-- [x] **`fillFromWeeklyPlan` is unreachable from the UI** – reviewed
-      2026-07-27, still KEPT DELIBERATELY, no change wanted. It is the "reset
-      this week's list" escape hatch from the A + rails decision and the only
-      repair path if a contribution ever fails mid-write (offline at the wrong
-      moment – nothing retries it). Its doc comment now says so, instead of
-      describing the retired push-then-link flow.
+- **NOT A DEBT – `fillFromWeeklyPlan` is unreachable from the UI on purpose.**
+      Standing note so it stops being re-flagged as dead code (last reviewed
+      2026-07-27). It is the "reset this week's list" escape hatch from the
+      A + rails decision and the only repair path if a contribution ever fails
+      mid-write (offline at the wrong moment – nothing retries it). Its doc
+      comment and its RPC `push_plan_to_list` both say so.
 - [ ] **DS nit** (diagnosed 2026-07-27, fix is in FIGMA not in code):
       in the **prep-eat** brand `color/text/contrast-text` aliases
       `{color.text.primary}` – i.e. the dark ink #4F4230 – where the **sebell**
