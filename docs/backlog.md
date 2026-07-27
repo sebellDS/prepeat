@@ -44,11 +44,6 @@ below is open.
       foreground refetch repairs the data at once – but it reads as wrong.
       Fix would be to drive the badge off the last successful fetch as well as
       the socket state. Cosmetic, not urgent.
-- [ ] **Row content may render BLANK while swiped open** – spotted in a
-      2026-07-25 screenshot: the swiped shopping row showed the ⋯/edit/trash
-      actions but no item name or checkbox. UNCONFIRMED, may just be the swipe
-      shifting content out of view. Watch for it; if it recurs, dig into
-      ItemRow / ReanimatedSwipeable.
 
 ## Conditional – only if it bites
 
