@@ -470,8 +470,18 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     removed: [],
   });
   const [live, setLive] = useState<LiveStatus>('connecting');
+  // Read back inside refresh(), which has to stay stable (the realtime effect
+  // depends on it – putting `live` in its deps would rebuild the channel on
+  // every status change).
+  const liveRef = useRef(live);
+  useEffect(() => {
+    liveRef.current = live;
+  }, [live]);
   // Bumped to re-run the boot effect after a launch-time load failure.
   const [bootAttempt, setBootAttempt] = useState(0);
+  // Bumped to rebuild the realtime channel once a fetch proves the network is
+  // back – see refresh().
+  const [channelAttempt, setChannelAttempt] = useState(0);
   // Week navigation (designed 2026-07-16): every week has its own list.
   // Reachable weeks mirror the plan's rule – existing lists, weeks with a
   // plan, and the current week; two weeks back at most.
@@ -529,6 +539,18 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
         memory: prefs.memory,
         categoryOrder: sanitizeOrder(prefs.categoryOrder ?? stateRef.current.categoryOrder),
       });
+      // The fetch just succeeded, so the network is back – but the socket
+      // only notices its own death at the next heartbeat (25s), which left
+      // "Offline" sitting over visibly fresh items (Thomas, 2026-07-25).
+      // Rebuild the channel now: subscribing on a disconnected socket
+      // reconnects it, so 'live' arrives in about a second instead of after
+      // the heartbeat timeout plus backoff. The badge only goes as far as
+      // 'connecting' here – reaching the server does not prove the stream is
+      // flowing, and only SUBSCRIBED proves that.
+      if (liveRef.current === 'offline') {
+        setLive('connecting');
+        setChannelAttempt((n) => n + 1);
+      }
     } catch (error) {
       console.warn('[shopping] refresh failed', error);
     }
@@ -618,7 +640,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   // Realtime: stream the other phones' item changes into local state. The
   // subscribe status doubles as the Live badge; a RE-subscribe (reconnect)
   // refetches to cover anything missed while disconnected – the first subscribe
-  // skips it, since the boot (or viewWeek) already loaded this list.
+  // skips it, since the boot (or viewWeek) already loaded this list. A bump of
+  // channelAttempt rebuilds the channel from scratch and skips the refetch for
+  // the same reason: the refresh that triggered it has just run.
   useEffect(() => {
     const listId = state.listId;
     if (!listId) return;
@@ -659,7 +683,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [state.listId, refresh]);
+  }, [state.listId, refresh, channelAttempt]);
 
   // Coming back to the foreground refetches: realtime reconnects on its own,
   // but events missed while backgrounded would otherwise leave stale state.

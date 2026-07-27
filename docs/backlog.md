@@ -38,19 +38,9 @@ below is open.
 
 ## Known bugs (open)
 
-- [ ] **Live/Offline badge lags the data** (two-phone test 2026-07-25) –
-      FIX WRITTEN 2026-07-27, NOT YET VERIFIED ON DEVICE. Coming back from
-      airplane mode the items synced visibly BEFORE the badge returned to
-      "Live", because the badge followed the realtime channel alone and
-      realtime-js only notices a dead socket at its next heartbeat (25s),
-      then reconnects on a stepped backoff of up to 10s more.
-      `refresh()` in shopping-list.tsx now rebuilds the channel when a fetch
-      succeeds while the badge says Offline – subscribing on a disconnected
-      socket reconnects it at once, so "Live" follows in about a second. The
-      badge only goes as far as "Connecting" off a fetch: reaching the server
-      does not prove the stream is flowing, and only SUBSCRIBED does.
-      To close this: airplane mode on, change something on the other phone,
-      airplane mode off, and watch the badge catch up with the items.
+None. The last two closed on 2026-07-27: the badge lag (fixed, see the
+decisions log) and the "blank swiped row" (never a bug – a short name
+sliding out of view).
 
 ## Conditional – only if it bites
 
@@ -165,6 +155,28 @@ below is open.
 
 ## Decisions log (recent)
 
+- **2026-07-27 – the Live badge now believes a fetch, but only so far**
+  (verified on device by Thomas). The badge lag was never a race in our code:
+  realtime-js only notices a dead socket at its next **heartbeat, 25s**
+  (CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL), then reconnects on a stepped
+  backoff of up to 10s more, while the foreground refetch repairs the DATA the
+  instant the network returns. Two signals, two clocks – so "Offline" sat over
+  visibly fresh items. `refresh()` now rebuilds the realtime channel when a
+  fetch succeeds while the badge says Offline; `subscribe()` calls
+  `socket.connect()` itself on a disconnected socket, so "Live" arrives in
+  about a second instead of after the heartbeat plus backoff.
+  The restraint is the part worth keeping: a successful fetch only moves the
+  badge to **Connecting**, never straight to Live. Reaching the server proves
+  you have a network; it does not prove the other devices' edits are
+  streaming in, and only SUBSCRIBED proves that. The reverse direction was
+  deliberately left alone – a FAILED fetch does not force Offline, because
+  that would invent a new wrong-badge case (one flaky request flashing
+  Offline while realtime is fine) to fix one the socket already handles.
+  Also settled that day: the "blank swiped row" was never a bug (Thomas read
+  it off the screenshot – a short name slides out of view when the row
+  translates left by the two 56px actions), and the iPad joined the test
+  fleet, which is why the badge could be verified without borrowing Pia's
+  phone.
 - **2026-07-26 – imported recipes credit their source.** Raised as an idea the
   night before and built the same session, because the data turned out to be
   there already: the importer has stored `recipes.source_url` since
