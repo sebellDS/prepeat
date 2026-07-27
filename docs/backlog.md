@@ -65,22 +65,35 @@ sliding out of view).
 
 ## Code debts (small, known, deliberate)
 
-- [ ] **Two dead columns to drop in one migration when convenient** – both
-      harmless meanwhile:
-      - `households.image_url` – the household image was dropped from the
-        design 2026-07-22; nothing reads or writes it (added migration 0010).
-      - `meal_plans.pushed_to_list_at` – vestigial since decision #8
-        (2026-07-25); migration 0021 used it once to find weeks needing the
-        backfill, and nothing reads it now.
-- [ ] **`fillFromWeeklyPlan` is unreachable from the UI** (since decision #8
-      removed the empty state's button). KEPT DELIBERATELY: it is the "reset
-      this week's list" escape hatch from the A + rails decision, and the only
+- [ ] **Two dead columns** – migration
+      `0022_drop_dead_columns.sql` is WRITTEN AND COMMITTED but NOT YET
+      APPLIED on Supabase. Thomas runs it in the SQL editor (click once to
+      clear any selection first, or only the highlighted text runs). Drops
+      `households.image_url` and `meal_plans.pushed_to_list_at`.
+      Not as mechanical as it looked: `pushed_to_list_at` was still SELECTed
+      in four meal-plan queries and still STAMPED by `push_plan_to_list`, so
+      the migration replaces that function first and the client stopped
+      reading the column in the same commit. Dropping a column is
+      irreversible – but the app no longer touches either one, so applying it
+      late is harmless.
+- [x] **`fillFromWeeklyPlan` is unreachable from the UI** – reviewed
+      2026-07-27, still KEPT DELIBERATELY, no change wanted. It is the "reset
+      this week's list" escape hatch from the A + rails decision and the only
       repair path if a contribution ever fails mid-write (offline at the wrong
-      moment – nothing retries it). If a repair affordance is ever wanted, the
-      plumbing is already there.
-- [ ] **DS nit**: color/text/contrast-text in the DS repo aliases
-      color.text.primary (dark) while Figma renders it near-white – looks like
-      a wiring slip in the DS token source, check on the DS side (2026-07-12).
+      moment – nothing retries it). Its doc comment now says so, instead of
+      describing the retired push-then-link flow.
+- [ ] **DS nit** (diagnosed 2026-07-27, fix is in FIGMA not in code):
+      in the **prep-eat** brand `color/text/contrast-text` aliases
+      `{color.text.primary}` – i.e. the dark ink #4F4230 – where the **sebell**
+      brand has it as a literal near-white #FBFBF9. That asymmetry between the
+      two brand modes is the wiring slip; Figma renders near-white, so the
+      export is what is wrong. `figma-exports/*.tokens.json` are generated FROM
+      Figma, so hand-editing them would be overwritten – the variable has to be
+      repointed in the Figma file, then re-exported and rebuilt.
+      NO EFFECT ON THE APP TODAY: the only contrast-text the app consumes is
+      `error.contrast-text` (#FFFFFF), which is correct in both brands. Nothing
+      uses text/success/warning/info contrast-text. So this is DS hygiene, not
+      a bug in Prep+Eat, and it can wait for the next DS pass.
 
 ## Ideas – not yet committed
 

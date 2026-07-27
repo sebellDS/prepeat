@@ -1,8 +1,8 @@
 // Plan → shopping list reconciliation ("A + rails", decided 2026-07-16).
 //
-// Once a week's plan has been pushed to the shopping list
-// (meal_plans.pushed_to_list_at), every plan edit flows into the list
-// automatically – but only "clean" lines are touched silently:
+// Every plan edit flows into the week's list automatically (decision #8,
+// 2026-07-25 – there is no longer an opt-in to push a week first), but only
+// "clean" lines are touched silently:
 //   - clean (unchecked, not hand-edited)  → quantity updates in place
 //   - checked                             → left alone; the shopper sees a
 //                                           "changed in the plan" marker
@@ -66,10 +66,11 @@ export async function rescaleEntry(
 }
 
 /**
- * "Add all to shopping list": sweeps every live entry of the plan into its
- * week's list and stamps pushed_to_list_at – from then on plan edits reconcile
- * automatically. Runs as one atomic server call; idempotent (a re-push adds
- * nothing). Returns the number of new list lines.
+ * Sweeps every live entry of the plan into its week's list. Unreachable from
+ * the UI since decision #8 retired the "Update shopping list" button – kept as
+ * the "reset this week's list" escape hatch and the only repair path if a
+ * contribution ever fails mid-write. Runs as one atomic server call;
+ * idempotent (a re-push adds nothing). Returns the number of new list lines.
  */
 export async function pushPlanToList(planId: string): Promise<number> {
   const { data, error } = await supabase.rpc("push_plan_to_list", {

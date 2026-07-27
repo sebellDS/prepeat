@@ -44,7 +44,6 @@ export const WEEKS_BACK_LIMIT = 2;
 export interface PlanWeek {
   id: string;
   weekStart: string; // 'YYYY-MM-DD', always a Monday
-  pushedToListAt: number | null;
   updatedAt: number;
 }
 
@@ -65,7 +64,6 @@ export interface PlanEntry {
 interface PlanRow {
   id: string;
   week_start_date: string;
-  pushed_to_list_at: string | null;
   updated_at: string;
   deleted_at: string | null;
 }
@@ -88,9 +86,6 @@ function rowToWeek(row: PlanRow): PlanWeek {
   return {
     id: row.id,
     weekStart: row.week_start_date,
-    pushedToListAt: row.pushed_to_list_at
-      ? Date.parse(row.pushed_to_list_at)
-      : null,
     updatedAt: Date.parse(row.updated_at),
   };
 }
@@ -195,7 +190,7 @@ async function fetchWeeks(householdId: string): Promise<PlanWeek[]> {
   const minWeek = addWeeksKey(weekStartOf(new Date()), -WEEKS_BACK_LIMIT);
   const { data, error } = await supabase
     .from("meal_plans")
-    .select("id, week_start_date, pushed_to_list_at, updated_at, deleted_at")
+    .select("id, week_start_date, updated_at, deleted_at")
     .eq("household_id", householdId)
     .is("deleted_at", null)
     .gte("week_start_date", minWeek)
@@ -226,7 +221,7 @@ async function getOrCreatePlan(
 ): Promise<PlanWeek> {
   const { data, error } = await supabase
     .from("meal_plans")
-    .select("id, week_start_date, pushed_to_list_at, updated_at, deleted_at")
+    .select("id, week_start_date, updated_at, deleted_at")
     .eq("household_id", householdId)
     .eq("week_start_date", weekStart)
     .is("deleted_at", null)
@@ -241,14 +236,14 @@ async function getOrCreatePlan(
       week_start_date: weekStart,
       created_by_user_id: userId,
     })
-    .select("id, week_start_date, pushed_to_list_at, updated_at, deleted_at")
+    .select("id, week_start_date, updated_at, deleted_at")
     .single();
   if (!insertError) return rowToWeek(created);
   // Unique index: another phone created this week first – use theirs.
   if (insertError.code === "23505") {
     const { data: existing, error: retryError } = await supabase
       .from("meal_plans")
-      .select("id, week_start_date, pushed_to_list_at, updated_at, deleted_at")
+      .select("id, week_start_date, updated_at, deleted_at")
       .eq("household_id", householdId)
       .eq("week_start_date", weekStart)
       .is("deleted_at", null)
