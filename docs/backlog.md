@@ -175,9 +175,22 @@ below is open.
   his follow-up. It opens the phone's browser rather than an in-app one: it is
   somebody else's site, and leaving the app makes that plain. Hand-typed
   recipes have no source and show nothing.
-  Still open if wanted: the edit form cannot clear or change a source, and
-  `sourceLabel()` shows the host only – the full URL would wrap over several
-  lines in that style.
+  Finished 2026-07-27: the source is now a **field on the recipe form** (last
+  of the facts, under Servings, mirroring the detail screen), pre-filled by an
+  import, loading the existing value when editing, and saving null when
+  emptied so the credit can be dropped. Behaviour change worth knowing:
+  `updateRecipeFacts` never touched `source_url` before, so editing left it
+  alone – now the field's contents win, which is the point, but an edit CAN
+  clear a source.
+  Same round: **Edit recipe** joined the ⋯ menu between "Add ingredients to
+  shopping list" and "Delete recipe" (Thomas), keeping its button at the
+  bottom of the page too so a long recipe does not have to be scrolled. Both
+  call one `openEdit` handler – the routing has a subtlety worth not
+  duplicating (edit must stay in whichever tab's stack the detail is rendered
+  in, so saving returns to the plan when opened from there).
+  Still open if wanted: `sourceLabel()` shows the host only – a full recipe
+  URL would wrap over several lines in that quiet style. The form field is
+  IMPROVISED (no Figma frame), like the detail line.
 - **2026-07-25 – build 10 shipped to TestFlight, and the submit script now
   ends with a fact.** Everything from the day went up in one build: decision
   #8, the undo toasts (including the bulk clear), the reorder gap animation,
