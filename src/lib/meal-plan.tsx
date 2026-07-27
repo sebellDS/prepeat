@@ -387,6 +387,8 @@ interface MealPlanContextValue {
   undoRemoveEntry: () => void;
   /** Drop the undo offer without restoring (the toast timed out). */
   dismissUndoEntry: () => void;
+  /** Re-run the initial load after it failed at launch (the offline retry). */
+  retry: () => void;
 }
 
 const MealPlanContext = createContext<MealPlanContextValue | null>(null);
@@ -417,6 +419,9 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     undoEntryRef.current = undoEntry;
   }, [undoEntry]);
   const [liveStatus, setLive] = useState<LiveStatus>("connecting");
+  // Bumped to re-run the boot effect after a launch-time load failure (the
+  // same wiring as the shopping list's bootAttempt).
+  const [bootAttempt, setBootAttempt] = useState(0);
   // Callbacks read the latest state through a ref so they can stay stable.
   const stateRef = useRef(state);
   useEffect(() => {
@@ -455,6 +460,16 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  // Re-run the initial load after it failed. Nothing else recovers from it:
+  // a failed boot leaves the tab with no weeks, and every other path either
+  // needs one or waits for a realtime event that a dead socket never brings.
+  // Back to 'connecting' so the badge and the retry screen both reflect the
+  // new attempt.
+  const retry = useCallback(() => {
+    setLive("connecting");
+    setBootAttempt((n) => n + 1);
+  }, []);
+
   // Boot: load the navigable weeks and the current week's entries.
   useEffect(() => {
     let cancelled = false;
@@ -475,7 +490,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [household.id, currentWeekStart]);
+  }, [household.id, currentWeekStart, bootAttempt]);
 
   // Realtime on the household's plans: a week created or pushed on another
   // phone appears here. Entry-level changes ride the per-week channel below.
@@ -896,6 +911,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       undoEntry,
       undoRemoveEntry,
       dismissUndoEntry,
+      retry,
     }),
     [
       state.ready,
@@ -917,6 +933,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       undoEntry,
       undoRemoveEntry,
       dismissUndoEntry,
+      retry,
     ],
   );
 

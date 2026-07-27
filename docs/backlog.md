@@ -37,24 +37,30 @@ below is open.
 
 ## Known bugs (open)
 
-- [ ] **A failed load leaves the Plan tab on a silent spinner forever** – the
-      reason the plan-loading outage below read as "won't load" instead of
-      "something went wrong".
-      `MealPlanProvider` only marks itself ready when the first fetch
-      SUCCEEDS, so any boot failure (this one, or simply being offline when
-      the app opens) shows an endless spinner with no message and no retry.
-      The shopping list has the same shape. NOT YET FIXED – needs a design
-      call from Thomas first: there is no Figma frame for a "couldn't load,
-      try again" state on Plan or Shopping.
+None.
 
-Closed 2026-07-27: **the Plan tab spinning forever on the phones** – migration
-0022 dropped `meal_plans.pushed_to_list_at` while the app the phones actually
-run (TestFlight build 10) still SELECTed it, so every plan load was rejected.
-Migration 0023 restored the column and Thomas ran it the same day; the plan
-loads again on build 10, with no new build and no reinstall. The rule that
-came out of it is in the decisions log. Also closed: the badge lag (fixed, see
-the decisions log) and the "blank swiped row" (never a bug – a short name
-sliding out of view).
+Closed 2026-07-27:
+
+- **The Plan tab spun forever on the phones.** Migration 0022 dropped
+  `meal_plans.pushed_to_list_at` while the app the phones actually run
+  (TestFlight build 10) still SELECTed it, so every plan load was rejected.
+  Migration 0023 restored the column and Thomas ran it the same day: the plan
+  loads again on build 10, with no new build and no reinstall. The rule that
+  came out of it is in the decisions log.
+- **A failed load left the Plan tab on a silent spinner** – the reason the
+  outage above read as "won't load" instead of "something went wrong".
+  `MealPlanProvider` only marked itself ready when the first fetch SUCCEEDED,
+  so any boot failure (that outage, or simply opening the app with no signal)
+  left a spinner with no message and no way out. Fixed by giving Plan the
+  retry screen the app already had in two other places: `HouseholdLoadError`
+  at launch and the shopping list's `LoadFailed`, both blessed as the design
+  on 2026-07-25. Thomas spotted that the pattern already existed – worth
+  checking for a precedent before calling something undesigned. Correcting a
+  wrong note from earlier the same day: Shopping did NOT share this flaw,
+  Plan was the only tab missing the recovery. **Not on the phones until the
+  next build** – unlike the migration, this one is app code.
+- **The Live badge lag** (fixed, see the decisions log) and the **"blank
+  swiped row"** (never a bug – a short name sliding out of view).
 
 ## Conditional – only if it bites
 
