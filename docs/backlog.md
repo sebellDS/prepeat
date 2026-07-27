@@ -125,9 +125,10 @@ sliding out of view).
       holds classes 42+45 in US/UK/CA/AU but NOT in the EU). The TAGLINE is
       not: "Prep Eat Repeat" is registered in the UK in class 9 (software),
       and Sistema Plastics holds "PREP. EAT. REPEAT." in class 21 via WIPO.
-      - [ ] **Register prepeat.dk and prepeat.eu** – both confirmed AVAILABLE
-            2026-07-27, and the only time-sensitive item here. (.com has been
-            taken since 2004 and is parked.)
+      Domains: we already own **prepeat.app** and **prepeat.love** (both
+      parked at Porkbun; .love registered 2026-06-12, the day the name was
+      decided). prepeat.dk and prepeat.eu are available if wanted defensively;
+      .com has been taken since 2004.
       - [ ] Decide whether to keep "Prep. Eat. Repeat." as the public tagline.
       - [ ] Attorney clearance before filing an EUTM (classes 9 + 42) or
             launching in the US/UK.

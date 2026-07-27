@@ -89,19 +89,25 @@ wrong, and the name is the part that is clear.
 
 | Domain | Status |
 |---|---|
-| **prepeat.dk** | **AVAILABLE** |
-| **prepeat.eu** | **AVAILABLE** |
+| **prepeat.app** | **OURS** – parked at Porkbun |
+| **prepeat.love** | **OURS** – registered 2026-06-12, the day the name was decided |
+| prepeat.dk | AVAILABLE |
+| prepeat.eu | AVAILABLE |
 | prepeat.com | Taken – registered 2004, expires 2027, registrar Annulet LLC. No website; parked. |
-| prepeat.app | Taken – DNS resolves, no working HTTPS |
-| prepeat.io | Taken – Italian food-service site |
+| prepeat.io | Taken – Italian food-service site branded "ItaliaFire" |
+
+Both owned domains resolve to the same Porkbun parking address
+(207.207.210.229) with no site configured, which is why an early check here
+mistook prepeat.app for a third party's.
 
 ## Suggested next steps
 
-1. **Register prepeat.dk and prepeat.eu now.** Both free, both cheap, and
-   "Prepeat" is already the project's plain-text form for slug, scheme and
-   handles. This is the one time-sensitive item here.
-2. **Treat the tagline as a separate decision from the name.** Using
+1. **Treat the tagline as a separate decision from the name.** Using
    "Prep. Eat. Repeat." in App Store marketing copy is where the exposure sits.
+2. **Optional, defensive: prepeat.dk.** We already own prepeat.app (the natural
+   home for an app, and .app enforces HTTPS) and prepeat.love, so nothing is
+   urgent. But .dk is the home market and costs little; .eu is more optional
+   still. Note that owning a domain gives no trademark rights either way.
 3. **If registering the mark:** an EU trade mark (EUTM) filed at EUIPO covers
    all 27 member states including Denmark in one application – roughly €850 for
    the first class, ~€50 for a second. Classes 9 and 42 would be the pair.
