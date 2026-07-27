@@ -267,6 +267,7 @@ export async function updateRecipeFacts(
       | "prepMinutes"
       | "cookMinutes"
       | "imageUrl"
+      | "sourceUrl"
     >
   >,
 ): Promise<void> {
@@ -278,6 +279,9 @@ export async function updateRecipeFacts(
   if (fields.prepMinutes !== undefined) patch.prep_minutes = fields.prepMinutes;
   if (fields.cookMinutes !== undefined) patch.cook_minutes = fields.cookMinutes;
   if (fields.imageUrl !== undefined) patch.image_url = fields.imageUrl;
+  // Editable since 2026-07-27 – including clearing it, so an explicit null is
+  // meaningful here and must not be treated as "leave alone".
+  if (fields.sourceUrl !== undefined) patch.source_url = fields.sourceUrl;
   const { error } = await supabase.from("recipes").update(patch).eq("id", id);
   if (error) throw error;
 }

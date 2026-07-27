@@ -152,6 +152,13 @@ export default function RecipeDetailScreen() {
     );
   };
 
+  // Reachable from both the "⋯" menu and the button at the bottom of the
+  // page. Edit stays in the stack we're rendered in: /recipes/[id] on the
+  // Recipes tab, /recipe/[id] when opened from the Plan tab (2026-07-18) – so
+  // saving lands back on this detail via back().
+  const openEdit = () =>
+    router.push(`${inPlanTab ? "/recipe" : "/recipes"}/new?id=${recipe.id}`);
+
   // Undo a swipe-delete: re-insert the snapshot (ingredient by sort order,
   // step at its old position), then reload from the server truth.
   const undoDelete = async () => {
@@ -218,7 +225,14 @@ export default function RecipeDetailScreen() {
       onPress: () => setDialog("shopping"),
     },
     // "Add ingredient/instruction" left this menu 2026-07-16 (feedback):
-    // ingredients and steps are edited inline on the lists below.
+    // ingredients and steps are edited inline on the lists below. Edit recipe
+    // joined it 2026-07-27 (Thomas) – it keeps its button at the bottom of the
+    // page too, so it is reachable without scrolling the whole recipe.
+    {
+      icon: "edit-note",
+      label: "Edit recipe",
+      onPress: openEdit,
+    },
     {
       icon: "delete",
       label: "Delete recipe",
@@ -448,14 +462,7 @@ export default function RecipeDetailScreen() {
           {/* Edit the recipe's facts (name, photo, times, servings) –
               requested back after the menu item was removed (2026-07-12). */}
           <Pressable
-            // Edit stays in the stack we're rendered in: /recipes/[id] on
-            // the Recipes tab, /recipe/[id] when opened from the Plan tab
-            // (2026-07-18) – so saving lands back on this detail via back().
-            onPress={() =>
-              router.push(
-                `${inPlanTab ? "/recipe" : "/recipes"}/new?id=${recipe.id}`,
-              )
-            }
+            onPress={openEdit}
             accessibilityRole="button"
             className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium border-2 border-button-outline-border-enabled py-comp-large"
           >

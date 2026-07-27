@@ -88,7 +88,9 @@ export default function AddRecipeScreen() {
   const [stepSheet, setStepSheet] = useState<{ index: number } | "add" | null>(
     null,
   );
-  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  // Held as a plain string so the field can be typed in and cleared; saved as
+  // null when empty. Filled by an import, and editable ever since (2026-07-27).
+  const [sourceUrl, setSourceUrl] = useState("");
 
   useEffect(() => {
     if (!editing) return;
@@ -100,6 +102,7 @@ export default function AddRecipeScreen() {
         setCook(recipe.cookMinutes != null ? String(recipe.cookMinutes) : "");
         setServings(recipe.servings);
         setExistingPhotoUrl(recipe.imageUrl);
+        setSourceUrl(recipe.sourceUrl ?? "");
         setIngredients(
           recipe.ingredients.map((ingredient) => ({
             name: ingredient.name,
@@ -150,6 +153,8 @@ export default function AddRecipeScreen() {
   const save = async () => {
     const trimmedTitle = title.replace(/\s+/g, " ").trim();
     if (!trimmedTitle || busy) return;
+    // An emptied field means "no source", not an empty string.
+    const trimmedSource = sourceUrl.trim() || null;
     setBusy(true);
     try {
       let imageUrl = existingPhotoUrl;
@@ -164,6 +169,7 @@ export default function AddRecipeScreen() {
           prepMinutes: parseMinutes(prep),
           cookMinutes: parseMinutes(cook),
           imageUrl,
+          sourceUrl: trimmedSource,
         });
         await replaceIngredientsAndSteps(
           id,
@@ -180,7 +186,7 @@ export default function AddRecipeScreen() {
           session?.user?.id ?? "",
           {
             title: trimmedTitle,
-            sourceUrl,
+            sourceUrl: trimmedSource,
             description: description.trim() || null,
             servings,
             prepMinutes: parseMinutes(prep),
@@ -319,6 +325,21 @@ export default function AddRecipeScreen() {
             </Field>
             <Field label="Servings">
               <ServingsCounter value={servings} onChange={setServings} />
+            </Field>
+            {/* Filled automatically by a link import; editable so a recipe you
+                have made your own can drop or correct the credit (Thomas,
+                2026-07-27). Last of the facts, mirroring where it shows on the
+                detail screen. IMPROVISED – no Figma frame for this field. */}
+            <Field label="Source">
+              <Input
+                value={sourceUrl}
+                onChangeText={setSourceUrl}
+                placeholder="https://example.com/recipe"
+                accessibilityLabel="Source link"
+                keyboardType="url"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
             </Field>
           </View>
         </View>
