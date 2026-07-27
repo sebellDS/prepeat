@@ -37,9 +37,28 @@ below is open.
 
 ## Known bugs (open)
 
-None. The last two closed on 2026-07-27: the badge lag (fixed, see the
-decisions log) and the "blank swiped row" (never a bug – a short name
-sliding out of view).
+- [ ] **The Plan tab spins forever on the phones** (reported by Thomas
+      2026-07-27, diagnosed same day). Migration 0022 dropped
+      `meal_plans.pushed_to_list_at` from the live database, but the app the
+      phones actually run – TestFlight build 10, 2026-07-25 – still SELECTs
+      that column when it loads the weeks. The database rejects the whole
+      request, the Plan tab's load fails, and it never leaves the spinner.
+      Recipes and Shopping are unaffected (nothing else named the column).
+      **FIX WAITING ON THOMAS:** run
+      `supabase/migrations/0023_restore_pushed_to_list_at.sql` in the Supabase
+      SQL editor. It puts the (meaningless, always-null) column back, so build
+      10 works again immediately – no new build, no reinstall.
+- [ ] **A failed load leaves the Plan tab on a silent spinner forever** – the
+      reason the above read as "won't load" instead of "something went wrong".
+      `MealPlanProvider` only marks itself ready when the first fetch
+      SUCCEEDS, so any boot failure (this one, or simply being offline when
+      the app opens) shows an endless spinner with no message and no retry.
+      The shopping list has the same shape. NOT YET FIXED – needs a design
+      call from Thomas first: there is no Figma frame for a "couldn't load,
+      try again" state on Plan or Shopping.
+
+Closed 2026-07-27: the badge lag (fixed, see the decisions log) and the
+"blank swiped row" (never a bug – a short name sliding out of view).
 
 ## Conditional – only if it bites
 
@@ -64,6 +83,13 @@ sliding out of view).
 
 ## Code debts (small, known, deliberate)
 
+- [ ] **`meal_plans.pushed_to_list_at` is back, on purpose** – restored by
+      migration 0023 as an always-null compatibility shim so TestFlight build
+      10 keeps working (see Known bugs). Nothing reads or writes it. Drop it
+      again – a fresh migration, never by editing 0022 or 0023 – only once
+      every tester's phone runs a build that does not SELECT it (11 or later,
+      confirmed INSTALLED in App Store Connect, not merely committed here).
+      No hurry: a nullable column nobody touches costs nothing.
 - **NOT A DEBT – `fillFromWeeklyPlan` is unreachable from the UI on purpose.**
       Standing note so it stops being re-flagged as dead code (last reviewed
       2026-07-27). It is the "reset this week's list" escape hatch from the
@@ -182,6 +208,20 @@ sliding out of view).
 
 ## Decisions log (recent)
 
+- **2026-07-27 – never drop a database column in the same round as the code
+  change that stops using it.** Migration 0022 broke the Plan tab on every
+  phone within the hour, and the reasoning that let it through was recorded
+  right here: "the app no longer touches either one, so applying it late is
+  harmless". That confused two different things – the REPO had stopped reading
+  `pushed_to_list_at`, but the SHIPPED APP (TestFlight build 10) had not, and
+  the shipped app is the one talking to the database. Supabase serves every
+  installed build at once, and a phone updates days or weeks after a commit.
+  The rule from here on, for any DROP or RENAME of a column the client names:
+  **ship the client change first, wait until every install has it, drop
+  afterwards** – two migrations, weeks apart, not one. When a drop has already
+  gone out, restoring the column is the fast repair (0023): it fixes every
+  phone at once with no App Store round trip, where a new build takes a
+  build + submit + Apple + each tester updating.
 - **2026-07-27 – the Live badge now believes a fetch, but only so far**
   (verified on device by Thomas). The badge lag was never a race in our code:
   realtime-js only notices a dead socket at its next **heartbeat, 25s**
