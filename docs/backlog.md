@@ -129,7 +129,17 @@ sliding out of view).
       parked at Porkbun; .love registered 2026-06-12, the day the name was
       decided). prepeat.dk and prepeat.eu are available if wanted defensively;
       .com has been taken since 2004.
-      - [ ] Decide whether to keep "Prep. Eat. Repeat." as the public tagline.
+      - [x] **Tagline decided 2026-07-27: "prep. cook. eat. repeat."** – the
+            launch-screen wordmark, promoted to the public strapline (24 chars,
+            fits Apple's 30-char subtitle). Chosen knowing it is modestly
+            risky rather than clean: it CONTAINS the registered UK class 9 mark
+            "Prep Eat Repeat", separated only by a generic verb. See
+            [trademark-search.md](trademark-search.md) for the reasoning.
+            - [ ] ⚠️ **UK caveat – revisit before adding the UK storefront.**
+                  Exposure is territorial: none in DK/EU, real in the UK, and
+                  the App Store ships worldwide BY DEFAULT unless territories
+                  are restricted at submission. Replacement already checked and
+                  clean: "One kitchen, every phone." (25 chars).
       - [ ] Attorney clearance before filing an EUTM (classes 9 + 42) or
             launching in the US/UK.
 - [ ] Privacy policy (required for accounts + a database).

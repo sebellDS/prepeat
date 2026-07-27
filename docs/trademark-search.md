@@ -100,6 +100,45 @@ Both owned domains resolve to the same Porkbun parking address
 (207.207.210.229) with no site configured, which is why an early check here
 mistook prepeat.app for a third party's.
 
+## Tagline decision (2026-07-27, Thomas)
+
+**Keep "prep. cook. eat. repeat."** – the four-line launch-screen wordmark with
+the lime full stops, already shipping in builds 3-10. It replaces
+"Prep. Eat. Repeat." as the public strapline. 24 characters, so it fits
+Apple's 30-character subtitle field.
+
+Why it is defensible, and where it is not:
+
+- TMview returns **no rows** for "prep cook eat repeat" in any class, any
+  office.
+- But a clean exact search is not the test. **"Prep. Cook. Eat. Repeat."
+  contains the whole of UK00004192070 ("Prep Eat Repeat", class 9, software)**
+  – same three words, same order, separated by one generic cooking verb.
+  Adding a descriptive word to someone else's mark does not reliably avoid
+  confusion. Against that UK registration this is about as exposed as the old
+  tagline was.
+- It IS a clear improvement against Sistema Plastics' "PREP. EAT. REPEAT."
+  (class 21, kitchen containers): the extra beat makes it a visibly different
+  phrase, and the goods differ anyway.
+- Mitigating: the "X, Y, Z, repeat" construction is a common cultural formula
+  ("eat sleep rave repeat"), and marks built on common formulas are weak and
+  hard to enforce broadly. UK00004192070 is a 2025 filing by an individual.
+
+### ⚠️ UK CAVEAT – revisit before adding the UK storefront
+
+The exposure is **territorial**, and the split is clean:
+
+- **Denmark / EU** – no exposure. The blocking mark is UK-only; there is no EU
+  registration for any of this. Ship freely.
+- **UK App Store** – this is the collision. **The App Store ships worldwide by
+  default**; restricting territories is a choice made at submission. If the UK
+  is ever added, revisit this decision first.
+
+Ready-made replacement if that day comes: **"One kitchen, every phone."** (25
+chars) – checked 2026-07-27, no rows found in TMview, and it says the thing the
+name cannot (shared, live across devices). Runner-up: "Plan together. Shop
+once." (25, also clean).
+
 ## Suggested next steps
 
 1. **Treat the tagline as a separate decision from the name.** Using
