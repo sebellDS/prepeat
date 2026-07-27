@@ -88,14 +88,14 @@ else except where the law requires it.
 
 ## Where your data is stored
 
-Your data is stored on servers operated by Supabase. Where those servers are
-located outside the European Economic Area, the transfer is covered by the
-European Commission's Standard Contractual Clauses.
+Your data is stored **in the European Union** – on servers in Stockholm,
+Sweden (AWS region `eu-north-1`), operated on our behalf by Supabase. Your
+recipes, plans, lists, photos and account details do not leave the EU in
+normal operation.
 
-<!-- BEFORE APP STORE SUBMISSION: replace the paragraph above with the actual
-     region, e.g. "stored on servers in West EU (Ireland)". Supabase dashboard
-     → Project Settings → General → Region. GDPR Art. 13 wants the specific
-     location; the wording above is accurate but deliberately general. -->
+Supabase is a US-headquartered company. If its staff need access from outside
+the European Economic Area – for example to investigate a fault – that access
+is covered by the European Commission's Standard Contractual Clauses.
 
 
 ## How long we keep it
