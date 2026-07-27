@@ -15,7 +15,7 @@ tell us.
 
 Thomas Sebell, Denmark, is the data controller for Prep+Eat.
 
-Contact: **thomas@sebell.dk**
+Contact: **prepeat@sebell.dk**
 
 ## What we collect, and why
 
@@ -123,7 +123,7 @@ Under the GDPR you have the right to:
 - **restrict** or **object to** how we use your data,
 - receive your data in a portable form.
 
-Write to **thomas@sebell.dk** and we will answer within one month.
+Write to **prepeat@sebell.dk** and we will answer within one month.
 
 If you are unhappy with how we have handled your data, you can complain to the
 Danish Data Protection Agency (Datatilsynet), Carl Jacobsens Vej 35, 2500
@@ -143,4 +143,4 @@ the "Last updated" date. Significant changes will also be announced in the app.
 
 ## Contact
 
-Thomas Sebell – **thomas@sebell.dk**
+Thomas Sebell – **prepeat@sebell.dk**
