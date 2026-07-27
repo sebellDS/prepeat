@@ -119,7 +119,18 @@ sliding out of view).
 
 ## Pre-launch checklist (v1 ship)
 
-- [ ] Proper trademark search for "Prepeat" / "Prep+Eat".
+- [x] **First-look trademark search done 2026-07-27** – full write-up in
+      [trademark-search.md](trademark-search.md). Headline: the NAME is clear
+      (nobody holds "Prepeat" anywhere; no EU/DK registration; Prepear Inc.
+      holds classes 42+45 in US/UK/CA/AU but NOT in the EU). The TAGLINE is
+      not: "Prep Eat Repeat" is registered in the UK in class 9 (software),
+      and Sistema Plastics holds "PREP. EAT. REPEAT." in class 21 via WIPO.
+      - [ ] **Register prepeat.dk and prepeat.eu** – both confirmed AVAILABLE
+            2026-07-27, and the only time-sensitive item here. (.com has been
+            taken since 2004 and is parked.)
+      - [ ] Decide whether to keep "Prep. Eat. Repeat." as the public tagline.
+      - [ ] Attorney clearance before filing an EUTM (classes 9 + 42) or
+            launching in the US/UK.
 - [ ] Privacy policy (required for accounts + a database).
 - [ ] App Store assets: screenshots, description.
 - [ ] Icon/splash follow-ups (iOS app icon + launch screen shipped
