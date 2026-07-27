@@ -37,19 +37,9 @@ below is open.
 
 ## Known bugs (open)
 
-- [ ] **The Plan tab spins forever on the phones** (reported by Thomas
-      2026-07-27, diagnosed same day). Migration 0022 dropped
-      `meal_plans.pushed_to_list_at` from the live database, but the app the
-      phones actually run – TestFlight build 10, 2026-07-25 – still SELECTs
-      that column when it loads the weeks. The database rejects the whole
-      request, the Plan tab's load fails, and it never leaves the spinner.
-      Recipes and Shopping are unaffected (nothing else named the column).
-      **FIX WAITING ON THOMAS:** run
-      `supabase/migrations/0023_restore_pushed_to_list_at.sql` in the Supabase
-      SQL editor. It puts the (meaningless, always-null) column back, so build
-      10 works again immediately – no new build, no reinstall.
 - [ ] **A failed load leaves the Plan tab on a silent spinner forever** – the
-      reason the above read as "won't load" instead of "something went wrong".
+      reason the plan-loading outage below read as "won't load" instead of
+      "something went wrong".
       `MealPlanProvider` only marks itself ready when the first fetch
       SUCCEEDS, so any boot failure (this one, or simply being offline when
       the app opens) shows an endless spinner with no message and no retry.
@@ -57,8 +47,14 @@ below is open.
       call from Thomas first: there is no Figma frame for a "couldn't load,
       try again" state on Plan or Shopping.
 
-Closed 2026-07-27: the badge lag (fixed, see the decisions log) and the
-"blank swiped row" (never a bug – a short name sliding out of view).
+Closed 2026-07-27: **the Plan tab spinning forever on the phones** – migration
+0022 dropped `meal_plans.pushed_to_list_at` while the app the phones actually
+run (TestFlight build 10) still SELECTed it, so every plan load was rejected.
+Migration 0023 restored the column and Thomas ran it the same day; the plan
+loads again on build 10, with no new build and no reinstall. The rule that
+came out of it is in the decisions log. Also closed: the badge lag (fixed, see
+the decisions log) and the "blank swiped row" (never a bug – a short name
+sliding out of view).
 
 ## Conditional – only if it bites
 
@@ -83,9 +79,9 @@ Closed 2026-07-27: the badge lag (fixed, see the decisions log) and the
 
 ## Code debts (small, known, deliberate)
 
-- [ ] **`meal_plans.pushed_to_list_at` is back, on purpose** – restored by
-      migration 0023 as an always-null compatibility shim so TestFlight build
-      10 keeps working (see Known bugs). Nothing reads or writes it. Drop it
+- [ ] **`meal_plans.pushed_to_list_at` is back, on purpose** – migration 0023,
+      APPLIED 2026-07-27, an always-null compatibility shim so TestFlight
+      build 10 keeps working. Nothing reads or writes it. Drop it
       again – a fresh migration, never by editing 0022 or 0023 – only once
       every tester's phone runs a build that does not SELECT it (11 or later,
       confirmed INSTALLED in App Store Connect, not merely committed here).
