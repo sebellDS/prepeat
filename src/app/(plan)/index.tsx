@@ -1,11 +1,6 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -15,6 +10,7 @@ import { AddMealSheet } from "@/components/plan/add-meal-sheet";
 import { DayRow } from "@/components/plan/day-row";
 import { MoveDaySheet } from "@/components/plan/move-day-sheet";
 import { ServingsSheet } from "@/components/plan/servings-sheet";
+import { LoadError } from "@/components/ui/load-error";
 import { UndoToast } from "@/components/ui/undo-toast";
 import { WeekPicker } from "@/components/ui/week-picker";
 import { ds } from "@/constants/ds";
@@ -96,9 +92,21 @@ function PlanContent() {
       </View>
 
       {!plan.ready ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={ds.colors.surface.primary.main} />
-        </View>
+        plan.liveStatus === "offline" ? (
+          // The initial load failed (launch-time outage, or the server
+          // refusing the query as on 2026-07-27). Offer a retry instead of a
+          // spinner that never stops – the tab also retries itself on
+          // foreground once the connection is back.
+          <LoadError
+            title="Can't load your plan"
+            message="We couldn't load your weekly plan. Check your connection and try again – nothing in your plan is lost."
+            onRetry={plan.retry}
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={ds.colors.surface.primary.main} />
+          </View>
+        )
       ) : (
         <ScrollView
           className="flex-1"

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import {
 } from '@/components/shopping/inline-reorder-overlay';
 import { LiveBadge } from '@/components/shopping/live-badge';
 import { ReorderCategoriesSheet } from '@/components/shopping/reorder-categories-sheet';
+import { LoadError } from '@/components/ui/load-error';
 import { UndoToast } from '@/components/ui/undo-toast';
 import { WeekPicker } from '@/components/ui/week-picker';
 import {
@@ -146,62 +147,67 @@ function ShoppingListScreen() {
             listTop.value = y;
           });
         }}>
-        <ScrollView
-          className="flex-1"
-          keyboardShouldPersistTaps="handled"
-          // The add-input keeps the keyboard up for entering several items;
-          // scrolling the list is the natural "I'm done typing, now I'm
-          // shopping" signal, so it puts the keyboard away (in-store
-          // feedback, 2026-07-09).
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{
-            // 56 (off the Spacing scale): the list wants extra breathing room
-            // under the last row before the tab bar.
-            paddingBottom: tabBarClearance(insets, 56),
-            gap: 16,
-          }}>
-          {items.length === 0 ? (
-            loading && live === 'offline' ? (
-              // The initial load failed (launch-time outage). Offer a retry
-              // instead of a permanent blank; the tab also retries itself on
-              // foreground once the connection is back.
-              <LoadFailed onRetry={retry} />
-            ) : (
+        {items.length === 0 && loading && live === 'offline' ? (
+          // The initial load failed (launch-time outage). Offer a retry
+          // instead of a permanent blank; the tab also retries itself on
+          // foreground once the connection is back. Outside the ScrollView so
+          // the block can centre itself in the list area, as designed.
+          <LoadError
+            title="Can't load your list"
+            message="We couldn't load your shopping list. Check your connection and try again – nothing on your list is lost."
+            onRetry={retry}
+          />
+        ) : (
+          <ScrollView
+            className="flex-1"
+            keyboardShouldPersistTaps="handled"
+            // The add-input keeps the keyboard up for entering several items;
+            // scrolling the list is the natural "I'm done typing, now I'm
+            // shopping" signal, so it puts the keyboard away (in-store
+            // feedback, 2026-07-09).
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={{
+              // 56 (off the Spacing scale): the list wants extra breathing room
+              // under the last row before the tab bar.
+              paddingBottom: tabBarClearance(insets, 56),
+              gap: 16,
+            }}>
+            {items.length === 0 ? (
               // While the first fetch is in flight the list area stays blank –
               // flashing the empty state at a household with items would lie.
               !loading && <EmptyState />
-            )
-          ) : (
-            <>
-              <CategoryGroup
-                items={uncategorized}
-                onToggle={toggleItem}
-                onEdit={setEditing}
-                onDelete={removeItem}
-              />
-              {groups.map(({ category, items: groupItems }) => (
+            ) : (
+              <>
                 <CategoryGroup
-                  key={category}
-                  title={category}
-                  items={groupItems}
+                  items={uncategorized}
                   onToggle={toggleItem}
                   onEdit={setEditing}
                   onDelete={removeItem}
-                  onReorder={() => setReordering(true)}
-                  dragGesture={makeDragGesture(category)}
                 />
-              ))}
-              <DoneSection
-                items={doneItems}
-                currentUserId={userId}
-                onToggle={toggleItem}
-                onEdit={setEditing}
-                onDelete={removeItem}
-                onClear={clearCompleted}
-              />
-            </>
-          )}
-        </ScrollView>
+                {groups.map(({ category, items: groupItems }) => (
+                  <CategoryGroup
+                    key={category}
+                    title={category}
+                    items={groupItems}
+                    onToggle={toggleItem}
+                    onEdit={setEditing}
+                    onDelete={removeItem}
+                    onReorder={() => setReordering(true)}
+                    dragGesture={makeDragGesture(category)}
+                  />
+                ))}
+                <DoneSection
+                  items={doneItems}
+                  currentUserId={userId}
+                  onToggle={toggleItem}
+                  onEdit={setEditing}
+                  onDelete={removeItem}
+                  onClear={clearCompleted}
+                />
+              </>
+            )}
+          </ScrollView>
+        )}
 
         {dragging != null && (
           <InlineReorderOverlay
@@ -247,34 +253,6 @@ function ShoppingListScreen() {
         />
       )}
     </SafeAreaView>
-  );
-}
-
-/**
- * Shown when the shopping list's first load fails (no connection at launch).
- * Improvised – no Figma design for this offline state yet (flagged in the
- * backlog), matched to the launch retry screen in _layout.tsx.
- */
-function LoadFailed({ onRetry }: { onRetry: () => void }) {
-  return (
-    <View className="items-center gap-layout-medium px-layout-large py-layout-large">
-      <View className="w-full items-center gap-comp-small">
-        <Text className="text-center font-header text-display-6 font-emphasized leading-medium text-text-default">
-          Can&apos;t load your list
-        </Text>
-        <Text className="text-center font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-          Check your connection and try again – nothing on your list is lost.
-        </Text>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onRetry}
-        className="items-center rounded-medium bg-button-solid-fill-enabled px-comp-xlarge py-comp-large">
-        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-button-solid-label-enabled">
-          Try again
-        </Text>
-      </Pressable>
-    </View>
   );
 }
 

@@ -37,9 +37,30 @@ below is open.
 
 ## Known bugs (open)
 
-None. The last two closed on 2026-07-27: the badge lag (fixed, see the
-decisions log) and the "blank swiped row" (never a bug – a short name
-sliding out of view).
+None.
+
+Closed 2026-07-27:
+
+- **The Plan tab spun forever on the phones.** Migration 0022 dropped
+  `meal_plans.pushed_to_list_at` while the app the phones actually run
+  (TestFlight build 10) still SELECTed it, so every plan load was rejected.
+  Migration 0023 restored the column and Thomas ran it the same day: the plan
+  loads again on build 10, with no new build and no reinstall. The rule that
+  came out of it is in the decisions log.
+- **A failed load left the Plan tab on a silent spinner** – the reason the
+  outage above read as "won't load" instead of "something went wrong".
+  `MealPlanProvider` only marked itself ready when the first fetch SUCCEEDED,
+  so any boot failure (that outage, or simply opening the app with no signal)
+  left a spinner with no message and no way out. Fixed by giving Plan the
+  retry screen the app already had in two other places: `HouseholdLoadError`
+  at launch and the shopping list's `LoadFailed`, both blessed as the design
+  on 2026-07-25. Thomas spotted that the pattern already existed – worth
+  checking for a precedent before calling something undesigned. Correcting a
+  wrong note from earlier the same day: Shopping did NOT share this flaw,
+  Plan was the only tab missing the recovery. **Not on the phones until the
+  next build** – unlike the migration, this one is app code.
+- **The Live badge lag** (fixed, see the decisions log) and the **"blank
+  swiped row"** (never a bug – a short name sliding out of view).
 
 ## Conditional – only if it bites
 
@@ -64,6 +85,13 @@ sliding out of view).
 
 ## Code debts (small, known, deliberate)
 
+- [ ] **`meal_plans.pushed_to_list_at` is back, on purpose** – migration 0023,
+      APPLIED 2026-07-27, an always-null compatibility shim so TestFlight
+      build 10 keeps working. Nothing reads or writes it. Drop it
+      again – a fresh migration, never by editing 0022 or 0023 – only once
+      every tester's phone runs a build that does not SELECT it (11 or later,
+      confirmed INSTALLED in App Store Connect, not merely committed here).
+      No hurry: a nullable column nobody touches costs nothing.
 - **NOT A DEBT – `fillFromWeeklyPlan` is unreachable from the UI on purpose.**
       Standing note so it stops being re-flagged as dead code (last reviewed
       2026-07-27). It is the "reset this week's list" escape hatch from the
@@ -182,6 +210,35 @@ sliding out of view).
 
 ## Decisions log (recent)
 
+- **2026-07-27 – the error/retry screen is designed, and it is ONE component**
+  (Figma 392:11911, Thomas). The first improvisation from July is retired.
+  The design: the block centres vertically in the screen body, text
+  left-aligned at 40px margins – a 40px `wifi_off` icon, the title in
+  text/accent at display-5, the message in text/default, then 24px to a
+  full-width "Try again". Built as `src/components/ui/load-error.tsx` and used
+  in all three places that can fail to load (launch, Shopping, Plan), which
+  settles both open questions: **one shared component**, not three near-copies,
+  and **one state** – no "retrying…", no offline-vs-server distinction.
+  Thomas's call that only the copy changes per screen, so title and message
+  are props. Two notes worth keeping: the frame carries a white bottom rule
+  and sits inside the Household screen's list, both artefacts of where it was
+  drawn – the rule was dropped on Thomas's word and the surrounding list is
+  not part of the component. The copy keeps the app's en-dash over the frame's
+  hyphen (writing style).
+- **2026-07-27 – never drop a database column in the same round as the code
+  change that stops using it.** Migration 0022 broke the Plan tab on every
+  phone within the hour, and the reasoning that let it through was recorded
+  right here: "the app no longer touches either one, so applying it late is
+  harmless". That confused two different things – the REPO had stopped reading
+  `pushed_to_list_at`, but the SHIPPED APP (TestFlight build 10) had not, and
+  the shipped app is the one talking to the database. Supabase serves every
+  installed build at once, and a phone updates days or weeks after a commit.
+  The rule from here on, for any DROP or RENAME of a column the client names:
+  **ship the client change first, wait until every install has it, drop
+  afterwards** – two migrations, weeks apart, not one. When a drop has already
+  gone out, restoring the column is the fast repair (0023): it fixes every
+  phone at once with no App Store round trip, where a new build takes a
+  build + submit + Apple + each tester updating.
 - **2026-07-27 – the Live badge now believes a fetch, but only so far**
   (verified on device by Thomas). The badge lag was never a race in our code:
   realtime-js only notices a dead socket at its next **heartbeat, 25s**

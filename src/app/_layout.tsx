@@ -17,12 +17,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, useColorScheme, View } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppTabs from '@/components/app-tabs';
 import { OnboardingFlow } from '@/components/onboarding/onboarding-flow';
+import { LoadError } from '@/components/ui/load-error';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { fetchMyHouseholds, type Household } from '@/lib/household';
 import { HouseholdProvider } from '@/lib/household-context';
@@ -227,32 +228,19 @@ function RootGate() {
 
 /**
  * Shown when the household lookup fails at launch (no connection, server
- * blip). Improvised – there is no Figma design for this offline state yet
- * (flagged in the backlog). It deliberately reassures that nothing is lost,
- * since the bug it replaces made an existing household look gone.
+ * blip). The designed block (Figma 392:12013) sits at the top of the body,
+ * which is where it lands here too – this screen has nothing else on it. It
+ * deliberately reassures that nothing is lost, since the bug it replaces made
+ * an existing household look gone.
  */
 function HouseholdLoadError({ onRetry }: { onRetry: () => void }) {
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-neutral-lightest">
-      <View className="flex-1 items-center justify-center gap-layout-medium px-layout-large">
-        <View className="w-full items-center gap-comp-small">
-          <Text className="text-center font-header text-display-5 font-emphasized leading-medium text-text-default">
-            Can&apos;t reach your kitchen
-          </Text>
-          <Text className="text-center font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-            We couldn&apos;t load your household. Check your connection and try
-            again – your recipes and lists are safe.
-          </Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onRetry}
-          className="w-full items-center rounded-medium bg-button-solid-fill-enabled px-comp-xlarge py-comp-large">
-          <Text className="font-paragraph text-paragraph font-default leading-xsmall text-button-solid-label-enabled">
-            Try again
-          </Text>
-        </Pressable>
-      </View>
+      <LoadError
+        title="Can't reach your kitchen"
+        message="We couldn't load your household. Check your connection and try again – your recipes and lists are safe."
+        onRetry={onRetry}
+      />
     </SafeAreaView>
   );
 }
