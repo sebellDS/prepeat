@@ -17,24 +17,23 @@ below is open.
 
 ## Blocked on other people
 
-- [x] **Pia on TestFlight** – DONE 2026-07-27, she shows state=INSTALLED in
-      App Store Connect (has Prep+Eat from TestFlight and has launched it).
-      The family now updates cable-free; the weekly-signing chore below is
-      closed too. What actually went wrong (worth remembering): "Pia never
-      got the invite" was NOT the two-emails trap. She had accepted the
-      App Store Connect TEAM invite (she's an Admin) but was never added to
-      the internal tester GROUP "Prep+Eat v. 1.0 test" – team membership
-      does not make you a TestFlight tester, the two lists are separate. No
-      tester slot → no invite email ever sent. Diagnosed via the ASC API
-      (scratchpad tf-diag.mjs: /v1/betaTesters filtered by app vs /v1/users);
-      fix was adding her to that group. Whenever a family member "doesn't
-      get the invite", check betaTesters vs Users-and-Access before assuming
+- [x] **Second tester on TestFlight** – DONE 2026-07-27, state=INSTALLED in
+      App Store Connect. The family now updates cable-free; the weekly-signing
+      chore below is closed too. What actually went wrong (worth remembering):
+      "never got the invite" was NOT the two-emails trap. She had accepted the
+      App Store Connect TEAM invite (as an Admin) but was never added to the
+      internal tester GROUP "Prep+Eat v. 1.0 test" – team membership does not
+      make you a TestFlight tester, the two lists are separate. No tester slot
+      → no invite email ever sent. Diagnosed via the ASC API (scratchpad
+      tf-diag.mjs: /v1/betaTesters filtered by app vs /v1/users); the fix was
+      adding her to that group. Whenever a family member "doesn't get the
+      invite", check betaTesters vs Users-and-Access before assuming
       email/spam.
       Everything else in the pipeline works end to end (EAS cloud build →
       `eas submit` → TestFlight; builds 3-10 shipped). **Build 10
       (2026-07-25) is the current one.**
-      - [ ] **Lise Due** invited to TestFlight 2026-07-27, state=INVITED
-            (not yet accepted). Send her [the tester guide](testflight-tester-guide.md).
+      - [ ] **Third tester** invited to TestFlight 2026-07-27, state=INVITED
+            (not yet accepted). Send the [tester guide](testflight-tester-guide.md).
 
 ## Known bugs (open)
 
@@ -156,12 +155,16 @@ sliding out of view).
       under ~7 days out means the free dev CERTIFICATE (also 7-day) is the
       limiter and needs regenerating too. Re-trust on the phone if prompted
       (Settings → General → VPN & Device Management → Trust).
-      Thomas's iPhone 15 Pro `00008130-000C28221489001C`; Pia's iPhone 17
-      `00008150-00086D290198401C`. (Note: `expo run:ios` does NOT pass
+      Device UDIDs are not kept in this public repo – read them off the Mac
+      with `xcrun xctrace list devices`. (Note: `expo run:ios` does NOT pass
       -allowProvisioningUpdates, so xcodebuild must be driven directly – that
-      is what the script does.) Thomas's TestFlight app is separate and
-      unaffected; this chore shrinks to Pia's phone alone once she is on
-      TestFlight, and ends entirely if both stop needing cable builds.
+      is what the script does.) The TestFlight app is separate and unaffected,
+      so this chore ends entirely once no phone needs cable builds.
+      **PREMISE LOOKS WRONG (measured 2026-07-27):** the signing is a PAID
+      team, so the profile runs to 2027-07-24 and the certificate to
+      2027-07-06 – a year each, not seven days. The "expires 2026-08-01" date
+      above is fiction. Kept as a safety net until mid-August; if the app is
+      still opening fine then, delete this item.
 - [ ] After every DS publish/retune (Thomas says "DS published"): rebuild
       tokens in the DS repo, `npm run sync-ds-tokens` here, diff
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12).
@@ -188,8 +191,8 @@ sliding out of view).
   Also settled that day: the "blank swiped row" was never a bug (Thomas read
   it off the screenshot – a short name slides out of view when the row
   translates left by the two 56px actions), and the iPad joined the test
-  fleet, which is why the badge could be verified without borrowing Pia's
-  phone.
+  fleet, which is why the badge could be verified without borrowing a second
+  family member's phone.
 - **2026-07-26 – imported recipes credit their source.** Raised as an idea the
   night before and built the same session, because the data turned out to be
   there already: the importer has stored `recipes.source_url` since

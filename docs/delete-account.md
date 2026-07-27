@@ -128,5 +128,5 @@ call and remains open.
 - **Retention**: a meal-planning app holds nothing legally required to retain,
   so full erasure is clean – no carve-outs needed.
 - This is the manual operation we hit when cleaning up test users
-  (e.g. sebell@mac.com, 2026-07-21) – the same FK blocks are why a dashboard
-  delete fails until the traces are cleared.
+  (2026-07-21) – the same FK blocks are why a dashboard delete fails until
+  the traces are cleared.
