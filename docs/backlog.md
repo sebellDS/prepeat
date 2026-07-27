@@ -17,16 +17,6 @@ below is open.
 
 ## Blocked on other people
 
-- [ ] **Error/retry screen redesign** – Thomas is doing design tweaks in Figma
-      (said 2026-07-27) and will come back with them. Today the same screen
-      serves three places: `HouseholdLoadError` at launch (full screen,
-      display-5, full-width button) and `LoadFailed` in Shopping and Plan
-      (in-tab, display-6, auto-width button), each with its own copy. Two
-      things to settle when the frames land: which STATES exist (there is one
-      flat state now – no "retrying…", no offline-vs-server distinction), and
-      whether it becomes ONE shared component instead of three near-copies.
-      The current version is the 2026-07-25 blessed improvisation, so this
-      replaces an approved screen rather than filling a gap – no rush.
 - [x] **Second tester on TestFlight** – DONE 2026-07-27, state=INSTALLED in
       App Store Connect. The family now updates cable-free; the weekly-signing
       chore below is closed too. What actually went wrong (worth remembering):
@@ -220,6 +210,21 @@ Closed 2026-07-27:
 
 ## Decisions log (recent)
 
+- **2026-07-27 – the error/retry screen is designed, and it is ONE component**
+  (Figma 392:11911, Thomas). The first improvisation from July is retired.
+  The design: the block centres vertically in the screen body, text
+  left-aligned at 40px margins – a 40px `wifi_off` icon, the title in
+  text/accent at display-5, the message in text/default, then 24px to a
+  full-width "Try again". Built as `src/components/ui/load-error.tsx` and used
+  in all three places that can fail to load (launch, Shopping, Plan), which
+  settles both open questions: **one shared component**, not three near-copies,
+  and **one state** – no "retrying…", no offline-vs-server distinction.
+  Thomas's call that only the copy changes per screen, so title and message
+  are props. Two notes worth keeping: the frame carries a white bottom rule
+  and sits inside the Household screen's list, both artefacts of where it was
+  drawn – the rule was dropped on Thomas's word and the surrounding list is
+  not part of the component. The copy keeps the app's en-dash over the frame's
+  hyphen (writing style).
 - **2026-07-27 – never drop a database column in the same round as the code
   change that stops using it.** Migration 0022 broke the Plan tab on every
   phone within the hour, and the reasoning that let it through was recorded

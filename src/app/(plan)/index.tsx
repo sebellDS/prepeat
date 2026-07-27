@@ -1,12 +1,6 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -16,6 +10,7 @@ import { AddMealSheet } from "@/components/plan/add-meal-sheet";
 import { DayRow } from "@/components/plan/day-row";
 import { MoveDaySheet } from "@/components/plan/move-day-sheet";
 import { ServingsSheet } from "@/components/plan/servings-sheet";
+import { LoadError } from "@/components/ui/load-error";
 import { UndoToast } from "@/components/ui/undo-toast";
 import { WeekPicker } from "@/components/ui/week-picker";
 import { ds } from "@/constants/ds";
@@ -102,9 +97,11 @@ function PlanContent() {
           // refusing the query as on 2026-07-27). Offer a retry instead of a
           // spinner that never stops – the tab also retries itself on
           // foreground once the connection is back.
-          <View className="flex-1 items-center justify-center">
-            <LoadFailed onRetry={plan.retry} />
-          </View>
+          <LoadError
+            title="Can't load your plan"
+            message="We couldn't load your weekly plan. Check your connection and try again – nothing in your plan is lost."
+            onRetry={plan.retry}
+          />
         ) : (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color={ds.colors.surface.primary.main} />
@@ -230,35 +227,5 @@ function PlanContent() {
         />
       )}
     </SafeAreaView>
-  );
-}
-
-/**
- * Shown when the plan's first load fails (no connection at launch, or a
- * server-side refusal). Same screen as the shopping list's LoadFailed and the
- * launch-time HouseholdLoadError – all three were blessed as the design
- * 2026-07-25, so this reuses that approved pattern rather than inventing one.
- */
-function LoadFailed({ onRetry }: { onRetry: () => void }) {
-  return (
-    <View className="items-center gap-layout-medium px-layout-large py-layout-large">
-      <View className="w-full items-center gap-comp-small">
-        <Text className="text-center font-header text-display-6 font-emphasized leading-medium text-text-default">
-          Can&apos;t load your plan
-        </Text>
-        <Text className="text-center font-paragraph text-paragraph font-default leading-xsmall text-text-subtle">
-          Check your connection and try again – nothing in your plan is lost.
-        </Text>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onRetry}
-        className="items-center rounded-medium bg-button-solid-fill-enabled px-comp-xlarge py-comp-large"
-      >
-        <Text className="font-paragraph text-paragraph font-default leading-xsmall text-button-solid-label-enabled">
-          Try again
-        </Text>
-      </Pressable>
-    </View>
   );
 }
