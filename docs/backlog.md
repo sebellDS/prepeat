@@ -17,33 +17,40 @@ below is open.
 
 ## Blocked on other people
 
-- [ ] **Pia on TestFlight** – the last thing standing between the family and
-      cable-free updates. She was invited 2026-07-23 and has not accepted.
-      Internal testers must accept the App Store Connect team invite FIRST,
-      then the TestFlight one, or it fails with a useless error. Send her
-      [the tester guide](testflight-tester-guide.md), written for a
-      non-technical tester to follow unaided.
-      Everything else in the TestFlight pipeline works end to end (EAS cloud
-      build → `eas submit` → TestFlight; builds 3-10 shipped, Thomas installs
-      and runs from it). **Build 10 (2026-07-25) is the current one** and
-      carries everything from that day – point Pia at it once she accepts.
-      Closing this also closes the weekly-signing chore below.
-      - [x] Build 10 installed from TestFlight and verified working (Thomas,
-            2026-07-25: "seems to work as intended"). The production build
-            boots and behaves – so the only thing left on this item is Pia
-            accepting. Worth keeping as a habit: the dev variant cannot prove
-            a production build boots, and it has broken twice before (build 4
-            crashed on missing env vars, build 6 shipped a corrupt icon).
+- [x] **Pia on TestFlight** – DONE 2026-07-27, she shows state=INSTALLED in
+      App Store Connect (has Prep+Eat from TestFlight and has launched it).
+      The family now updates cable-free; the weekly-signing chore below is
+      closed too. What actually went wrong (worth remembering): "Pia never
+      got the invite" was NOT the two-emails trap. She had accepted the
+      App Store Connect TEAM invite (she's an Admin) but was never added to
+      the internal tester GROUP "Prep+Eat v. 1.0 test" – team membership
+      does not make you a TestFlight tester, the two lists are separate. No
+      tester slot → no invite email ever sent. Diagnosed via the ASC API
+      (scratchpad tf-diag.mjs: /v1/betaTesters filtered by app vs /v1/users);
+      fix was adding her to that group. Whenever a family member "doesn't
+      get the invite", check betaTesters vs Users-and-Access before assuming
+      email/spam.
+      Everything else in the pipeline works end to end (EAS cloud build →
+      `eas submit` → TestFlight; builds 3-10 shipped). **Build 10
+      (2026-07-25) is the current one.**
+      - [ ] **Lise Due** invited to TestFlight 2026-07-27, state=INVITED
+            (not yet accepted). Send her [the tester guide](testflight-tester-guide.md).
 
 ## Known bugs (open)
 
-- [ ] **Live/Offline badge lags the data** (two-phone test 2026-07-25):
-      coming back from airplane mode the items sync visibly BEFORE the badge
-      returns to "Live". Expected – the badge follows the realtime channel's
-      status, which takes a while to notice a dropped socket, while the
-      foreground refetch repairs the data at once – but it reads as wrong.
-      Fix would be to drive the badge off the last successful fetch as well as
-      the socket state. Cosmetic, not urgent.
+- [ ] **Live/Offline badge lags the data** (two-phone test 2026-07-25) –
+      FIX WRITTEN 2026-07-27, NOT YET VERIFIED ON DEVICE. Coming back from
+      airplane mode the items synced visibly BEFORE the badge returned to
+      "Live", because the badge followed the realtime channel alone and
+      realtime-js only notices a dead socket at its next heartbeat (25s),
+      then reconnects on a stepped backoff of up to 10s more.
+      `refresh()` in shopping-list.tsx now rebuilds the channel when a fetch
+      succeeds while the badge says Offline – subscribing on a disconnected
+      socket reconnects it at once, so "Live" follows in about a second. The
+      badge only goes as far as "Connecting" off a fetch: reaching the server
+      does not prove the stream is flowing, and only SUBSCRIBED does.
+      To close this: airplane mode on, change something on the other phone,
+      airplane mode off, and watch the badge catch up with the items.
 
 ## Conditional – only if it bites
 
