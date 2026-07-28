@@ -75,6 +75,77 @@ Closed 2026-07-27:
       optional convenience.
 ## Later (v1.1+)
 
+- [ ] **Share a recipe – FIRST ITEM IN v1.1** (Thomas, raised as an idea
+      2026-07-25, weighed for v1.0 on 2026-07-27 and deliberately left out of
+      it the same day: *"I must think some more over the sharing feature"*).
+      The reason it is top of the list rather than one item among many:
+      Thomas's case for it is that it is the growth mechanic, not a
+      convenience – *"with out 'mouth to mouth' sharing, this app will not be
+      a success. And having a recipe as a carrier will be key."* That case
+      still stands; what is unsettled is the shape, and v1.0 was not the round
+      to settle it in. Worth a spec doc (like leave-household.md and
+      delete-account.md) before any code.
+      Settled while it was briefly a v1 item:
+      - **A shared recipe is a link to a page we host** (prepeat.app/r/<token>).
+        Not a choice between "deep link" and "web page": an iOS universal link
+        falls back to loading the URL in a browser when the app is not
+        installed, so the page is the fallback target and has to exist either
+        way. Recipients who HAVE the app get it opened there.
+      - **The photo story is a non-issue** – contrary to the original note, the
+        `recipe-photos` bucket is public-read (0006_recipes.sql). Migration 0018
+        only stopped clients ENUMERATING it. Anyone holding a photo URL can
+        already load it, so a public page can show the picture with no new
+        infrastructure.
+      - **Scope, so the deferral is not mistaken for a small job**: this is the
+        project's first web deployment, plus a share-token table and
+        universal-link setup on the domain. Roughly a week of new surface.
+      Still open:
+      - [ ] **How much the page shows a stranger.** The whole recipe, or a
+            teaser (photo + title + "Get Prep+Eat to see it")? Thomas's
+            argument for gating: a personal recommendation carries the install –
+            *"I have this recipe, so please download the app to get it"* – and
+            everyone who wants the recipe becomes a user rather than a reader
+            who never installs. Claude first called deep-link-only "dead on
+            arrival", withdrew it, and ended up recommending the teaser. A dial,
+            changeable later if the install rate disappoints.
+      - [ ] ⚠️ **Copyright on imported recipes – Thomas's question, 2026-07-27,
+            NOT yet answered by anyone qualified.** Publishing an imported
+            recipe is a different act from importing one. Importing to your own
+            household is private copying; a public URL makes **Prep+Eat the
+            publisher**, and takedowns arrive at our domain. What that turns on:
+            ingredient lists are facts and not copyrightable (US/EU), bare
+            procedural steps much the same, but headnotes, descriptive method
+            prose and above all **photographs** are protected – and minor edits
+            produce a derivative work, not a new one. There is no
+            percentage-changed threshold that makes a copy legal.
+            The sharp edge is the photo: `new.tsx:139` puts the scraped
+            `imageUrl` into `photoUri` and line 162 uploads it to our public
+            bucket, so imported recipes already carry a copy of the source
+            site's photograph on our storage. Invisible while private, the most
+            complaint-prone thing on a public page.
+            Note the convergence: a **teaser page publishes almost nothing**, so
+            gating largely sidesteps this. A full public recipe needs the
+            mitigations: ingredients + a prominent link to the original, never
+            the source's prose, never the imported photo – which needs photo
+            PROVENANCE recorded, since a scraped photo and one you shot are
+            today indistinguishable uploads in the same bucket.
+            This question is NOT urgent while sharing sits in v1.1 – nothing
+            ships publicly until then – but it is cheap to put to the attorney
+            alongside the trademark clearance, so it is cross-referenced there.
+      - [ ] **Does the recipient's copy get COPIED into their household** (their
+            own editable version, matching copy-on-leave) or merely displayed?
+            "Save to my recipes" is the conversion action if so.
+      - [ ] **Revocation + snapshot.** A share token is readable by anyone
+            holding the URL until revoked. Consistent with the project's
+            snapshot principle, the page should probably show the recipe AS
+            SHARED, not live – so later edits are never accidentally published.
+      - [ ] A public share page makes household content readable outside the
+            household, so the **privacy policy written for v1.0 will need
+            updating** when this ships, and prepeat.app stops being a parked
+            domain.
+      Overlaps the merge item directly below – "copy a recipe to my other
+      household" is the same mechanic pointed inward, so they are probably one
+      feature and should be designed together.
 - [ ] **Merge two households / "copy a recipe to my other household"** – the
       deferred merge mechanic that later lets a rejoiner bring their parked
       solo-kitchen recipes into the family (leave-household.md, rule A). Also
@@ -98,6 +169,19 @@ Closed 2026-07-27:
       A + rails decision and the only repair path if a contribution ever fails
       mid-write (offline at the wrong moment – nothing retries it). Its doc
       comment and its RPC `push_plan_to_list` both say so.
+- [ ] **DS nit – `text/link` fails contrast on white** (measured 2026-07-28
+      while building the website). `text/link` is **#56C91D**, which is
+      **2.15:1** against #FFFFFF – far below the WCAG AA minimum of 4.5:1 for
+      body text. It is the token whose whole job is "this is a link", so it
+      cannot be legible only on coloured surfaces.
+      `text/brand` (#378112) is the same family and measures **4.87:1**, so the
+      website uses that for links and underlines them as well, keeping colour
+      off the critical path. Everything else measured clean: text/default 9.75:1,
+      text/subtle 7.79:1, button label on lime 6.22:1.
+      NOT yet checked inside the APP – wherever the app renders a link with
+      text/link on white it has the same problem. Worth a sweep. The DS fix is
+      to retune the link token; until then this is a real accessibility defect,
+      not hygiene like the nit below.
 - [ ] **DS nit** (diagnosed 2026-07-27, fix is in FIGMA not in code):
       in the **prep-eat** brand `color/text/contrast-text` aliases
       `{color.text.primary}` – i.e. the dark ink #4F4230 – where the **sebell**
@@ -122,16 +206,6 @@ Closed 2026-07-27:
 - [ ] AI first-guess for categories, in front of the learned memory
       (decision #7 names this as the natural v1.1 upgrade).
 - [ ] Smart quantity parsing when adding items ("Milk 2L" → name + quantity).
-- [ ] **Share a recipe** (Thomas, 2026-07-25): send one out of the household –
-      to a friend, or to your own other kitchen. Questions to settle before
-      building: does the recipient need Prep+Eat (deep link into the app) or
-      should it be readable by anyone (a web page or plain text/PDF)? Does the
-      recipe get COPIED to them (their own editable version, matching how
-      copy-on-leave already works) or merely displayed? Photos are in a
-      members-only bucket, so a public share needs a story for the image.
-      Note the overlap with the deferred merge item under Later (v1.1+) –
-      "copy a recipe to my other household" is the same mechanic pointed
-      inward, so they are probably one feature and should be designed together.
 - [ ] **Statistics on the plan – the app learns your habits** (Thomas,
       2026-07-25): the household has been building a real history in
       `meal_plan_entries` since July (every meal, its day and its servings),
@@ -169,16 +243,241 @@ Closed 2026-07-27:
                   are restricted at submission. Replacement already checked and
                   clean: "One kitchen, every phone." (25 chars).
       - [ ] Attorney clearance before filing an EUTM (classes 9 + 42) or
-            launching in the US/UK.
-- [ ] Privacy policy (required for accounts + a database).
-- [ ] App Store assets: screenshots, description.
-- [ ] Icon/splash follow-ups (iOS app icon + launch screen shipped
-      2026-07-23): Android adaptiveIcon still on Expo template art – needs
-      an android-foreground (art inside the centre 66% safe zone) and an
-      android-monochrome silhouette; no ios-dark / ios-tinted icon variants
-      yet (iOS 18+ appearance icons); Android splash still uses Expo's
-      splash-icon.png (the Android 12+ centred-icon-in-a-circle system can't
-      reuse the full-bleed iOS launch image). None of this ships while it's
+            launching in the US/UK. While you have them: **also ask the
+            imported-recipe copyright question** from the share item under Later
+            (v1.1+). It does not block v1.0 – nothing is published publicly
+            until sharing ships – but the answer shapes that feature, and it
+            costs nothing to ask both in one conversation.
+- [x] **Privacy policy WRITTEN and PUBLISHED** –
+      [privacy-policy.md](privacy-policy.md), dated 2026-07-27, live at
+      https://sebellds.github.io/prepeat-web/privacy.html since 2026-07-28.
+      Covers what is collected and why, what is not, retention incl.
+      soft-delete, GDPR rights, Datatilsynet as the complaints route, children,
+      and hello@prepeat.app as the contact.
+      - [x] **FACTUAL ERROR CORRECTED 2026-07-28, in both copies.** The policy
+            listed only TWO processors and said "we do not use any other
+            processors" – but **Resend** handles every user's email address and
+            one-time code, and was missing. The old text also credited **Apple**
+            with delivering the sign-in emails, which Apple does not do. Now
+            three processors with accurate roles. This mattered: an incomplete
+            processor list in a published privacy policy is a GDPR problem, not
+            a typo. It was found only because the SMTP screenshot showed who
+            actually sends the mail – nothing in the repo said so.
+      - [ ] ⚠️ **VERIFY the data-residency wording with the attorney.** The
+            policy says data stays in the EU (Supabase, Stockholm), which is
+            true of the database – but sign-in now means an email address is
+            processed by **Resend, a US company**, and on the free tier there is
+            no EU region. The page currently states that transfer is covered by
+            the Standard Contractual Clauses. That is the normal position for
+            such a vendor and it is what Resend's DPA is expected to say, but it
+            has NOT been read and confirmed. Do that, and fold it into the
+            attorney conversation queued below.
+      - [x] **Contact address DECIDED and CHANGED 2026-07-28: hello@prepeat.app**
+            everywhere – all 8 references across privacy-policy.md,
+            app-store-listing.md and the three web pages. Live on the site.
+- [x] **App Store listing text DRAFTED** – [app-store-listing.md](app-store-listing.md),
+      name / subtitle / promotional text / keywords / description / What's New,
+      all within Apple's character limits. NOT yet committed to git.
+
+Audit of what submission actually requires, done 2026-07-27. The items above
+were already further along than this list claimed; the ones below were
+missing from it entirely.
+
+- [x] **The website is BUILT AND LIVE, 2026-07-28** –
+      **https://sebellds.github.io/prepeat-web/** (privacy.html, support.html and
+      a minimal index). Separate repo `sebellDS/prepeat-web`, three static pages,
+      no build step, no framework, no JavaScript, GitHub Pages on the free tier.
+      Verified live on desktop and at 375px: no console errors, no horizontal
+      overflow, Montserrat headings + IBM Plex Sans body loading, and **zero
+      third-party network requests** – the fonts are self-hosted precisely so
+      the page that promises "no third-party tracking" does not hand every
+      visitor's IP to Google to render itself.
+      Both URLs can go straight into App Store Connect as they are; the custom
+      domain below is cosmetic, not blocking.
+      - [ ] **Point prepeat.app at it** (optional, nicer than a github.io URL in
+            a public listing). Add a `CNAME` file containing `prepeat.app`
+            AFTER the DNS records exist at Porkbun – doing it first makes Pages
+            serve a domain that does not resolve. **Keep DNS at Porkbun**;
+            moving nameservers means re-creating the Resend records, and a slip
+            there stops sign-in codes for every user.
+      - [ ] **Two copies of the privacy policy now exist** –
+            `docs/privacy-policy.md` here (where it was authored) and
+            `privacy.html` in the web repo (the one that legally matters).
+            Change one, change the other. Worth collapsing to one source if it
+            ever drifts in practice.
+      - **IMPROVISED, flagged per the 2026-07-17 rule**: no Figma frames exist
+            for any web page. They are typographic document pages assembled from
+            DS tokens, deliberately restrained – a real marketing landing page
+            is a design job and was NOT invented here. The index is minimal on
+            purpose: enough that the domain does not 404.
+      Note this survived the sharing deferral: dropping share from v1.0 did not
+      remove the need for a web presence, it only shrank it – v1.0 needs two
+      static pages, no database and no share tokens, where the v1.1 share page
+      needs the rest. Build the small one now and the share page grows into it.
+      **PLAN, settled 2026-07-28: neither piece costs anything new. Do not buy
+      a one.com plan for this.** Thomas asked whether his paid one.com account
+      could serve – it could, but only makes sense if it ALREADY includes web
+      hosting + mail; buying an upgrade would be paying for two things he has
+      for free:
+      - [ ] **Pages → GitHub Pages.** Free for public repos (this repo is
+            public), custom domain, free HTTPS. Serves the privacy policy and a
+            support page as static HTML. Suggest a SEPARATE small repo
+            (`prepeat-web`) rather than this one, so the site does not rebuild
+            on every app commit and the app's history stays clean.
+      - [ ] **Inbound mail → Porkbun email forwarding.** Free, up to 20
+            addresses per domain, already included with prepeat.app. Forward
+            hello@prepeat.app → thomas@sebell.dk and support requests stop
+            vanishing.
+            **Caveat worth knowing:** forwarding delivers TO your inbox, but a
+            reply goes out as thomas@sebell.dk, not as hello@prepeat.app. A user
+            writes to the app and gets an answer from a stranger's personal
+            address. Fixing that needs a real hosted mailbox – Porkbun's own
+            hosted email is a few dollars a month, or one.com IF the plan
+            already covers it. Cheap either way, and it can wait until somebody
+            actually writes in.
+      - **Keep DNS at Porkbun** (it runs on Cloudflare) and add records there.
+        Do NOT move nameservers – that means re-creating the Resend records
+        elsewhere, and a mistake there stops sign-in for everyone. Inbound mail
+        (MX) and outbound (Resend) do not conflict; they are different record
+        types. The one collision risk is SPF – see the email decision in the log
+        below, one record only, both senders inside it.
+      Fit for the v1.1 share page too, with one caveat: static hosting plus
+      client-side Supabase calls would render a recipe fine, but **link
+      previews** (the card that appears in WhatsApp/iMessage) need per-recipe
+      Open Graph tags in the served HTML, which a purely client-rendered page
+      cannot produce. For a feature whose whole point is being passed between
+      phones, that preview matters – so the share page needs either
+      pre-generated HTML per share or a small server. Decide when share is
+      designed, not now.
+- [x] **Custom SMTP is configured – checked 2026-07-28, NOT a blocker.**
+      Supabase's built-in sender would have been (2 messages/hour, no SLA,
+      team addresses only – *"We urge all customers to set up custom SMTP
+      server"*), and since every sign-in is an emailed code, the default sender
+      would have meant the app simply did not work for the public. It is on:
+      **Resend** (smtp.resend.com:465), sending as **hello@prepeat.app**, sender
+      name "Prep+Eat", minimum 60s between codes to one user. So prepeat.app is
+      already carrying live DNS records, which shortens the website item below.
+      - [ ] **The Resend free tier caps at 100 emails/DAY** (3,000/month, one
+            domain). One sign-in = one email, so 100/day is fine for the family
+            and thin for a launch spike – and when it is hit, new users cannot
+            get in at all, which is the same failure mode as the default sender
+            just at a higher threshold. Decide before launch whether to move to
+            Pro ($20/mo, 50,000) or launch on Free and watch it.
+- [x] **One contact address, settled 2026-07-28: `hello@prepeat.app`.** All 8
+      references changed and live (privacy-policy.md ×3, privacy.html ×3,
+      support.html, index.html, app-store-listing.md). The app already MAILED
+      from this address; now it is also the one every page tells you to write
+      to, so the GDPR contact, the App Store support channel and the reply-to
+      are a single address on the product's own domain.
+      Why it mattered: the moment that decides whether a stranger trusts you is
+      BEFORE any contact – they get a code from hello@prepeat.app, hit trouble,
+      and the support page used to send them to prepeat@sebell.dk, a domain
+      they had never seen. (Claude first argued the opposite, weighting the
+      reply-from over the inbound direction, and withdrew it.)
+      "Thomas Sebell, Denmark" stays as the named data controller in the policy –
+      that is correct and legally required; only the contact address moved.
+      - [x] **DONE 2026-07-28: Porkbun free email forwarding is live.**
+            `hello@prepeat.app` → `prepeat@sebell.dk`, a mailbox Thomas created
+            for the purpose – so replies go out as prepeat@sebell.dk rather than
+            his personal thomas@, which is a better outcome than the plan
+            assumed. Free, up to 20 forwards, included with the domain.
+            **Deliberately NOT the $24/year hosted mailbox.** Buy that when the
+            reply-from address actually confuses somebody, not before; it is a
+            toggle in the same account.
+            (one.com was ruled out entirely – it does not support .app domains.
+            No loss: GitHub Pages does not care about the TLD.)
+      - [x] **DNS verified after the change, 2026-07-28 – NOTHING BROKE, and
+            the reason is worth keeping.** Enabling forwarding DID create a root
+            SPF record, `v=spf1 include:_spf.porkbun.com ~all` – exactly the
+            thing feared, and contrary to Claude's prediction that a
+            receive-only forward would not add one. It is harmless anyway,
+            because **Resend does not use the root domain for sending**:
+            - `prepeat.app` TXT → `v=spf1 include:_spf.porkbun.com ~all` (new,
+              Porkbun's forwarding)
+            - `send.prepeat.app` TXT → `v=spf1 include:amazonses.com ~all`
+              (Resend's, untouched)
+            - `send.prepeat.app` MX → `feedback-smtp.eu-west-1.amazonses.com`
+            - `prepeat.app` MX → `fwd1/fwd2.porkbun.com` (new)
+            - `resend._domainkey.prepeat.app` → DKIM key, still present
+            - `_dmarc.prepeat.app` → `v=DMARC1; p=none;`
+            **The one-SPF-record rule is per NAME, not per domain.** Resend's
+            envelope return-path is `send.prepeat.app`, so its SPF is checked
+            against that subdomain and never against the root. Two records, two
+            names, no collision. DMARC aligns twice over – by DKIM on the root,
+            and by relaxed SPF alignment from the subdomain.
+            **Keep the rule anyway**: anything that ever adds a second SENDER on
+            the ROOT (a newsletter tool, a hosted mailbox that sends) must go
+            into the root's single record beside Porkbun's include – it cannot
+            have its own. Re-run `dig +short TXT prepeat.app` after any mail
+            change.
+      - **Bonus finding, feeds the residency question above**: that bounce MX is
+            `eu-west-1` – Ireland. Resend is handling this domain's mail in an
+            **EU region**, which is evidence (not proof) that sign-in emails are
+            processed inside the EU rather than the US. Good for the privacy
+            policy's data-location paragraph; still confirm it in Resend's own
+            terms before treating it as settled.
+- [ ] ⚠️ **The Apple reviewer cannot sign in.** `src/lib/auth.tsx:58` uses
+      `signInWithOtp` – a one-time code emailed to you, no password anywhere.
+      A reviewer handed an email address cannot receive that code, and offering
+      to relay it by hand does not pass review.
+      **Researched 2026-07-27: Supabase has NO fixed test-OTP for email.** The
+      feature exists for SMS only (`auth.sms.test_otp` maps a phone number to a
+      fixed code); there is no `auth.email.test_otp`, in the CLI config or the
+      dashboard. The community workaround is a Postgres trigger that overwrites
+      `auth.users.recovery_token` with a SHA224 hash of a known code and
+      backdates `recovery_sent_at` past the 60s rate limit. **Rejected as the
+      plan**: it writes into Supabase's internal `auth` schema, which is
+      undocumented and changes without notice (the discussion thread already
+      has it breaking after an update), it is a permanent known-code backdoor,
+      and it is load-bearing for review while never exercised day to day – so
+      it rots silently and fails at submission, which is the worst place to
+      find out.
+      **Plan instead: a real mailbox the reviewer can open.** A dedicated demo
+      address on sebell.dk with webmail; App Review notes give the address plus
+      the webmail login and one line of instruction. No auth-schema tampering,
+      nothing shipped in the app, nothing to rot. If Apple pushes back, the
+      trigger is the fallback, not the opening move.
+      - [ ] **Seed a demo household for it.** A meal planner reviewed on an
+            empty account reviews badly and invites a "not complete" rejection.
+            The demo account needs its own household with a few recipes and a
+            planned week – NOT Thomas's family's real data, which would hand
+            Apple the household's actual eating habits.
+- [ ] **Screenshots** – `app-store-assets/screenshots/` exists and is EMPTY.
+      iPhone-only (no `supportsTablet` in app.json), so one required size
+      rather than a matrix. The folder is gitignored on purpose: real household
+      data, public repo.
+- [ ] **App Privacy card in App Store Connect** – the "nutrition label", a
+      SEPARATE mandatory questionnaire from the privacy policy document.
+      Declares data types collected and whether they are linked to identity or
+      used for tracking. Ours is unusually easy: email, first name, user
+      content; no analytics SDK, no advertising, no tracking – which is what
+      the listing's "NO ADS. NO TRACKING." section promises, so the two must
+      agree.
+- [ ] **The remaining App Store Connect paperwork**: age-rating questionnaire,
+      primary category (Food & Drink), copyright line, and the **territory
+      selection** – which is where the UK tagline decision above actually gets
+      made.
+- [ ] **Ship build 11 before launching.** The Plan-tab retry screen is app
+      code, so no phone has it – build 10 (2026-07-25) is still current. v1.0
+      should not go out on a build older than that fix.
+- [x] Export compliance handled – `ITSAppUsesNonExemptEncryption: false` is
+      already in app.json, so submission stops asking every time.
+- [x] In-app account deletion built (guideline 5.1.1(v), required for any app
+      with account creation) – Delete profile, shipped 2026-07-22.
+- [ ] **Confirm the support address actually receives mail** – see the
+      two-addresses item above. Whichever address wins, it is promised in the
+      privacy policy AND the App Store description and is the app's only
+      support channel, so it has to work before either goes live.
+- [ ] Minor: `prepeat://ds-check` is reachable in a production build (hidden
+      NativeTabs trigger, not linked from any UI). A token-debug screen, so
+      harmless if found, but it does not belong in a shipped app.
+- [ ] Icon/splash follow-ups – iOS app icon + launch screen shipped
+      2026-07-23; the **Android adaptive icon is DONE too** (foreground,
+      background and monochrome art all present in assets/images, contrary to
+      the older note here). Still open: no ios-dark / ios-tinted icon variants
+      (iOS 18+ appearance icons), and the Android splash still uses Expo's
+      splash-icon.png (the Android 12+ centred-icon-in-a-circle system cannot
+      reuse the full-bleed iOS launch image). None of it ships while it is
       iOS-only.
 
 ## Recurring
@@ -210,6 +509,27 @@ Closed 2026-07-27:
 
 ## Decisions log (recent)
 
+- **2026-07-28 – how Prep+Eat's email actually works**, written down because it
+  is invisible in the repo (all of it is dashboard and DNS) and because getting
+  it wrong breaks sign-in for everybody at once. Sign-in is an emailed one-time
+  code, so **email delivery is not a side feature – it is the front door**.
+  - **Outbound: Resend**, via Supabase Auth's custom SMTP (smtp.resend.com:465),
+    sending as **hello@prepeat.app**, sender name "Prep+Eat", minimum 60s
+    between codes to one user. Supabase's built-in sender was never an option
+    for production – 2 messages/hour, no SLA, and delivery only to
+    pre-authorized team addresses. Had that been left on, the app would have
+    looked fine for the family and failed for the public on day one.
+  - **Free tier ceiling: 100 emails/DAY** (3,000/month, one domain). The
+    failure mode when it is hit is total – no code, no sign-in, no workaround
+    for the user.
+  - **Inbound is the gap.** Resend sends only. People reply to the email in
+    front of them, which is the sign-in email, so hello@prepeat.app needs to
+    receive mail or support requests vanish silently.
+  - ⚠️ **The SPF trap, for whenever a second sender is added** (a mail host, a
+    newsletter tool): a domain may have exactly **ONE** SPF TXT record. Adding
+    a second one does not add a sender, it makes SPF invalid and codes start
+    landing in spam. Both senders go in the one record as two `include:`
+    terms. This is the most likely way to silently break sign-in later.
 - **2026-07-27 – the error/retry screen is designed, and it is ONE component**
   (Figma 392:11911, Thomas). The first improvisation from July is retired.
   The design: the block centres vertically in the screen body, text

@@ -45,3 +45,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Store screenshots: real household data, and this repo is public
+app-store-assets/

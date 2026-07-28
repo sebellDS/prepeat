@@ -15,7 +15,7 @@ tell us.
 
 Thomas Sebell, Denmark, is the data controller for Prep+Eat.
 
-Contact: **prepeat@sebell.dk**
+Contact: **hello@prepeat.app**
 
 ## What we collect, and why
 
@@ -76,12 +76,13 @@ Only invite the people you want to share a kitchen with.
 
 ## Who else handles your data
 
-We use two companies to run the service. Both act on our instructions.
+We use three companies to run the service. All of them act on our instructions.
 
 - **Supabase** – the database, sign-in, file storage and live sync behind the
   app. Your account, recipes, plans, lists and photos are stored there.
-- **Apple** – distributes the app through the App Store and TestFlight, and
-  delivers the sign-in emails you receive from us as ordinary email.
+- **Resend** – delivers the sign-in emails. It handles your email address and
+  the one-time code, and nothing else.
+- **Apple** – distributes the app through the App Store and TestFlight.
 
 We do not use any other processors, and we do not transfer your data to anyone
 else except where the law requires it.
@@ -93,9 +94,11 @@ Sweden (AWS region `eu-north-1`), operated on our behalf by Supabase. Your
 recipes, plans, lists, photos and account details do not leave the EU in
 normal operation.
 
-Supabase is a US-headquartered company. If its staff need access from outside
-the European Economic Area – for example to investigate a fault – that access
-is covered by the European Commission's Standard Contractual Clauses.
+Two of our providers are US-headquartered companies. If Supabase staff need
+access from outside the European Economic Area – for example to investigate a
+fault – that access is covered by the European Commission's Standard
+Contractual Clauses. Sending you a sign-in code means your email address is
+processed by Resend, which is also covered by those clauses.
 
 
 ## How long we keep it
@@ -123,7 +126,7 @@ Under the GDPR you have the right to:
 - **restrict** or **object to** how we use your data,
 - receive your data in a portable form.
 
-Write to **prepeat@sebell.dk** and we will answer within one month.
+Write to **hello@prepeat.app** and we will answer within one month.
 
 If you are unhappy with how we have handled your data, you can complain to the
 Danish Data Protection Agency (Datatilsynet), Carl Jacobsens Vej 35, 2500
@@ -143,4 +146,4 @@ the "Last updated" date. Significant changes will also be announced in the app.
 
 ## Contact
 
-Thomas Sebell – **prepeat@sebell.dk**
+Thomas Sebell – **hello@prepeat.app**
