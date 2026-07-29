@@ -391,14 +391,26 @@ const UNITS = new Set([
   // metric + Danish
   "g",
   "gram",
+  "grams",
+  "gr",
   "kg",
+  "kilogram",
+  "kilograms",
   "mg",
   "ml",
+  "milliliter",
+  "millilitre",
+  "milliliters",
+  "millilitres",
   "cl",
   "dl",
   "l",
   "liter",
   "litre",
+  "liters",
+  "litres",
+  "head",
+  "heads",
   "tsk",
   "spsk",
   "knsp",
@@ -600,8 +612,57 @@ function tidyIngredientName(raw: string): string {
   return name.replace(/\s+/g, " ").replace(/[\s,.;]+$/, "").trim();
 }
 
-// Shorthand that is fine to read on a recipe page but not on a shopping list.
-const UNIT_ALIASES: Record<string, string> = { c: "cup" };
+// The shopping list merges on name + UNIT STRING (item_merge_key, migration
+// 0013), so "2 tablespoons olive oil" and "2 tbsp olive oil" become two rows
+// unless the unit is written the same way. Fold the spelled-out forms onto
+// the abbreviation. Only units whose abbreviation reads correctly at any
+// amount are listed – "cup"/"cups" and "clove"/"cloves" are deliberately
+// absent, since "2 cup" and "1 cloves" would read wrong on the list.
+const UNIT_ALIASES: Record<string, string> = {
+  c: "cup",
+  tablespoon: "tbsp",
+  tablespoons: "tbsp",
+  teaspoon: "tsp",
+  teaspoons: "tsp",
+  gram: "g",
+  grams: "g",
+  gr: "g",
+  kilogram: "kg",
+  kilograms: "kg",
+  milliliter: "ml",
+  millilitre: "ml",
+  milliliters: "ml",
+  millilitres: "ml",
+  liter: "l",
+  litre: "l",
+  liters: "l",
+  litres: "l",
+  ounce: "oz",
+  ounces: "oz",
+  pound: "lb",
+  pounds: "lb",
+  lbs: "lb",
+};
+
+// Sites write the same thing both ways round: "5 cloves garlic" gives unit
+// "cloves" + name "garlic", while "2 garlic cloves" gives no unit and name
+// "garlic cloves". Those are one ingredient and have to merge, so when the
+// amount carries no unit and the name ENDS in one, move it across.
+function liftTrailingUnit(
+  name: string,
+  amount: string,
+): { name: string; quantityText: string } {
+  const words = name.split(/\s+/);
+  const last = words[words.length - 1]?.toLowerCase();
+  // Never strip the only word – "2 slices" is already just a unit.
+  if (words.length < 2 || !last || !UNITS.has(last)) {
+    return { name, quantityText: amount };
+  }
+  return {
+    name: words.slice(0, -1).join(" "),
+    quantityText: `${amount} ${UNIT_ALIASES[last] ?? last}`,
+  };
+}
 
 export function splitIngredient(text: string): {
   name: string;
@@ -649,7 +710,9 @@ export function splitIngredient(text: string): {
       : { name: tidyIngredientName(rest) || rest, quantityText: amount };
   }
   const name = tidyIngredientName(rest);
-  return name
-    ? { name, quantityText: amount }
-    : { name: tidyIngredientName(cleaned) || cleaned, quantityText: null };
+  if (!name) {
+    return { name: tidyIngredientName(cleaned) || cleaned, quantityText: null };
+  }
+  // No unit was found up front, but the name may end in one.
+  return liftTrailingUnit(name, amount);
 }
