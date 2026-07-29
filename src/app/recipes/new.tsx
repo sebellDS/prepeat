@@ -245,7 +245,9 @@ export default function AddRecipeScreen() {
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         contentContainerStyle={{
-          paddingBottom: tabBarClearance(insets, Spacing.five),
+          // The save bar below is a real footer, so the scroll area only needs
+          // a little breathing room at the end – not the tab-bar clearance.
+          paddingBottom: Spacing.three,
           gap: 16,
         }}
       >
@@ -480,28 +482,37 @@ export default function AddRecipeScreen() {
             </View>
           </View>
         </>
-        <View className="w-full px-layout-small">
-          <Pressable
-            onPress={save}
-            disabled={busy || title.trim().length === 0}
-            accessibilityRole="button"
-            className={
-              "w-full items-center rounded-medium py-comp-large " +
-              (busy || title.trim().length === 0
-                ? "bg-surface-neutral-main"
-                : "bg-button-solid-fill-enabled")
-            }
-          >
-            {busy ? (
-              <ActivityIndicator color={ds.colors.text.inverse} />
-            ) : (
-              <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
-                {editing ? "Save changes" : "Save recipe"}
-              </Text>
-            )}
-          </Pressable>
-        </View>
       </ScrollView>
+
+      {/* Save is pinned to the bottom of the screen rather than scrolling
+          away at the end of the form: on a long recipe it sat far below the
+          fold and edits were being lost by leaving without it (Thomas,
+          2026-07-28). IMPROVISED – the Figma add/edit frame puts the button
+          at the end of the page and has no sticky-footer frame yet. */}
+      <View
+        style={{ paddingBottom: tabBarClearance(insets, Spacing.three) }}
+        className="w-full border-t border-border-subtle bg-surface-neutral-lightest px-layout-small pt-comp-medium"
+      >
+        <Pressable
+          onPress={save}
+          disabled={busy || title.trim().length === 0}
+          accessibilityRole="button"
+          className={
+            "w-full items-center rounded-medium py-comp-large " +
+            (busy || title.trim().length === 0
+              ? "bg-surface-neutral-main"
+              : "bg-button-solid-fill-enabled")
+          }
+        >
+          {busy ? (
+            <ActivityIndicator color={ds.colors.text.inverse} />
+          ) : (
+            <Text className="font-paragraph text-components-button-label font-default text-button-solid-label-enabled">
+              {editing ? "Save changes" : "Save recipe"}
+            </Text>
+          )}
+        </Pressable>
+      </View>
 
       <ImportRecipeSheet
         visible={importing}

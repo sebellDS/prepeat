@@ -250,7 +250,7 @@ Closed 2026-07-27:
             costs nothing to ask both in one conversation.
 - [x] **Privacy policy WRITTEN and PUBLISHED** –
       [privacy-policy.md](privacy-policy.md), dated 2026-07-27, live at
-      https://sebellds.github.io/prepeat-web/privacy.html since 2026-07-28.
+      https://thomassebell.github.io/prepeat-web/privacy.html since 2026-07-28.
       Covers what is collected and why, what is not, retention incl.
       soft-delete, GDPR rights, Datatilsynet as the complaints route, children,
       and hello@prepeat.app as the contact.
@@ -284,27 +284,72 @@ were already further along than this list claimed; the ones below were
 missing from it entirely.
 
 - [x] **The website is BUILT AND LIVE, 2026-07-28** –
-      **https://sebellds.github.io/prepeat-web/** (privacy.html, support.html and
-      a minimal index). Separate repo `sebellDS/prepeat-web`, three static pages,
+      **https://thomassebell.github.io/prepeat-web/** (privacy.html, support.html and
+      a minimal index). Separate repo `thomassebell/prepeat-web`, three static pages,
       no build step, no framework, no JavaScript, GitHub Pages on the free tier.
       Verified live on desktop and at 375px: no console errors, no horizontal
       overflow, Montserrat headings + IBM Plex Sans body loading, and **zero
       third-party network requests** – the fonts are self-hosted precisely so
       the page that promises "no third-party tracking" does not hand every
       visitor's IP to Google to render itself.
-      Both URLs can go straight into App Store Connect as they are; the custom
-      domain below is cosmetic, not blocking.
-      - [ ] **Point prepeat.app at it** (optional, nicer than a github.io URL in
-            a public listing). Add a `CNAME` file containing `prepeat.app`
-            AFTER the DNS records exist at Porkbun – doing it first makes Pages
-            serve a domain that does not resolve. **Keep DNS at Porkbun**;
-            moving nameservers means re-creating the Resend records, and a slip
-            there stops sign-in codes for every user.
-      - [ ] **Two copies of the privacy policy now exist** –
+      ⚠️ **The github.io URL above no longer works on its own** – setting the
+      custom domain makes it 301-redirect to prepeat.app. **The URL for App
+      Store Connect is `https://prepeat.app/privacy.html` and
+      `https://prepeat.app/support.html`, and NEITHER is enterable until the
+      certificate below is live.**
+      - [~] **prepeat.app – IN PROGRESS 2026-07-28, waiting on the certificate.**
+            Everything is configured and verified; only Let's Encrypt is
+            outstanding.
+            - **Order matters, and the first instinct was wrong.** GitHub is
+              explicit: claim the domain on the REPO first, then point DNS. Do
+              it the other way and there is a window where anyone on GitHub can
+              attach the name to their own Pages site. The cost of the correct
+              order is that the site is briefly dark, which was free here
+              because nothing pointed at it yet.
+            - **Porkbun DNS, as changed** (there were never any A records to
+              delete – Porkbun parks via ALIAS):
+              - `ALIAS prepeat.app` → `thomassebell.github.io` (was
+                pixie.porkbun.com). Porkbun supports ALIAS at the apex and
+                GitHub accepts it – one edit beside the mail records instead of
+                adding four A records, which is the safer operation.
+              - `CNAME www.prepeat.app` → `thomassebell.github.io` (new)
+              - deleted the parking wildcard `CNAME *.prepeat.app`
+              - all 7 mail records untouched and re-verified afterwards
+              Apex now flattens to GitHub's four IPs (185.199.108-111.153),
+              identical across Google, Cloudflare and Quad9.
+            - ⚠️ **`.app` is HSTS-preloaded**, so browsers refuse to fall back
+              to HTTP. Until the certificate exists the domain is dark in a
+              browser even though GitHub IS serving it – `curl http://` returns
+              200. Confirmed not a misconfiguration: no CAA record blocks Let's
+              Encrypt, DNS is stable, and the TLS error is simply GitHub
+              answering with its default `*.github.io` certificate.
+            - **If it never arrives**: GitHub's stated window is up to 24h. Past
+              that, the remedy is to remove and re-add the custom domain, which
+              re-triggers the request. Do NOT do that while provisioning might
+              still be in flight – it resets the queue position.
+            - [ ] Turn on **Enforce HTTPS** once the certificate lands.
+      - [ ] **Two copies of the privacy policy exist** –
             `docs/privacy-policy.md` here (where it was authored) and
             `privacy.html` in the web repo (the one that legally matters).
             Change one, change the other. Worth collapsing to one source if it
             ever drifts in practice.
+      - [x] **A THIRD copy existed and was deleted, 2026-07-28.** The app repo
+            had a `gh-pages` branch quietly serving its own landing page and
+            `privacy/index.html` – built in an earlier session for App Store
+            submission, and never mentioned in this backlog. So two privacy
+            policies with different contents were live on the internet at once,
+            the older one naming two processors instead of three and giving the
+            superseded contact address. That is the worst category of thing to
+            have a stale public copy of.
+            Claude's pre-launch audit MISSED it: the audit read the docs and the
+            app config but never asked GitHub what the account was already
+            publishing, and concluded "you need a website" while one existed.
+            `gh repo list` + the Pages API found it in seconds. **Check what is
+            already deployed before concluding something is missing.**
+            Branch deleted (tip was `d41c6f9`), Pages deactivated on that repo,
+            URL confirmed 404. Note it did NOT self-retire on the username
+            rename as first predicted – GitHub rebuilt it under the new name,
+            and it took the branch deletion plus a CDN expiry to actually go.
       - **IMPROVISED, flagged per the 2026-07-17 rule**: no Figma frames exist
             for any web page. They are typographic document pages assembled from
             DS tokens, deliberately restrained – a real marketing landing page
@@ -509,6 +554,39 @@ missing from it entirely.
 
 ## Decisions log (recent)
 
+- **2026-07-28 – the recipe form's save button is pinned to the bottom.**
+  Thomas lost edits twice by leaving the form without reaching the button: it
+  sat at the very end of the page, below ingredients and instructions, so on
+  a real recipe it was several screens down and easy to walk past. It is now a
+  footer bar outside the ScrollView (hairline top rule, page background, above
+  the tab bar), so "Save changes" is on screen the whole time. Applies to
+  adding too – it is one screen, and the same trap exists there.
+  **IMPROVISED, flagged per the 2026-07-17 rule**: the Figma add/edit frame
+  draws the button at the end of the page and the DS has no sticky-footer
+  component, so the bar's rule, padding and background are mine. Worth a frame
+  if the pattern is kept, since the same shape would suit any long form.
+  Not covered: with the keyboard open on iOS the bar sits behind it – the
+  keyboard is dismissed before saving anyway.
+- **2026-07-28 – the GitHub account is now `thomassebell`** (was `sebellDS`, a
+  leftover from when the Design System was the only thing on it). Done at the
+  right moment by luck as much as judgement: the Pages URLs were not yet in App
+  Store Connect, and the custom domain had not been set up – renaming after
+  either would have meant changing a URL Apple held, or redoing DNS.
+  What GitHub does and does not carry over, from its own warning dialog:
+  **repository URLs redirect** (so git keeps working), **Pages sites do NOT**,
+  and the old profile URL dies. So every `sebellds.github.io/...` link broke
+  instantly and permanently.
+  Updated: remotes on prepeat, prepeat-web and design-system; the two
+  `github.com/sebellDS/...` links in the DS Storybook docs (Architecture.mdx,
+  Welcome.mdx – done in a parallel session); this backlog. The DS was otherwise
+  untouched: its token pipeline is a LOCAL file copy, it is `private: true` and
+  unpublished, and it has no Pages site.
+  ⚠️ **`sebellDS` is now unclaimed and anyone can register it.** GitHub's repo
+  redirects stop working the moment somebody does. Nothing depends on them any
+  more, but do not rely on one.
+  Also learned: `sebell` was already taken, and so is `prepeat` – if an
+  organisation for the app is ever wanted, `prepeat-app` / `prepeatapp` /
+  `getprepeat` / `prepeat-hq` were all free on 2026-07-28.
 - **2026-07-28 – how Prep+Eat's email actually works**, written down because it
   is invisible in the repo (all of it is dashboard and DNS) and because getting
   it wrong breaks sign-in for everybody at once. Sign-in is an emailed one-time
