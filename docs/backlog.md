@@ -37,7 +37,34 @@ below is open.
 
 ## Known bugs (open)
 
-None.
+- [ ] **The same ingredient can still appear twice on the shopping list**
+      (Thomas, 2026-07-29, looking at the week-32 demo list: *"a lot of item
+      are the same, but named differently"*). `item_merge_key` (migration
+      0013) is `norm_item_name(name) || ' ' || lower(trim(unit))`, so two rows
+      merge only on an exact name AND an exact unit string. The mechanical
+      halves are fixed (trailing unit words lifted out of the name, spelled-out
+      units folded onto abbreviations). Two causes remain:
+      - **Singular vs plural count units.** "1 clove garlic" and "5 cloves
+        garlic" have the same name and still split, because `clove` ≠ `cloves`.
+        Not folded in the parser on purpose: the merged row would print
+        "8 clove garlic". The clean fix is to singularise the unit INSIDE
+        `item_merge_key` (a new migration – never edit 0013) so rows merge
+        while the displayed text keeps whichever natural form was stored.
+        Same applies to cup/cups, slice/slices, sprig/sprigs, head/heads.
+        NEEDS A DECISION from Thomas: change the key, or accept the split.
+      - **Synonyms.** `onion` / `small onion` / `yellow onion`,
+        `salt` / `kosher salt` / `cooking salt` / `flaky sea salt`,
+        `olive oil` / `extra virgin olive oil`, `fresh cilantro` /
+        `coriander leaves`. These are genuinely different strings and no
+        mechanical rule settles them – "small onion" may well be a deliberate
+        distinction, and merging UK/US names (coriander/cilantro) is a
+        judgement about who the household is. Any fix here is a product
+        decision, not a parser change, and probably belongs with the
+        category-memory idea: let the household teach synonyms once, the same
+        way it teaches aisles.
+      Worth weighing against the listing copy, which promises the list "builds
+      itself from the plan" – a shopper seeing garlic twice reads that as
+      broken even when the quantities are right.
 
 Closed 2026-07-27:
 
