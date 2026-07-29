@@ -472,6 +472,7 @@ const PREP_CLAUSE_OPENERS = new Set([
   "softened", "beaten", "trimmed", "cut", "torn", "crumbled", "zested",
   "juiced", "roughly", "finely", "thinly", "coarsely", "freshly", "lightly",
   "well", "to", "or", "optional", "for", "as", "plus", "divided", "packed",
+  "use", "any", "your",
   "preferably", "about", "approximately", "ideally", "cooked", "uncooked",
   "raw", "at", "room",
   // Danish
@@ -487,6 +488,7 @@ const PREP_CLAUSE_ENDINGS = new Set([
   "softened", "drained", "rinsed", "peeled", "trimmed", "crushed", "beaten",
   "cubed", "shredded", "halved", "quartered", "torn", "zested", "juiced",
   "crumbled", "separated", "reserved", "divided", "warmed", "chilled",
+  "packed", "softened", "toasted", "sifted", "strained",
   // Danish – past participles, the usual "løg, finthakket" shape.
   "hakket", "finthakket", "grofthakket", "revet", "snittet", "skrællet",
   "smeltet", "skåret", "delt", "kogt", "stegt", "ristet", "blendet",
@@ -506,8 +508,24 @@ function tidyIngredientName(raw: string): string {
   const colon = name.indexOf(":");
   if (colon > 0) name = name.slice(0, colon);
 
-  // "(any melting cheese will do)", "(or sub dark soy sauce …)"
-  name = name.replace(/\s*\([^)]*\)/g, " ");
+  // "(any melting cheese will do)", "(or sub dark soy sauce …)". Repeated,
+  // because sites nest them – RecipeTin writes "(, finely chopped (brown,
+  // yellow or white))" and a single pass stops at the first ")", leaving an
+  // orphan bracket on the shopping list.
+  for (let i = 0; i < 4; i++) {
+    const stripped = name.replace(/\s*\([^()]*\)/g, " ");
+    if (stripped === name) break;
+    name = stripped;
+  }
+  // Whatever brackets survive were unbalanced in the source.
+  name = name.replace(/[()]/g, " ");
+
+  // "1 lb / 500g beef mince", "800g / 28 oz can crushed tomato" – the second
+  // unit is a conversion for the reader, not a second thing to buy.
+  name = name.replace(/^\s*\/\s*[\d\s.,/]+[a-z]*\s+/i, "");
+
+  // "1 pinch of ground cumin", "2 slices of white bread"
+  name = name.replace(/^(?:of|af)\s+/i, "");
 
   // "spur chilies or another mild, red pepper" – buy the first alternative.
   // Only when something substantial precedes the "or": in "store-bought or
@@ -536,6 +554,24 @@ function tidyIngredientName(raw: string): string {
     name = name.slice(0, comma);
   }
 
+  // Some sites drop the comma entirely – BBC Good Food writes "300g celery
+  // sliced" and "200g potatoes peeled and cut into chunks". Cut at the first
+  // prep participle, but never at the first word: "shredded cheese" and
+  // "crushed tomato" are what you buy, not instructions.
+  // Only when the participle ENDS the string ("celery sliced") or opens a
+  // conjunction ("potatoes peeled and cut into chunks"). If a noun follows it
+  // instead, the participle is part of the product – "can crushed tomato",
+  // "shredded cheese" – and cutting there would throw away what you buy.
+  if (!name.includes(",")) {
+    const words = name.split(/\s+/);
+    const at = words.findIndex((w, i) => {
+      if (i < 1 || !PREP_CLAUSE_ENDINGS.has(w.toLowerCase())) return false;
+      const next = words[i + 1]?.toLowerCase();
+      return next === undefined || next === "and" || next === "og";
+    });
+    if (at > 0) name = words.slice(0, at).join(" ");
+  }
+
   return name.replace(/\s+/g, " ").replace(/[\s,.;]+$/, "").trim();
 }
 
@@ -546,9 +582,12 @@ export function splitIngredient(text: string): {
   name: string;
   quantityText: string | null;
 } {
+  // "1½ tsp" means one and a half. Folding the glyph without a separator
+  // would splice it onto the whole number and read as eleven halves.
   const cleaned = cleanText(text).replace(
-    /[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞]/g,
-    (glyph) => VULGAR_FRACTIONS[glyph] ?? glyph,
+    /(\d?)\s*([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞])/g,
+    (_all, lead: string, glyph: string) =>
+      (lead ? `${lead} ` : "") + (VULGAR_FRACTIONS[glyph] ?? glyph),
   );
   const match = cleaned.match(
     /^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*(.*)$/,
