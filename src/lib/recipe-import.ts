@@ -333,16 +333,41 @@ function matchAttr(
   );
 }
 
+// A numeric entity, decimal or hex. Decoding the whole range beats listing
+// entities one at a time: the old code knew "&#39;" but not its hex twin
+// "&#x27;", so RecipeTin and Love & Lemons descriptions imported reading
+// "It&#x27;s a perfect side salad".
+function decodeNumericEntity(match: string, digits: string, hex: boolean) {
+  const code = hex ? parseInt(digits, 16) : Number(digits);
+  if (!Number.isFinite(code) || code <= 0 || code > 0x10ffff) return match;
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return match; // lone surrogate or similar – leave the source text alone
+  }
+}
+
 function cleanText(html: string): string {
   return html
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
+    .replace(/&#(\d+);/g, (m, d: string) => decodeNumericEntity(m, d, false))
+    .replace(/&#[xX]([0-9a-fA-F]+);/g, (m, d: string) =>
+      decodeNumericEntity(m, d, true),
+    )
     .replace(/&quot;/g, '"')
-    .replace(/&#0?39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
     .replace(/&aring;/g, "å")
     .replace(/&oslash;/g, "ø")
     .replace(/&aelig;/g, "æ")
+    .replace(/&Aring;/g, "Å")
+    .replace(/&Oslash;/g, "Ø")
+    .replace(/&AElig;/g, "Æ")
+    // Last on purpose: decoding "&amp;" first would turn a literal
+    // "&amp;#39;" into "&#39;" and then into an apostrophe it never was.
+    .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
 }
