@@ -75,6 +75,39 @@ Closed 2026-07-27:
       optional convenience.
 ## Later (v1.1+)
 
+- [ ] **Recipe import: ingredient parsing beyond English and Danish**
+      (scoped 2026-07-29 – Thomas: *"English and danish is the most
+      important. Log other languages as later versions"*). The parser in
+      [src/lib/recipe-import.ts](../src/lib/recipe-import.ts) splits an
+      ingredient string into name + quantity. The language-INDEPENDENT half
+      works everywhere already: leading amounts, ranges, vulgar fractions
+      (½ ¼ ¾), metric units, parentheticals and colon-sentences. The half that
+      needs to KNOW WORDS is hand-written vocabulary, and only English and
+      Danish are complete:
+      - **local spoon/measure units** – German `EL`/`TL`, Swedish `msk`,
+        Dutch `eetlepels`, Spanish `cucharadas`, Italian `cucchiai`. Missing
+        ones fall into the NAME: `2 EL Olivenöl` → quantity `2`, name
+        `EL Olivenöl`.
+      - **prep participles** – `, gewürfelt` / `, hackad` / `, tritata` /
+        `, émincé` are all kept verbatim, so the shopping list reads
+        `Zwiebel, gewürfelt`.
+      - **"to taste" qualifiers** – `nach Geschmack`, `al gusto`,
+        `selon le goût`, `efter smak` (Swedish – the Danish `efter smag` IS
+        handled).
+      - **alternatives** – only `or`/`eller` are known; `oder`, `ou`, `o`,
+        `of` are not.
+      - **Romance connector words** – `200 g de farine` → name `de farine`,
+        `200 g di farina` → name `di farina`. The `de`/`di`/`du`/`della`
+        should be dropped after the unit.
+      Each language is roughly one units list + one participle list + one
+      qualifier phrase – the same shape as the existing tables, ~30 lines.
+      Worth doing per territory as the App Store rollout reaches it, since
+      recipe sites are overwhelmingly local-language and this hits a user on
+      their very FIRST import.
+      One trap already found and guarded: French `c. à soupe` is a TABLESPOON,
+      and reading the bare `c` as `cup` inflates the amount ~16x. The parser
+      now bails out when `c` is followed by `à`/`a`. Any future language work
+      needs the same paranoia about collisions with English abbreviations.
 - [ ] **Share a recipe – FIRST ITEM IN v1.1** (Thomas, raised as an idea
       2026-07-25, weighed for v1.0 on 2026-07-27 and deliberately left out of
       it the same day: *"I must think some more over the sharing feature"*).
@@ -156,6 +189,47 @@ Closed 2026-07-27:
 
 ## Code debts (small, known, deliberate)
 
+- [ ] **Recipe import leaves prep instructions in the ingredient NAME, and the
+      shopping list inherits it** (found 2026-07-29 while shooting App Store
+      screenshots). `parseIngredient` in
+      [src/lib/recipe-import.ts](../src/lib/recipe-import.ts) only strips a
+      LEADING amount + known unit; everything else stays in the name verbatim.
+      Real items produced from imported recipes in the demo household:
+      - `Prik Nam Pla (condiment for seasoning the egg, optional): Mix together
+        some fish sauce, a squeeze of lime juice, chopped Thai chilies, and
+        chopped garlic.` – a whole instruction the source site filed under
+        `recipeIngredient`
+      - `½ tsp black soy sauce (or sub dark soy sauce and reduce regular soy
+        sauce to 2 tsp)`, quantity `1` – the `½` never parsed as an amount
+      - `coriander leaves, 1 large handful` – quantity is not leading, so it
+        stays in the name
+      - `½ cup long beans, cut into short pieces`, `cheese, grated (any melting
+        cheese will do)`, `garlic clove, cut in half`, `tomato, sliced`
+      This is the shopping list – the feature the listing calls the centrepiece
+      ("The list builds itself from the plan"). It makes an imported week's list
+      read as broken, and it is why the store screenshot of Shopping is not
+      usable as-is. Worth fixing at least: vulgar fractions (½ ¼ ¾) as amounts,
+      strip a trailing `, <prep word>` clause, drop parentheticals, and reject
+      ingredient strings that are obviously sentences.
+      **PARSER FIXED 2026-07-29** (vulgar fractions, trailing prep clauses
+      both opening AND ending in the prep word, parentheticals, `or`/`eller`
+      alternatives, trailing amounts, colon sentences, US `c.` for cup –
+      31 English + 18 Danish cases verified, range/Danish regressions intact).
+      Danish vocabulary completed the same day; other languages are a v1.1+
+      item under Later. Recipes imported
+      BEFORE that date still hold the old mangled names; see the re-import
+      gap below.
+- [ ] **An imported recipe can never be re-imported** – the "paste a link"
+      button in [src/app/recipes/new.tsx](../src/app/recipes/new.tsx) is gated
+      behind `!editing`, so the edit screen has no import trigger. Found
+      2026-07-29 when the parser fix above could not be applied to recipes
+      already in the demo household. Consequence: every parser improvement, and
+      every site that fixes its own markup, only ever benefits NEW recipes –
+      existing ones can only be corrected ingredient by ingredient by hand, or
+      by creating a duplicate and deleting the original (which also orphans the
+      meal-plan snapshots). A "Re-import from source" action on the edit screen
+      would fix it; `applyImport` already does exactly the right thing to the
+      form, and `replaceIngredientsAndSteps` already saves it in place.
 - [ ] **`meal_plans.pushed_to_list_at` is back, on purpose** – migration 0023,
       APPLIED 2026-07-27, an always-null compatibility shim so TestFlight
       build 10 keeps working. Nothing reads or writes it. Drop it
