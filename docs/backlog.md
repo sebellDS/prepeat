@@ -292,14 +292,18 @@ missing from it entirely.
       third-party network requests** – the fonts are self-hosted precisely so
       the page that promises "no third-party tracking" does not hand every
       visitor's IP to Google to render itself.
-      ⚠️ **The github.io URL above no longer works on its own** – setting the
-      custom domain makes it 301-redirect to prepeat.app. **The URL for App
-      Store Connect is `https://prepeat.app/privacy.html` and
-      `https://prepeat.app/support.html`, and NEITHER is enterable until the
-      certificate below is live.**
-      - [~] **prepeat.app – IN PROGRESS 2026-07-28, waiting on the certificate.**
-            Everything is configured and verified; only Let's Encrypt is
-            outstanding.
+      ## ✅ THE URLs FOR APP STORE CONNECT (live 2026-07-29, verified over HTTPS)
+
+      ```
+      Privacy Policy URL   https://prepeat.app/privacy.html
+      Support URL          https://prepeat.app/support.html
+      ```
+
+      The github.io address now 301-redirects to prepeat.app, so do not use it
+      anywhere. `www.prepeat.app` and plain `http://` both redirect to the
+      canonical https apex.
+      - [x] **prepeat.app – DONE 2026-07-29.** Certificate `CN=prepeat.app`
+            covering apex + www, valid to 27 Oct 2026, Enforce HTTPS on.
             - **Order matters, and the first instinct was wrong.** GitHub is
               explicit: claim the domain on the REPO first, then point DNS. Do
               it the other way and there is a window where anyone on GitHub can
@@ -323,11 +327,29 @@ missing from it entirely.
               200. Confirmed not a misconfiguration: no CAA record blocks Let's
               Encrypt, DNS is stable, and the TLS error is simply GitHub
               answering with its default `*.github.io` certificate.
-            - **If it never arrives**: GitHub's stated window is up to 24h. Past
-              that, the remedy is to remove and re-add the custom domain, which
-              re-triggers the request. Do NOT do that while provisioning might
-              still be in flight – it resets the queue position.
-            - [ ] Turn on **Enforce HTTPS** once the certificate lands.
+            - ⚠️ **The certificate genuinely got stuck, and the fix is worth
+              remembering.** It never arrived on its own – not in 30 minutes,
+              not in 2 hours, not overnight. The tell was that
+              `https_certificate` was ABSENT from the Pages API response rather
+              than showing a pending state: provisioning had never STARTED, as
+              opposed to being slow. Everything else checked out (no CAA record
+              blocking Let's Encrypt, DNS stable across three resolvers, GitHub
+              serving the site fine over plain HTTP), which is what made it
+              clear the problem was on GitHub's side, not in the DNS.
+              **Fix: remove the custom domain and re-add it** (`PUT
+              .../pages -f cname=""` then `-f cname=prepeat.app`). The field
+              appeared immediately as `authorization_created`, then `approved`
+              within a minute of triggering a fresh build. The rapid toggle left
+              `status: errored` – a `POST .../pages/builds` cleared it.
+              Do NOT reach for this while provisioning might still be in flight;
+              it resets the queue position. Only once the field is missing
+              entirely and hours have passed.
+              Rollout across GitHub's edge nodes is not instant: for a minute
+              some paths returned 200 and others failed. Not a fault, just wait.
+            - [x] **Enforce HTTPS ON**, verified: `http://` → 301 → https, and
+              `www` → 301 → apex.
+            - [x] Mail re-verified AFTER all DNS changes: both root MX, root
+              SPF, Resend DKIM, send.prepeat.app SPF + MX, and DMARC all intact.
       - [ ] **Two copies of the privacy policy exist** –
             `docs/privacy-policy.md` here (where it was authored) and
             `privacy.html` in the web repo (the one that legally matters).
