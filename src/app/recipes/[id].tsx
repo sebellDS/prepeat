@@ -534,7 +534,7 @@ export default function RecipeDetailScreen() {
         body={
           dialog === "delete"
             ? "You are about to delete a recipe from your household. This action cannot be undone."
-            : `Add this recipe's ingredients for ${chosenServings} servings to the shopping list? You can also do this from your weekly plan.`
+            : `Add this recipe's ingredients for ${chosenServings} ${chosenServings === 1 ? "serving" : "servings"} to the shopping list? You can also do this from your weekly plan.`
         }
         confirmLabel={dialog === "delete" ? "Delete recipe" : "Add ingredients"}
         destructive={dialog === "delete"}

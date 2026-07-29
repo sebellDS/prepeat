@@ -131,7 +131,7 @@ export function MealRow({
                   color={ds.colors.icon.default}
                 />
                 <Text className="font-paragraph text-small font-default leading-xxsmall text-text-default">
-                  {entry.servings} servings
+                  {entry.servings} {entry.servings === 1 ? "serving" : "servings"}
                 </Text>
               </View>
             )}
