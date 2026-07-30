@@ -11,6 +11,7 @@
 // order).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
+import { useFocusEffect } from 'expo-router';
 import {
   createContext,
   useCallback,
@@ -697,6 +698,18 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     });
     return () => subscription.remove();
   }, [refresh, retry]);
+
+  // Returning to the Shopping tab refetches. Plan edits made on the Plan tab
+  // (adding or removing a meal) reconcile the week's list server-side and
+  // reach us through the realtime channel – but if that event is ever missed
+  // (a dropped socket, a backgrounded tab), tab focus is the guaranteed
+  // catch-up: the list always reconciles with server truth on the way in.
+  // No-ops before boot resolves the listId (Thomas, 2026-07-30).
+  useFocusEffect(
+    useCallback(() => {
+      if (stateRef.current.listId != null) refresh();
+    }, [refresh]),
+  );
 
   const addItem = useCallback(
     (name: string) => {

@@ -1,6 +1,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
-import { type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -12,6 +18,17 @@ import {
 } from "react-native";
 
 import { ds } from "@/constants/ds";
+
+// A scroll-mode sheet exposes its ScrollView to its own body, so a section can
+// scroll itself into view – e.g. the edit-item sheet brings the category list
+// up when its picker opens. null outside a scroll sheet, so consumers no-op.
+const BottomSheetScrollContext = createContext<RefObject<ScrollView | null> | null>(
+  null,
+);
+
+export function useBottomSheetScroll(): RefObject<ScrollView | null> | null {
+  return useContext(BottomSheetScrollContext);
+}
 
 /**
  * The shared bottom-sheet shell (backlog debt, extracted 2026-07-16 for the
@@ -30,6 +47,8 @@ export function BottomSheet({
   onClose,
   onBack,
   scroll = false,
+  minHeightPercent = 55,
+  maxHeightPercent = 90,
   footer,
   children,
 }: {
@@ -44,11 +63,23 @@ export function BottomSheet({
    */
   onBack?: () => void;
   /**
-   * Wrap the body in a ScrollView capped at 90% height (long content). The
-   * sheet also takes a minimum height then, so it uses the screen rather than
-   * hugging a short form.
+   * Wrap the body in a ScrollView capped at maxHeightPercent (long content).
+   * The sheet also takes a minimum height then, so it uses the screen rather
+   * than hugging a short form.
    */
   scroll?: boolean;
+  /**
+   * How tall the scroll sheet opens (percent of screen). Defaults to 55;
+   * raise it for a sheet whose body needs room on open, or pass 0 to hug the
+   * content (e.g. the edit-item sheet, short until its picker opens).
+   */
+  minHeightPercent?: number;
+  /**
+   * The ceiling the scroll sheet grows to (percent of screen). Defaults to 90;
+   * raise it for a sheet that should use almost the whole screen when full –
+   * e.g. the edit-item category list.
+   */
+  maxHeightPercent?: number;
   /**
    * Pinned below the scroll area – for a CTA that must stay reachable however
    * long the body is, or however much of the screen the keyboard takes
@@ -57,6 +88,7 @@ export function BottomSheet({
   footer?: ReactNode;
   children: ReactNode;
 }) {
+  const scrollRef = useRef<ScrollView>(null);
   return (
     <Modal
       visible={visible}
@@ -80,7 +112,15 @@ export function BottomSheet({
               marginBottom: -80,
               paddingBottom: 120,
               ...(scroll
-                ? { maxHeight: "90%" as const, minHeight: "55%" as const }
+                ? {
+                    maxHeight: `${maxHeightPercent}%` as const,
+                    // A falsy percent means "hug the content" (cap at the max
+                    // and scroll past that) – the sheet grows with its body
+                    // instead of reserving empty space below a short form.
+                    ...(minHeightPercent
+                      ? { minHeight: `${minHeightPercent}%` as const }
+                      : null),
+                  }
                 : null),
             }}
             className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-lightest p-layout-small"
@@ -141,11 +181,14 @@ export function BottomSheet({
             </View>
             {scroll ? (
               <ScrollView
+                ref={scrollRef}
                 style={{ flexShrink: 1 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
-                <View className="w-full gap-layout-small">{children}</View>
+                <BottomSheetScrollContext.Provider value={scrollRef}>
+                  <View className="w-full gap-layout-small">{children}</View>
+                </BottomSheetScrollContext.Provider>
               </ScrollView>
             ) : (
               children
