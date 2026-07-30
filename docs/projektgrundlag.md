@@ -259,7 +259,9 @@ with the other dead-column cleanups when convenient.
   fallback)
 - Auto-created household at sign-up; every user always has at least one
   household
-- One household per user in the UI (multi-household in the data model)
+- Multi-household in the UI as well as the data model – a switcher over every
+  household you belong to, with join-by-code (the switcher shipped in v1.0,
+  ahead of its original v1.1 plan)
 - Weekly plan, one week at a time
 - Shopping list generated from the weekly plan + manual additions
 - Real-time sync of the shopping list and weekly plan
@@ -274,7 +276,6 @@ with the other dead-column cleanups when convenient.
 
 ### Later (v1.1+)
 
-- Multi-household UI (the household switcher)
 - Copy-on-leave, and "copy a recipe to my other household"
 - Merging two households into one
 - Advanced ingredient normalization ("onion" vs "yellow onion", g ↔ kg)
