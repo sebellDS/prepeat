@@ -8,6 +8,7 @@ import { DeleteProfileSheet } from "@/components/household/delete-profile-sheet"
 import { EditHouseholdSheet } from "@/components/household/edit-household-sheet";
 import { EditProfileSheet } from "@/components/household/edit-profile-sheet";
 import { InviteSomeoneSheet } from "@/components/household/invite-someone-sheet";
+import { CreateHouseholdModal } from "@/components/household/create-household-modal";
 import { JoinHouseholdModal } from "@/components/household/join-household-modal";
 import { LeaveHouseholdSheet } from "@/components/household/leave-household-sheet";
 import { ds } from "@/constants/ds";
@@ -57,6 +58,7 @@ export default function HouseholdScreen() {
   >("none");
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const loadMembers = useCallback((householdId: string) => {
     fetchHouseholdMembers(householdId)
@@ -93,7 +95,7 @@ export default function HouseholdScreen() {
           hitSlop={8}
           onPress={() => setSwitcherOpen(true)}
         >
-          <MaterialIcons name="expand-more" size={32} color={ds.colors.icon.default} />
+          <MaterialIcons name="expand-more" size={40} color={ds.colors.surface.primary.main} />
         </Pressable>
       </View>
 
@@ -266,6 +268,10 @@ export default function HouseholdScreen() {
           setSwitcherOpen(false);
           setJoinOpen(true);
         }}
+        onCreate={() => {
+          setSwitcherOpen(false);
+          setCreateOpen(true);
+        }}
         onClose={() => setSwitcherOpen(false)}
       />
 
@@ -277,15 +283,24 @@ export default function HouseholdScreen() {
           addHousehold(joined);
         }}
       />
+
+      <CreateHouseholdModal
+        visible={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(created) => {
+          setCreateOpen(false);
+          addHousehold(created);
+        }}
+      />
     </SafeAreaView>
   );
 }
 
 /**
  * The household switcher, opened from the "Household ▾" title. Lists every
- * household the user belongs to (checkmark on the active one) plus a
- * "Join a household" action, as a dropdown card below the header over a dim
- * backdrop.
+ * household the user belongs to (checkmark on the active one), then
+ * "Join a household" and "Create a new household", as a dropdown card below the
+ * header over a dim backdrop (Figma "change household", 2026-07-30).
  */
 function HouseholdSwitcherMenu({
   visible,
@@ -294,6 +309,7 @@ function HouseholdSwitcherMenu({
   topInset,
   onSelect,
   onJoin,
+  onCreate,
   onClose,
 }: {
   visible: boolean;
@@ -302,6 +318,7 @@ function HouseholdSwitcherMenu({
   topInset: number;
   onSelect: (id: string) => void;
   onJoin: () => void;
+  onCreate: () => void;
   onClose: () => void;
 }) {
   return (
@@ -345,11 +362,21 @@ function HouseholdSwitcherMenu({
             <Pressable
               accessibilityRole="button"
               onPress={onJoin}
-              className="w-full flex-row items-center gap-layout-small p-layout-small"
+              className="w-full flex-row items-center gap-layout-small border-b border-border-subtle p-layout-small"
             >
-              <MaterialIcons name="group-add" size={24} color={ds.colors.icon.default} />
+              <MaterialIcons name="login" size={24} color={ds.colors.icon.default} />
               <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
                 Join a household
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onCreate}
+              className="w-full flex-row items-center gap-layout-small p-layout-small"
+            >
+              <MaterialIcons name="add-home" size={24} color={ds.colors.icon.default} />
+              <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+                Create a new household
               </Text>
             </Pressable>
           </Pressable>
