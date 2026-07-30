@@ -61,7 +61,9 @@ below is open.
         judgement about who the household is. Any fix here is a product
         decision, not a parser change, and probably belongs with the
         category-memory idea: let the household teach synonyms once, the same
-        way it teaches aisles.
+        way it teaches aisles. **Now written up as its own v1.1+ item,
+        "Teach-a-synonym", under Later** – see there for the data model and
+        the design gap.
       Worth weighing against the listing copy, which promises the list "builds
       itself from the plan" – a shopper seeing garlic twice reads that as
       broken even when the quantities are right.
@@ -102,6 +104,41 @@ Closed 2026-07-27:
       optional convenience.
 ## Later (v1.1+)
 
+- [ ] **Teach-a-synonym: merge two ingredient names the household says are
+      the same.** This is the "advanced ingredient normalization (onion vs
+      yellow onion)" line already in projektgrundlag under Later (v1.1+) –
+      written up here 2026-07-30 after it showed on a real list as three
+      un-merged Parmesans (`Parmesan`, `Parmesan cheese`, `shaved Parmesan
+      cheese`) and onion split three ways (`onion` / `small onion` /
+      `yellow onion`). See also the synonym note under Known bugs, which this
+      supersedes.
+      WHY IT CANNOT BE A PARSER RULE: these are genuinely different strings,
+      and no mechanical rule settles them without breaking real distinctions –
+      you cannot strip "cheese" (`cream cheese` ≠ `cream`), and `small onion`
+      may be a deliberate distinction. The household has to decide.
+      SHAPE (mirrors the learned-category pattern, decision #7, which is the
+      precedent Thomas keeps pointing at):
+      - A new per-household table, e.g. `item_name_alias(household_id,
+        alias_name normalized, canonical_name normalized, primary key
+        (household_id, alias_name))`, RLS `is_household_member` like
+        `item_category_memory`. New numbered migration; never edit an applied
+        one.
+      - Fold the alias into the merge key: `norm_item_name` (or the merge
+        step) resolves an alias to its canonical name BEFORE
+        `item_merge_key`, so aliased rows merge and the canonical display name
+        wins. Touches migration 0013's reconciler – needs care and re-test.
+      - Teaching UI: on the shopping-list edit sheet, a "same as…" action that
+        points item B at an existing item A. This is the ONLY genuinely new
+        surface. NO FIGMA DESIGN EXISTS – must be designed before it is built
+        (the multi-day-sheets rule: build Thomas's design, never an
+        improvisation). Backend + merge logic can be built design-free; the
+        sheet cannot.
+      - Realtime: like categories, no realtime on the alias table itself – the
+        visible effect is the shopping_list_items rows merging, already a
+        realtime surface.
+      Decision needed before any UI work: is an alias one-directional (B → A)
+      or a group of equal names? One-directional is simpler and matches the
+      category-memory precedent; start there unless Thomas wants groups.
 - [ ] **Recipe import: ingredient parsing beyond English and Danish**
       (scoped 2026-07-29 – Thomas: *"English and danish is the most
       important. Log other languages as later versions"*). The parser in
