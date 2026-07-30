@@ -673,9 +673,11 @@ missing from it entirely.
       two-addresses item above. Whichever address wins, it is promised in the
       privacy policy AND the App Store description and is the app's only
       support channel, so it has to work before either goes live.
-- [ ] Minor: `prepeat://ds-check` is reachable in a production build (hidden
-      NativeTabs trigger, not linked from any UI). A token-debug screen, so
-      harmless if found, but it does not belong in a shipped app.
+- [x] **`prepeat://ds-check` no longer reachable in production (2026-07-30).**
+      The token-debug screen is now development-only: the route redirects to
+      home when `!__DEV__` (a deep link in a Release build goes nowhere) and
+      the hidden tab trigger is only registered under `__DEV__`. Kept for dev
+      use rather than deleted – it is the DS-token verification tool.
 - [ ] Icon/splash follow-ups – iOS app icon + launch screen shipped
       2026-07-23; the **Android adaptive icon is DONE too** (foreground,
       background and monochrome art all present in assets/images, contrary to

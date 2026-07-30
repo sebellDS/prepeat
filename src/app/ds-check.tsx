@@ -1,6 +1,9 @@
-// Throwaway verification screen for the DS token wiring. Reachable at
-// /ds-check. Delete once the tokens are confirmed working. Every class below
-// comes from the Sebell DS Prep+Eat theme fragment.
+// Verification screen for the DS token wiring, reachable at /ds-check. A
+// development-only tool: the route redirects away in production so it is not
+// reachable in a shipped build, even by deep link (the file still registers a
+// route with expo-router regardless of the hidden tab trigger). Every class
+// below comes from the Sebell DS Prep+Eat theme fragment.
+import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
@@ -10,6 +13,10 @@ export default function DsCheck() {
   const [picked, setPicked] = useState<string[]>(['Veggie']);
   const toggle = (tag: string) =>
     setPicked((p) => (p.includes(tag) ? p.filter((t) => t !== tag) : [...p, tag]));
+  // __DEV__ is true in the dev client and false in Release builds, so a
+  // production deep link to /ds-check lands on the home tab instead. Placed
+  // after the hooks so they are always called (Rules of Hooks).
+  if (!__DEV__) return <Redirect href="/" />;
   return (
     <ScrollView
       className="flex-1 bg-surface-primary"
