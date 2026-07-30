@@ -603,6 +603,17 @@ function tidyIngredientName(raw: string): string {
     name = name.slice(0, comma);
   }
 
+  // Clauses left dangling by an earlier "or" cut, or a bare inline count, are
+  // not part of the name. Great British Chefs writes "green chillies, 1–2,
+  // with or without seeds…"; the or-cut leaves "green chillies, 1–2, with",
+  // and these two strips take it down to "green chillies".
+  for (let i = 0; i < 3; i++) {
+    const before = name;
+    name = name.replace(/,\s*(?:with|and|of|plus|in|for|on|to)\s*$/i, "");
+    name = name.replace(/,\s*\d+(?:\s*[-–]\s*\d+)?\s*$/, "");
+    if (name === before) break;
+  }
+
   // Some sites drop the comma entirely – BBC Good Food writes "300g celery
   // sliced" and "200g potatoes peeled and cut into chunks". Cut at the first
   // prep participle, but never at the first word: "shredded cheese" and
@@ -688,6 +699,11 @@ export function splitIngredient(text: string): {
       (_all, lead: string, glyph: string) =>
         (lead ? `${lead} ` : "") + (VULGAR_FRACTIONS[glyph] ?? glyph),
     )
+    // A leading amount range – keep the low end. The main amount regex only
+    // knows decimal ranges ("500-600 g"); a fraction on either side left the
+    // rest in the name, so "1/4 -1/2 teaspoon crushed red pepper" parsed as
+    // amount "1/4", name "-1/2 teaspoon crushed red pepper".
+    .replace(/^(\d+(?:\/\d+)?)\s*[-–]\s*\d+(?:\/\d+)?(?=\s|$)/, "$1")
     // BBC glues an imperial conversion to the metric unit with a slash and no
     // space: "45g/2oz Parmesan", "500ml/18fl oz milk". The conversion is for
     // the reader, not a second thing to buy, and it can span two tokens
