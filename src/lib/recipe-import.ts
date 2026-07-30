@@ -670,11 +670,20 @@ export function splitIngredient(text: string): {
 } {
   // "1½ tsp" means one and a half. Folding the glyph without a separator
   // would splice it onto the whole number and read as eleven halves.
-  const cleaned = cleanText(text).replace(
-    /(\d?)\s*([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞])/g,
-    (_all, lead: string, glyph: string) =>
-      (lead ? `${lead} ` : "") + (VULGAR_FRACTIONS[glyph] ?? glyph),
-  );
+  const cleaned = cleanText(text)
+    .replace(
+      /(\d?)\s*([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞])/g,
+      (_all, lead: string, glyph: string) =>
+        (lead ? `${lead} ` : "") + (VULGAR_FRACTIONS[glyph] ?? glyph),
+    )
+    // BBC glues an imperial conversion to the metric unit with a slash and no
+    // space: "45g/2oz Parmesan", "500ml/18fl oz milk". The conversion is for
+    // the reader, not a second thing to buy, and it can span two tokens
+    // ("18fl oz"), so drop it whole and leave "45 g Parmesan".
+    .replace(
+      /(\d)\s*([a-zA-Z]+)\s*\/\s*[\d\s.,/]*(?:fl\s*)?[a-zA-Z]{1,4}\b/,
+      "$1 $2",
+    );
   const match = cleaned.match(
     /^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*(.*)$/,
   );
