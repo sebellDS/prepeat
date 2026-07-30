@@ -5,9 +5,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { Keyboard, Pressable, ScrollView, Text, View } from "react-native";
+import { Keyboard, Pressable, Text, View } from "react-native";
 
-import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { BottomSheet, useBottomSheetScroll } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
 import {
@@ -36,6 +36,11 @@ export function EditItemSheet({ item, onClose, onSave }: EditItemSheetProps) {
       title="Edit item"
       onClose={onClose}
       scroll
+      // Hug the content (0 = no forced minimum): short when the category
+      // picker is closed – no dead space above the Done button – and growing
+      // to near full-height as the list opens (Thomas, 2026-07-30).
+      minHeightPercent={0}
+      maxHeightPercent={96}
       footer={
         <Pressable
           onPress={() => saveRef.current?.()}
@@ -77,6 +82,10 @@ function SheetContent({ item, onClose, onSave, saveRef }: SheetContentProps) {
   const [quantity, setQuantity] = useState(item.quantity ?? "");
   const [aisle, setAisle] = useState<Category | null>(item.aisle);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // The sheet's own ScrollView, plus where the Category block sits within it,
+  // so opening the picker can scroll that block to the top (below).
+  const sheetScroll = useBottomSheetScroll();
+  const categoryY = useRef(0);
 
   const save = () => {
     onSave({ name, quantity: quantity.trim() || null, aisle });
@@ -112,7 +121,12 @@ function SheetContent({ item, onClose, onSave, saveRef }: SheetContentProps) {
         />
       </View>
 
-      <View className="w-full gap-comp-xsmall">
+      <View
+        className="w-full gap-comp-xsmall"
+        onLayout={(event) => {
+          categoryY.current = event.nativeEvent.layout.y;
+        }}
+      >
         <Text className="font-paragraph text-small font-default text-text-subtle">
           Category
         </Text>
@@ -124,7 +138,23 @@ function SheetContent({ item, onClose, onSave, saveRef }: SheetContentProps) {
             // The keyboard and the picker fight for the same space – hand it
             // over cleanly instead of flickering.
             Keyboard.dismiss();
-            setPickerOpen((value) => !value);
+            setPickerOpen((value) => {
+              const opening = !value;
+              // On open, bring the whole Category block to the top of the
+              // sheet so the options are visible without a manual scroll. The
+              // delay lets the newly revealed list lay out first.
+              if (opening) {
+                setTimeout(
+                  () =>
+                    sheetScroll?.current?.scrollTo({
+                      y: categoryY.current,
+                      animated: true,
+                    }),
+                  120,
+                );
+              }
+              return opening;
+            });
           }}
           accessibilityRole="button"
           accessibilityLabel={`Category: ${aisle ?? "none yet"}`}
@@ -145,13 +175,10 @@ function SheetContent({ item, onClose, onSave, saveRef }: SheetContentProps) {
           />
         </Pressable>
         {pickerOpen && (
-          // Capped and scrollable so all nine categories are reachable even on
-          // small screens (bottom options were cut off before).
-          <ScrollView
-            className="w-full overflow-hidden rounded-medium border border-border"
-            style={{ maxHeight: 264 }}
-            nestedScrollEnabled
-          >
+          // The options flow inline so the sheet grows as the picker opens
+          // (rather than a fixed capped box); the sheet's own scroll reaches
+          // any that fall past 90% of the screen on a small phone.
+          <View className="w-full overflow-hidden rounded-medium border border-border">
             {CATEGORIES.map((category, index) => (
               <Pressable
                 key={category}
@@ -175,7 +202,7 @@ function SheetContent({ item, onClose, onSave, saveRef }: SheetContentProps) {
                 </Text>
               </Pressable>
             ))}
-          </ScrollView>
+          </View>
         )}
       </View>
     </>

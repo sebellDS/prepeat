@@ -128,7 +128,7 @@ export default function HouseholdScreen() {
               hitSlop={8}
               onPress={() => setSheet("household")}
             >
-              <MaterialIcons name="edit" size={24} color={ds.colors.icon.default} />
+              <MaterialIcons name="more-vert" size={24} color={ds.colors.icon.default} />
             </Pressable>
           </View>
           <View className="w-full items-center gap-layout-small p-layout-small">
@@ -424,7 +424,7 @@ function MemberRow({
           hitSlop={8}
           onPress={onEdit}
         >
-          <MaterialIcons name="edit" size={24} color={ds.colors.icon.default} />
+          <MaterialIcons name="more-vert" size={24} color={ds.colors.icon.default} />
         </Pressable>
       )}
     </View>

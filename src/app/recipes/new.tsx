@@ -307,6 +307,11 @@ export default function AddRecipeScreen() {
                 onChangeText={setDescription}
                 placeholder="A quick weeknight classic"
                 accessibilityLabel="Description"
+                multiline
+                // A recipe blurb runs to a few lines – grow the field into a
+                // text area that starts top-aligned rather than a one-line input.
+                textAlignVertical="top"
+                style={{ minHeight: 96 }}
               />
             </Field>
             <Field label="Preparation time">
