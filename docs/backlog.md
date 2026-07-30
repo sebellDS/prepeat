@@ -745,6 +745,35 @@ missing from it entirely.
 
 ## Decisions log (recent)
 
+- **2026-07-30 – five small UI bugs from on-device testing** (PR #9,
+  branch `fix/small-ui-bugs`). All reported by Thomas walking the app on his
+  iPhone, each built to device and confirmed before the next:
+  - **Household edit icon → vertical 3-dot.** Both edit affordances (the
+    household card and your own member row) now use `more-vert` instead of a
+    pencil, matching the list-row swipe-hint style. Started as `more-horiz`;
+    Thomas wanted the vertical dots as on the list rows.
+  - **Recipe description is a text area**, not a single-line input (multiline,
+    top-aligned, ~4 lines tall).
+  - **Add to weekly plan (recipe detail)** gained the shared week navigator
+    (plan a recipe into a future week; back stops at the current week). The
+    "Add to plan" button is pinned as the sheet footer – it was scrolling
+    half off the bottom once the week nav made the sheet taller – and the
+    sheet grows to near full-height.
+  - **Shopping refetches on tab focus**, so a meal removed on the Plan tab
+    always reconciles the week's list even if the realtime event is missed.
+    The reconciler and realtime were already correct; the gap was the tab
+    having no catch-up path short of app foregrounding.
+  - **Edit-item sheet sizing**: hugs its content when the category picker is
+    closed (no dead space above Done – the fixed 80% first try padded the
+    closed state), grows to near full-height and auto-scrolls the category
+    block into view when the picker opens.
+  - Shared plumbing: `BottomSheet` gained `minHeightPercent` (0 = hug content)
+    and `maxHeightPercent`, and now exposes its scroll position to the sheet
+    body via a `useBottomSheetScroll` hook (used for the edit-item auto-scroll).
+  All improvised where noted (no Figma frames for these sheets yet), flagged
+  per the 2026-07-17 rule. The blessing note above (2026-07-25) that called the
+  edit-item sheet "55% minimum height" is now superseded by the hug/auto-scroll
+  behaviour.
 - **2026-07-28 – the recipe form's save button is pinned to the bottom.**
   Thomas lost edits twice by leaving the form without reaching the button: it
   sat at the very end of the page, below ingredients and instructions, so on
