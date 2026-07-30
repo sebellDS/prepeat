@@ -28,8 +28,9 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} />
       </NativeTabs.Trigger>
 
-      {/* Token verification screen; reachable at /ds-check but not a tab. */}
-      <NativeTabs.Trigger name="ds-check" hidden />
+      {/* DS token verification screen – development builds only. The route
+          itself also redirects away in production (see app/ds-check.tsx). */}
+      {__DEV__ && <NativeTabs.Trigger name="ds-check" hidden />}
     </NativeTabs>
   );
 }
