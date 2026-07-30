@@ -37,7 +37,34 @@ below is open.
 
 ## Known bugs (open)
 
-None.
+- [ ] **The same ingredient can still appear twice on the shopping list**
+      (Thomas, 2026-07-29, looking at the week-32 demo list: *"a lot of item
+      are the same, but named differently"*). `item_merge_key` (migration
+      0013) is `norm_item_name(name) || ' ' || lower(trim(unit))`, so two rows
+      merge only on an exact name AND an exact unit string. The mechanical
+      halves are fixed (trailing unit words lifted out of the name, spelled-out
+      units folded onto abbreviations). Two causes remain:
+      - **Singular vs plural count units.** "1 clove garlic" and "5 cloves
+        garlic" have the same name and still split, because `clove` ≠ `cloves`.
+        Not folded in the parser on purpose: the merged row would print
+        "8 clove garlic". The clean fix is to singularise the unit INSIDE
+        `item_merge_key` (a new migration – never edit 0013) so rows merge
+        while the displayed text keeps whichever natural form was stored.
+        Same applies to cup/cups, slice/slices, sprig/sprigs, head/heads.
+        NEEDS A DECISION from Thomas: change the key, or accept the split.
+      - **Synonyms.** `onion` / `small onion` / `yellow onion`,
+        `salt` / `kosher salt` / `cooking salt` / `flaky sea salt`,
+        `olive oil` / `extra virgin olive oil`, `fresh cilantro` /
+        `coriander leaves`. These are genuinely different strings and no
+        mechanical rule settles them – "small onion" may well be a deliberate
+        distinction, and merging UK/US names (coriander/cilantro) is a
+        judgement about who the household is. Any fix here is a product
+        decision, not a parser change, and probably belongs with the
+        category-memory idea: let the household teach synonyms once, the same
+        way it teaches aisles.
+      Worth weighing against the listing copy, which promises the list "builds
+      itself from the plan" – a shopper seeing garlic twice reads that as
+      broken even when the quantities are right.
 
 Closed 2026-07-27:
 
@@ -75,6 +102,39 @@ Closed 2026-07-27:
       optional convenience.
 ## Later (v1.1+)
 
+- [ ] **Recipe import: ingredient parsing beyond English and Danish**
+      (scoped 2026-07-29 – Thomas: *"English and danish is the most
+      important. Log other languages as later versions"*). The parser in
+      [src/lib/recipe-import.ts](../src/lib/recipe-import.ts) splits an
+      ingredient string into name + quantity. The language-INDEPENDENT half
+      works everywhere already: leading amounts, ranges, vulgar fractions
+      (½ ¼ ¾), metric units, parentheticals and colon-sentences. The half that
+      needs to KNOW WORDS is hand-written vocabulary, and only English and
+      Danish are complete:
+      - **local spoon/measure units** – German `EL`/`TL`, Swedish `msk`,
+        Dutch `eetlepels`, Spanish `cucharadas`, Italian `cucchiai`. Missing
+        ones fall into the NAME: `2 EL Olivenöl` → quantity `2`, name
+        `EL Olivenöl`.
+      - **prep participles** – `, gewürfelt` / `, hackad` / `, tritata` /
+        `, émincé` are all kept verbatim, so the shopping list reads
+        `Zwiebel, gewürfelt`.
+      - **"to taste" qualifiers** – `nach Geschmack`, `al gusto`,
+        `selon le goût`, `efter smak` (Swedish – the Danish `efter smag` IS
+        handled).
+      - **alternatives** – only `or`/`eller` are known; `oder`, `ou`, `o`,
+        `of` are not.
+      - **Romance connector words** – `200 g de farine` → name `de farine`,
+        `200 g di farina` → name `di farina`. The `de`/`di`/`du`/`della`
+        should be dropped after the unit.
+      Each language is roughly one units list + one participle list + one
+      qualifier phrase – the same shape as the existing tables, ~30 lines.
+      Worth doing per territory as the App Store rollout reaches it, since
+      recipe sites are overwhelmingly local-language and this hits a user on
+      their very FIRST import.
+      One trap already found and guarded: French `c. à soupe` is a TABLESPOON,
+      and reading the bare `c` as `cup` inflates the amount ~16x. The parser
+      now bails out when `c` is followed by `à`/`a`. Any future language work
+      needs the same paranoia about collisions with English abbreviations.
 - [ ] **Share a recipe – FIRST ITEM IN v1.1** (Thomas, raised as an idea
       2026-07-25, weighed for v1.0 on 2026-07-27 and deliberately left out of
       it the same day: *"I must think some more over the sharing feature"*).
@@ -156,6 +216,47 @@ Closed 2026-07-27:
 
 ## Code debts (small, known, deliberate)
 
+- [ ] **Recipe import leaves prep instructions in the ingredient NAME, and the
+      shopping list inherits it** (found 2026-07-29 while shooting App Store
+      screenshots). `parseIngredient` in
+      [src/lib/recipe-import.ts](../src/lib/recipe-import.ts) only strips a
+      LEADING amount + known unit; everything else stays in the name verbatim.
+      Real items produced from imported recipes in the demo household:
+      - `Prik Nam Pla (condiment for seasoning the egg, optional): Mix together
+        some fish sauce, a squeeze of lime juice, chopped Thai chilies, and
+        chopped garlic.` – a whole instruction the source site filed under
+        `recipeIngredient`
+      - `½ tsp black soy sauce (or sub dark soy sauce and reduce regular soy
+        sauce to 2 tsp)`, quantity `1` – the `½` never parsed as an amount
+      - `coriander leaves, 1 large handful` – quantity is not leading, so it
+        stays in the name
+      - `½ cup long beans, cut into short pieces`, `cheese, grated (any melting
+        cheese will do)`, `garlic clove, cut in half`, `tomato, sliced`
+      This is the shopping list – the feature the listing calls the centrepiece
+      ("The list builds itself from the plan"). It makes an imported week's list
+      read as broken, and it is why the store screenshot of Shopping is not
+      usable as-is. Worth fixing at least: vulgar fractions (½ ¼ ¾) as amounts,
+      strip a trailing `, <prep word>` clause, drop parentheticals, and reject
+      ingredient strings that are obviously sentences.
+      **PARSER FIXED 2026-07-29** (vulgar fractions, trailing prep clauses
+      both opening AND ending in the prep word, parentheticals, `or`/`eller`
+      alternatives, trailing amounts, colon sentences, US `c.` for cup –
+      31 English + 18 Danish cases verified, range/Danish regressions intact).
+      Danish vocabulary completed the same day; other languages are a v1.1+
+      item under Later. Recipes imported
+      BEFORE that date still hold the old mangled names; see the re-import
+      gap below.
+- [ ] **An imported recipe can never be re-imported** – the "paste a link"
+      button in [src/app/recipes/new.tsx](../src/app/recipes/new.tsx) is gated
+      behind `!editing`, so the edit screen has no import trigger. Found
+      2026-07-29 when the parser fix above could not be applied to recipes
+      already in the demo household. Consequence: every parser improvement, and
+      every site that fixes its own markup, only ever benefits NEW recipes –
+      existing ones can only be corrected ingredient by ingredient by hand, or
+      by creating a duplicate and deleting the original (which also orphans the
+      meal-plan snapshots). A "Re-import from source" action on the edit screen
+      would fix it; `applyImport` already does exactly the right thing to the
+      form, and `replaceIngredientsAndSteps` already saves it in place.
 - [ ] **`meal_plans.pushed_to_list_at` is back, on purpose** – migration 0023,
       APPLIED 2026-07-27, an always-null compatibility shim so TestFlight
       build 10 keeps working. Nothing reads or writes it. Drop it
@@ -549,6 +650,37 @@ missing from it entirely.
 
 ## Recurring
 
+- **HOW TO RUN A BIG SQL SCRIPT: the Supabase SQL editor TRUNCATES long
+  pastes.** Standing note, learned the hard way 2026-07-30 – five failed
+  attempts at one 46 KB rebuild script before it landed. Not a hypothesis: the
+  same script cut off at the same point twice, and the "copy file content"
+  button lost content too (Thomas: *"Not all of the files content get
+  copied"*).
+  What each shape failed with, so the symptoms are recognisable next time:
+  - **One `do $seed$ … $seed$` block** → `42601: unterminated dollar-quoted
+    string`, echoing only the first third of the file. A truncated DO block can
+    never parse.
+  - **Plain statements wrapped in `begin;` / `commit;`** → `23503` foreign-key
+    violation. The `begin` arrived, the `commit` did not, so the first part
+    rolled back and later statements referenced rows that had vanished. This is
+    the dangerous one: it looks like a data bug, not a truncation.
+  - **Plain statements, no transaction, ~196 of them** → another `23503`,
+    further down the file.
+  What worked: **collapse to ~13 multi-row statements** (one `insert … values
+  (…),(…),(…)` per table instead of one insert per row), no transaction
+  wrapper, and every insert preceded by a delete of the same fixed ids so the
+  whole file is safe to RE-RUN from the top. 46 KB → 30 KB, 196 statements →
+  13. End the script with a verification `select` (counts + one known-merged
+  row) so success is provable rather than assumed – "Success. No rows returned"
+  proves nothing about a script that was cut in half.
+  Also: the editor warns "creates tables without enabling RLS" on scripts that
+  create no tables at all. Pattern-matching false positive – choose **Run
+  without RLS**, never "Run and enable RLS", which would change security
+  settings as a side effect.
+  Generator for the working shape:
+  `scratchpad/gen-bulk.ts` from that session – it drives the app's own
+  `importRecipeFromUrl` + `parseQuantity` offline, so seeded data goes through
+  exactly the same parser as a real import.
 - [ ] **Renew the free signing every ~7 days.** BOTH phones now run the dev
       app ("Prep+Eat Dev", bundle app.prepeat.dev) from
       `./scripts/build-iphone.sh <UDID>` – no arg defaults to Thomas's. The
