@@ -650,6 +650,37 @@ missing from it entirely.
 
 ## Recurring
 
+- **HOW TO RUN A BIG SQL SCRIPT: the Supabase SQL editor TRUNCATES long
+  pastes.** Standing note, learned the hard way 2026-07-30 – five failed
+  attempts at one 46 KB rebuild script before it landed. Not a hypothesis: the
+  same script cut off at the same point twice, and the "copy file content"
+  button lost content too (Thomas: *"Not all of the files content get
+  copied"*).
+  What each shape failed with, so the symptoms are recognisable next time:
+  - **One `do $seed$ … $seed$` block** → `42601: unterminated dollar-quoted
+    string`, echoing only the first third of the file. A truncated DO block can
+    never parse.
+  - **Plain statements wrapped in `begin;` / `commit;`** → `23503` foreign-key
+    violation. The `begin` arrived, the `commit` did not, so the first part
+    rolled back and later statements referenced rows that had vanished. This is
+    the dangerous one: it looks like a data bug, not a truncation.
+  - **Plain statements, no transaction, ~196 of them** → another `23503`,
+    further down the file.
+  What worked: **collapse to ~13 multi-row statements** (one `insert … values
+  (…),(…),(…)` per table instead of one insert per row), no transaction
+  wrapper, and every insert preceded by a delete of the same fixed ids so the
+  whole file is safe to RE-RUN from the top. 46 KB → 30 KB, 196 statements →
+  13. End the script with a verification `select` (counts + one known-merged
+  row) so success is provable rather than assumed – "Success. No rows returned"
+  proves nothing about a script that was cut in half.
+  Also: the editor warns "creates tables without enabling RLS" on scripts that
+  create no tables at all. Pattern-matching false positive – choose **Run
+  without RLS**, never "Run and enable RLS", which would change security
+  settings as a side effect.
+  Generator for the working shape:
+  `scratchpad/gen-bulk.ts` from that session – it drives the app's own
+  `importRecipeFromUrl` + `parseQuantity` offline, so seeded data goes through
+  exactly the same parser as a real import.
 - [ ] **Renew the free signing every ~7 days.** BOTH phones now run the dev
       app ("Prep+Eat Dev", bundle app.prepeat.dev) from
       `./scripts/build-iphone.sh <UDID>` – no arg defaults to Thomas's. The
