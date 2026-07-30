@@ -90,7 +90,11 @@ function extractJsonLdRecipe(
       continue;
     }
     const node = findRecipeNode(data);
-    if (node) return normalizeJsonLd(node);
+    if (node) {
+      const recipe = normalizeJsonLd(node);
+      // Keep scanning the other blocks – another may hold a complete Recipe.
+      if (recipe) return recipe;
+    }
   }
   return null;
 }
@@ -112,10 +116,18 @@ function findRecipeNode(data: JsonValue): JsonObject | null {
   return null;
 }
 
-function normalizeJsonLd(node: JsonObject): Omit<ImportedRecipe, "sourceUrl"> {
+function normalizeJsonLd(
+  node: JsonObject,
+): Omit<ImportedRecipe, "sourceUrl"> | null {
   const ingredients = asStringArray(
     node.recipeIngredient ?? node.ingredients,
   ).map(splitIngredient);
+  // A Recipe node with no ingredients is not usable, and treating it as a
+  // success opened a near-empty form titled "Imported recipe" with no error –
+  // a silent failure. It happens when a site's bot protection serves a
+  // stripped page (delish/Hearst do this intermittently). Bail so the caller
+  // falls through to microdata and, failing that, raises "no-recipe".
+  if (ingredients.length === 0) return null;
   return {
     title: cleanText(asString(node.name) ?? "Imported recipe"),
     description: cleanText(asString(node.description) ?? "") || null,
