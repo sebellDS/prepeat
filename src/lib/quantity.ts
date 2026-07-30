@@ -41,9 +41,31 @@ export function roundQuantity(quantity: number): number {
   return Math.round(quantity * 100) / 100;
 }
 
+// Count units that read wrong at "1" – "1 cups" should be "1 cup". An explicit
+// map, not a blanket "drop trailing s", so Danish units that end in s or r
+// (glas, ris, liter) and imperial abbreviations (oz) are never mangled. Weight
+// and volume units (g, ml, tbsp) have no plural to fix.
+const UNIT_SINGULARS: Record<string, string> = {
+  cups: 'cup',
+  cloves: 'clove',
+  slices: 'slice',
+  sprigs: 'sprig',
+  heads: 'head',
+  cans: 'can',
+  pieces: 'piece',
+  sticks: 'stick',
+  pinches: 'pinch',
+  bunches: 'bunch',
+  handfuls: 'handful',
+  sheets: 'sheet',
+  tablespoons: 'tablespoon',
+  teaspoons: 'teaspoon',
+};
+
 export function formatQuantity(quantity: number | null, unit: string | null): string | null {
   if (quantity == null) return unit;
-  const amount = String(roundQuantity(quantity));
-  if (unit == null) return amount;
-  return `${amount} ${unit}`;
+  const amount = roundQuantity(quantity);
+  if (unit == null) return String(amount);
+  const shown = amount === 1 ? (UNIT_SINGULARS[unit.toLowerCase()] ?? unit) : unit;
+  return `${amount} ${shown}`;
 }
