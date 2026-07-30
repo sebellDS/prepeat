@@ -115,6 +115,61 @@ not carried over blindly.
 
 ---
 
+## 3. App Review sign-in (the reviewer demo account)
+
+App Store Connect → your app's version → **App Review Information**.
+
+**The problem it solves.** Sign-in is a 6-digit code emailed to the address –
+no password. A reviewer handed an email address cannot receive the code unless
+they can open that mailbox. So the demo account's address must be a **real
+mailbox with webmail** the reviewer can log into to read the code.
+
+**Set "Sign-In required" = Yes.** Fill the fields and Notes:
+
+```
+User name:  appreview@sebell.dk          ← the demo account address
+Password:   <mailbox password>           ← webmail login, NOT an app password
+```
+
+**Review Notes (paste, filling the two placeholders):**
+
+```
+This app has no password. Sign-in is a one-time 6-digit code emailed to the
+account address, so the reviewer needs to read that mailbox.
+
+To sign in:
+1. In the app, tap Sign in and enter:  appreview@sebell.dk
+2. Request the code. The app shows a 6-digit entry screen.
+3. Read the code from the mailbox: open <WEBMAIL URL> in a browser and log in
+   with  appreview@sebell.dk  /  <MAILBOX PASSWORD>.  The newest message from
+   "Prep+Eat" (hello@prepeat.app) contains the code.
+4. Enter the code in the app. You are signed in to a household ("Demo Kitchen")
+   that already has recipes, a planned week and a shopping list.
+
+Notes:
+- Codes expire; if one is old, request a new one in the app and re-check the
+  mailbox. There is a 60-second minimum between requests.
+- The webmail login above is only to read the emailed code – no password is
+  ever entered in the app itself.
+```
+
+The `<WEBMAIL URL>` and `<MAILBOX PASSWORD>` are Thomas's to fill from the
+mailbox he creates. Everything else is fixed.
+
+**Why not the Supabase auth-schema backdoor** (the fixed-test-OTP trigger):
+rejected in the backlog – it writes into Supabase's undocumented internal
+`auth` schema, is a permanent known-code backdoor, and rots silently because it
+is never exercised day to day. A real mailbox tampers with nothing and is what
+the reviewer actually needs. If Apple ever pushes back, the trigger is the
+fallback, not the opening move.
+
+**The demo data is NOT Thomas's family's data.** A separate account, its own
+household, its own recipes and planned week – seeded server-side (same
+technique as the screenshots rebuild), so Apple never sees the real
+household's eating habits.
+
+---
+
 ## Not covered here (separate checklist items)
 
 Category (Food & Drink), copyright line, and territory selection are the
