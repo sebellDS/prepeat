@@ -104,6 +104,31 @@ Closed 2026-07-27:
       optional convenience.
 ## Later (v1.1+)
 
+- [ ] **Sign in with Apple (iOS)** – considered 2026-07-30 while setting up the
+      App Review demo account, deferred to after v1.0 (Thomas: "Mailbox now,
+      Apple later"). Findings worth keeping:
+      - **Not required.** Apple's guideline 4.8 only forces a Sign-in-with-Apple
+        option for apps using a THIRD-PARTY social login (Google/Facebook/…).
+        Prep+Eat uses first-party email OTP, so it is exempt. This is a product
+        choice, not compliance.
+      - **It does NOT remove the demo-account work.** A reviewer signing in with
+        their own Apple ID lands in a brand-new EMPTY account – the "reviews
+        badly" risk. You cannot pre-seed the reviewer's Apple-ID account. The
+        demo mailbox is what lets you hand over a full, seeded account, so it is
+        still wanted even with SIWA.
+      - **An addition, not a replacement.** Email OTP stays for Android (SIWA is
+        effectively iOS-only) and for users without an Apple ID.
+      - **Cost:** `expo-apple-authentication` (Expo SDK 56 supports it) →
+        `supabase.auth.signInWithIdToken({provider:'apple'})`; Apple Developer
+        portal (enable the capability, a Services ID + a key); Supabase Apple
+        provider configured with those; capture Apple's name (given only on the
+        FIRST authorization – feeds the onboarding first-name step); handle
+        private-relay `@privaterelay.appleid.com` emails (they become the
+        stored identity / the address shown on the Household screen); decide
+        identity-linking if the same person later uses OTP with the same email.
+      - **Design gap:** the Apple button glyph/label is Apple-specified (HIG),
+        but its PLACEMENT on the welcome screen has no Figma frame – design
+        first, per the no-improvised-UI rule.
 - [ ] **Teach-a-synonym: merge two ingredient names the household says are
       the same.** This is the "advanced ingredient normalization (onion vs
       yellow onion)" line already in projektgrundlag under Later (v1.1+) –
@@ -139,6 +164,57 @@ Closed 2026-07-27:
       Decision needed before any UI work: is an alias one-directional (B → A)
       or a group of equal names? One-directional is simpler and matches the
       category-memory precedent; start there unless Thomas wants groups.
+- [ ] **Drag a meal to another day on the Plan screen** (Thomas asked
+      2026-07-30: *"is it possible to drag a meal to another day in Plan? It
+      has the slide to edit already"*). Answer: yes, and the data side is
+      already done – the swipe "Move to another day" action already calls
+      `plan.moveEntry(id, date)` in [src/lib/meal-plan.tsx](../src/lib/meal-plan.tsx),
+      so a drag gesture would reuse that exact function. This is therefore a
+      pure front-end gesture/animation build, not a data-model change. Filed
+      as v1.1+ polish, NOT a missing capability: moving a meal between days
+      already ships today via swipe → day-picker sheet (MoveDaySheet). Drag is
+      a nicer way to do the same thing.
+      WHAT MAKES IT MORE THAN A TWEAK: the Plan screen stacks all 7 days in a
+      vertical ScrollView ([src/app/(plan)/index.tsx](../src/app/(plan)/index.tsx)),
+      and each meal row already owns a horizontal swipe-to-edit gesture
+      (ReanimatedSwipeable in [src/components/plan/meal-row.tsx](../src/components/plan/meal-row.tsx)).
+      Three things need care: (1) gesture disambiguation between swipe-to-edit,
+      vertical scroll and pick-up – the standard fix is long-press-to-lift;
+      (2) auto-scroll while dragging so off-screen days are reachable; (3)
+      per-day drop-target highlighting. Standard pattern (reanimated + a
+      draggable-list approach), a few days of build-and-polish.
+      DESIGN GAP – NO FIGMA EXISTS for the drag states (lifted card, drop
+      highlight, drag handle). Per the build-the-design rule, these must be
+      designed before the build, or the improvisation flagged here. Note there
+      is a sibling drag interaction already designed+built on the shopping list
+      (see decisions log ~line 998: rows scroll inside, target slot shown) –
+      reuse its visual language rather than inventing a new one.
+- [ ] **Drag a shopping item to another category** (Thomas, 2026-07-30).
+      Pick up a single item and drop it on a different category group to
+      recategorize it. Like the meal-drag item above, the data side already
+      exists: `editItem(id, { ...aisle })` in
+      [src/lib/shopping-list.tsx](../src/lib/shopping-list.tsx) (~line 771)
+      already sets an item's aisle AND teaches `item_category_memory` so
+      future items of that name auto-file to the same category. A drag-drop
+      would call that same function with the drop target's category, getting
+      the "learn it once" behaviour for free. Pure front-end gesture build.
+      Filed as v1.1+ polish, NOT a missing capability: recategorizing already
+      ships today via tap item → edit sheet → pick a category
+      ([src/components/shopping/edit-item-sheet.tsx](../src/components/shopping/edit-item-sheet.tsx)).
+      DISTINCT from the drag that already exists here – the shopping list
+      already lets you drag category GROUPS to reorder them (inline drag,
+      [src/app/shopping.tsx](../src/app/shopping.tsx) ~line 55, overlay in
+      [src/components/shopping/inline-reorder-overlay.tsx](../src/components/shopping/inline-reorder-overlay.tsx)).
+      This new item is dragging one ITEM between groups, a different gesture.
+      WHAT MAKES IT MORE THAN A TWEAK: same three concerns as the meal drag –
+      long-press-to-lift so it doesn't fight the row's swipe-to-edit and the
+      list scroll, auto-scroll to reach off-screen categories, and drop-target
+      highlighting on each group. Extra wrinkle: an item can also be dropped on
+      the uncategorized/top region, and checked items sit in their own settled
+      area – decide which regions are valid drop targets before building.
+      DESIGN GAP – NO FIGMA for the item-drag states. Reuse the existing
+      category-group drag visuals (decisions log ~line 998: rows scroll inside,
+      target slot shown) rather than inventing new ones; flag any improvisation.
 - [ ] **Recipe import: ingredient parsing beyond English and Danish**
       (scoped 2026-07-29 – Thomas: *"English and danish is the most
       important. Log other languages as later versions"*). The parser in
