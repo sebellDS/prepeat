@@ -658,10 +658,24 @@ missing from it entirely.
       content; no analytics SDK, no advertising, no tracking – which is what
       the listing's "NO ADS. NO TRACKING." section promises, so the two must
       agree.
+      **ANSWERS DRAFTED 2026-07-30 –
+      [app-store-connect-answers.md](app-store-connect-answers.md).**
+      Verified against the code (no tracking/analytics/ads SDK; expo-device
+      unused; no push/location/IDFA). Field-by-field table ready to enter. One
+      CONFIRM: whether to declare the internal account "User ID" (recommended
+      yes) – for the attorney. Still to DO in App Store Connect by Thomas.
 - [ ] **The remaining App Store Connect paperwork**: age-rating questionnaire,
       primary category (Food & Drink), copyright line, and the **territory
       selection** – which is where the UK tagline decision above actually gets
       made.
+      **AGE-RATING ANSWERS DRAFTED 2026-07-30 –
+      [app-store-connect-answers.md](app-store-connect-answers.md):** target
+      4+, every content question None/No, do NOT enrol in the Kids Category.
+      Two CONFIRMs noted there – alcohol as a recipe ingredient (answer None;
+      fallback is the lowest tier), and that the v1.1 sharing feature turns on
+      real user-generated content and MUST re-trigger this questionnaire plus
+      report/block controls. Category/copyright/territory still Thomas's to
+      enter; territory is the UK-tagline call.
 - [ ] **Ship build 11 before launching.** The Plan-tab retry screen is app
       code, so no phone has it – build 10 (2026-07-25) is still current. v1.0
       should not go out on a build older than that fix.
