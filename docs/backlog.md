@@ -718,11 +718,20 @@ missing from it entirely.
       the webmail login and one line of instruction. No auth-schema tampering,
       nothing shipped in the app, nothing to rot. If Apple pushes back, the
       trigger is the fallback, not the opening move.
-      - [ ] **Seed a demo household for it.** A meal planner reviewed on an
-            empty account reviews badly and invites a "not complete" rejection.
-            The demo account needs its own household with a few recipes and a
-            planned week – NOT Thomas's family's real data, which would hand
-            Apple the household's actual eating habits.
+      - [x] **Demo account built and seeded, 2026-07-30.** Mailbox
+            `appreview@sebell.dk` created (webmail, its own password – shared
+            with Apple only, never committed to this public repo). Bootstrapped
+            in the app: signed in, name set, household **"Demo Kitchen"**
+            created. Then seeded server-side with 9 recipes + a planned CURRENT
+            and NEXT week + shopping lists (generator
+            `scratchpad/gen-demo.ts` → the SQL, re-runnable; the weeks are
+            `date_trunc('week', now())` so re-run it close to submission to keep
+            "this week" populated). Verified recipes 9, entries 14. SEPARATE
+            from "The Hanson Kitchen" (Thomas's own account, used only for the
+            App Store screenshots) – the reviewer never sees the real household.
+            REMAINING: Thomas fills the App Review notes in App Store Connect
+            with the webmail URL + mailbox password – draft ready in
+            [app-store-connect-answers.md](app-store-connect-answers.md) §3.
 - [ ] **Screenshots** – `app-store-assets/screenshots/` exists and is EMPTY.
       iPhone-only (no `supportsTablet` in app.json), so one required size
       rather than a matrix. The folder is gitignored on purpose: real household
