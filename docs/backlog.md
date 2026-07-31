@@ -761,9 +761,19 @@ missing from it entirely.
       real user-generated content and MUST re-trigger this questionnaire plus
       report/block controls. Category/copyright/territory still Thomas's to
       enter; territory is the UK-tagline call.
-- [ ] **Ship build 11 before launching.** The Plan-tab retry screen is app
-      code, so no phone has it – build 10 (2026-07-25) is still current. v1.0
-      should not go out on a build older than that fix.
+- [x] **Build 12 shipped to TestFlight, VALID (2026-07-30).** Supersedes the
+      "ship build 11" item – build 12 carries the Plan-tab retry screen, all
+      the import/parser fixes, migration 0024's behaviour, the ds-check
+      lockdown, and the household-switcher redesign. `autoIncrement` set the
+      number (11 → 12 during the build). Marketing version 1.0.0.
+      NOTE FOR NEXT TIME – the submit CLI hung TWICE (the watchdog killed both
+      local watchers at 600s), yet build 12 landed on App Store Connect anyway
+      ~25 min later: the upload runs on Expo's SERVERS and killing the watcher
+      never stops it. So when a submit stalls, do not rush to retry or to the
+      altool fallback – wait and poll `asc-build-state.mjs` for the specific
+      build number first (a 24-min poll timed out here just before it landed;
+      give it 30-40 min). Apple's VALID is the only truth, exactly as the
+      recurring note says.
 - [x] Export compliance handled – `ITSAppUsesNonExemptEncryption: false` is
       already in app.json, so submission stops asking every time.
 - [x] In-app account deletion built (guideline 5.1.1(v), required for any app
