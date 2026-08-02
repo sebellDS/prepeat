@@ -239,17 +239,41 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       FIX: make the expiry NOT NULL with a 14-day default plus a CHECK that it
       is in the future, and drop the "no expiry" branch from redeem.
 
-**Verification status of the 1 + 6 fixes (2026-08-02).** Typecheck and lint
-both clean, and every NativeWind class used was checked to exist elsewhere in
-`src/` – worth doing explicitly, because `tsc` does NOT catch an invented
-class name (they are just strings, so a typo fails silently at runtime as
-unstyled text). **NOT yet seen running.** Neither change is reachable in the
-web preview: the invite-code panel needs a real signed-in session that has
-just created a household, and the save banner needs a forced upload failure.
-So per the definition-of-done rule from
-[lessons-from-building-prepeat.md](lessons-from-building-prepeat.md), these
-are NOT done yet – they are committed, not confirmed. Check both on-device on
-the next build, and note the build number here when they are seen working.
+**Verification of the 1 + 6 fixes: CONFIRMED ON DEVICE 2026-08-02.** Typecheck
+and lint clean, every NativeWind class checked to exist elsewhere in `src/`
+(worth doing explicitly – `tsc` does NOT catch an invented class name, so a
+typo fails silently at runtime as unstyled text), then built to Thomas's
+iPhone with `./scripts/build-iphone.sh` and walked through. Finding 6 is
+evidenced by a screenshot of the real "… is ready" screen: the code renders in
+dark `text/default`, not lime. Thomas: *"everything checks out"*.
+Note this is the **dev build** (`app.prepeat.dev`, 2026-08-02), NOT a numbered
+TestFlight build – neither fix is on any tester's phone until the next EAS
+build ships. Per the definition-of-done rule from
+[lessons-from-building-prepeat.md](lessons-from-building-prepeat.md) that
+distinction is the whole point: verified ≠ delivered.
+
+Two things learned while verifying, worth keeping:
+- **The invite-code screen is FIRST-RUN ONLY.** Creating a household from the
+  switcher (`create-household-modal.tsx`) goes straight to a Welcome screen
+  with no code – you get the code afterwards from Household → Invite someone.
+  Only a brand-new account with no household sees the onboarding "… is ready"
+  panel. Claude's first test instructions sent Thomas down the switcher path
+  and wasted a throwaway household.
+- **The everyday invite sheet was already correct.**
+  [invite-someone-sheet.tsx:145](../src/components/household/invite-someone-sheet.tsx)
+  already rendered the code in `text/default`, so the lime was only ever on
+  the first-run screen and the fix makes the two paths agree rather than
+  inventing a new treatment. The sweep also confirms `text/link` now appears
+  exactly ONCE in the app – see the wordmark question below.
+
+- [ ] **Wordmark full stops are still `text/link` – a design call for Thomas,
+      not a bug.** [src/components/onboarding/onboarding-flow.tsx:388](../src/components/onboarding/onboarding-flow.tsx)
+      renders the periods in the stacked welcome wordmark (*prep. cook. eat.
+      repeat.*) in lime #56C91D. At 40px it is decorative brand typography, and
+      WCAG exempts purely decorative text, so this was deliberately LEFT ALONE
+      rather than swept up with finding 6 – the lime full stop reads as an
+      intentional brand mark. Decide whether it stays; it is the last
+      `text/link` in the app.
 
 Closed 2026-07-27:
 
