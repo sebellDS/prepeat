@@ -266,14 +266,21 @@ Two things learned while verifying, worth keeping:
   inventing a new treatment. The sweep also confirms `text/link` now appears
   exactly ONCE in the app – see the wordmark question below.
 
-- [ ] **Wordmark full stops are still `text/link` – a design call for Thomas,
-      not a bug.** [src/components/onboarding/onboarding-flow.tsx:388](../src/components/onboarding/onboarding-flow.tsx)
-      renders the periods in the stacked welcome wordmark (*prep. cook. eat.
-      repeat.*) in lime #56C91D. At 40px it is decorative brand typography, and
-      WCAG exempts purely decorative text, so this was deliberately LEFT ALONE
-      rather than swept up with finding 6 – the lime full stop reads as an
-      intentional brand mark. Decide whether it stays; it is the last
-      `text/link` in the app.
+- **DECIDED 2026-08-02: the wordmark full stops STAY lime, and the app is not
+  touched.** [src/components/onboarding/onboarding-flow.tsx:388](../src/components/onboarding/onboarding-flow.tsx)
+  renders the periods in the stacked welcome wordmark (*prep. cook. eat.
+  repeat.*) in `text/link` #56C91D – the last use of that token in the app.
+  Left alone on purpose: it is Thomas's design (the code comment cites the
+  Figma frame "household set up 5" – each word subtle, each period lime),
+  WCAG explicitly exempts logotypes and brand names from contrast minimums,
+  and the periods carry no information anyway – the words are #5F503A and
+  legible with or without them. Thomas: the token work belongs in the DS
+  project, not here. See the DS nit under Code debts for the shape of it.
+  Not re-flag this in a future audit.
+  One thing never checked, aesthetic rather than compliance: the wordmark sits
+  on `welcomePhoto` (an ImageBackground), so the real contrast of those lime
+  periods varies with the photograph behind them. Only Thomas's eye settles
+  whether they hold up.
 
 Closed 2026-07-27:
 
@@ -606,11 +613,30 @@ Closed 2026-07-27:
       accurately to give a family member full access. **That screen is now
       fixed** (swapped to `text/default`, 9.12:1), and the sweep found no other
       app surface using `text/link`.
-      **The TOKEN is still wrong**, so this stays open: #56C91D is 2.15:1 on
-      white and its whole job is "this is a link". The DS-side retune is the
-      real fix, and until it lands any NEW use of `text/link` reintroduces the
-      defect. A real accessibility bug in the DS, not hygiene like the nit
-      below.
+      **The TOKEN is still wrong, and the fix is a SPLIT – not a retune.**
+      HANDED TO THE DS PROJECT 2026-08-02 (Thomas: *"this is a bigger token
+      rewrite in the DS. Leave it for now and I will fix it in the DS
+      project"*). Nothing more happens in this repo until the DS ships it;
+      the app then picks it up on the next `npm run sync-ds-tokens`.
+      WHY A SPLIT. `text/link` is doing two incompatible jobs: "this is
+      tappable" (needs to be dark enough to read – #56C91D is 2.15:1 on white,
+      a real accessibility defect) and "this is the brand" (the lime full stops
+      in the welcome wordmark, which want to stay bright). Retuning the single
+      token fixes links and silently darkens the brand mark – trading one
+      problem for another, and the kind of change nobody notices until it has
+      shipped.
+      THE SHAPE, which needs no invention because the website already solved
+      it: links there use `text/brand` #378112 with an underline, precisely
+      because lime failed on white. So –
+      - links point at `text/brand` (#378112, measures 4.55:1 on #F8F7F7 and
+        4.87:1 on white – already the website's answer),
+      - lime #56C91D survives unchanged under a name that says what it is for
+        (a brand accent, not a link),
+      - the wordmark periods point at THAT, and the welcome screen looks
+        identical to today.
+      Until it lands, any NEW use of `text/link` in the app reintroduces the
+      defect – the app currently has exactly one, the wordmark, which is
+      exempt (see the decided item under the pre-build audit).
 - [ ] **DS nit** (diagnosed 2026-07-27, fix is in FIGMA not in code):
       in the **prep-eat** brand `color/text/contrast-text` aliases
       `{color.text.primary}` – i.e. the dark ink #4F4230 – where the **sebell**
