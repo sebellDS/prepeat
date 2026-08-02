@@ -68,6 +68,151 @@ below is open.
       itself from the plan" – a shopper seeing garlic twice reads that as
       broken even when the quantities are right.
 
+### Pre-build audit, 2026-08-02
+
+Found by a multi-agent review of the whole shipping surface (5 angles –
+RLS/security, auth lifecycle, data correctness, recipe import, UI states –
+each finding then adversarially verified by a second agent that tried to
+refute it; 13 survived, merged to the 10 below). Ranked by launch risk.
+
+**Verdict: ship with caveats.** No cross-household data leak, no launch
+crash, no hard-blocked flow – the security angle came back clean, and
+`is_household_member()` / RLS hold up. **Build 12, in review with Apple, is
+unaffected by all of this** – these are for build 13 and after. Suggested
+cut: fix 1 and 6 before the next build, the rest as a fast follow.
+
+- [ ] **1. HIGH – an imported recipe is silently thrown away when its photo
+      can't be fetched.** [src/app/recipes/new.tsx:204](../src/app/recipes/new.tsx)
+      On import, `photoUri` is set to the external image URL taken straight
+      off the page (new.tsx:139), unvalidated. Save re-downloads that URL and
+      uploads it (new.tsx:161-163). If the download fails – a relative path, a
+      hotlink-blocked image, a 403, flaky signal – the upload throws and the
+      catch at 204-207 only writes to the developer console and stops the
+      spinner. No message, no retry: the whole reviewed recipe (title,
+      ingredients, steps) is discarded and the user is given no clue their
+      work is gone. The same silent catch swallows any failure of the database
+      save too, so it is really "save has no user-facing error handling at
+      all" – import merely makes the failure far more likely.
+      This is the feature the listing calls the centrepiece, failing in the
+      way most likely to get the app deleted.
+      FIX: show a real error and keep the form populated so the user can
+      retry; and make a failed photo upload NON-FATAL – save the recipe text
+      without a photo rather than losing everything.
+- [ ] **2. Shopping quantities drift wrong when a line is checked/unchecked
+      around a plan change.** `supabase/migrations/0013_atomic_plan_push.sql`
+      :185-191 and `0014_atomic_withdraw_rescale.sql`:83-96.
+      `contribute` ALWAYS records that a meal contributed a quantity, but only
+      adds it to the visible line when the line is unchecked and not
+      hand-edited. `withdraw` later subtracts that recorded contribution based
+      on the line's state AT WITHDRAW TIME. A shopper naturally checks and
+      unchecks lines while shopping, so the two sides diverge: a contribution
+      recorded while the line was checked (never added) gets subtracted once
+      it is unchecked, driving a quantity to zero even though another meal
+      still needs the item. `rescale` has the same asymmetry.
+      Hits the "the list builds itself from the plan" promise directly.
+      FIX: make contribute and withdraw symmetric – base the adjustment on the
+      contribution ROWS actually recorded, not the line's live state, or
+      recompute the line quantity from the sum of its live contribution rows
+      on every change. New numbered migration; never edit 0013/0014.
+- [ ] **3. "This week" is frozen at app launch, so a meal can land on last
+      week.** [src/lib/shopping-list.tsx:489](../src/lib/shopping-list.tsx)
+      and [src/lib/meal-plan.tsx:407](../src/lib/meal-plan.tsx).
+      Both providers compute the current week ONCE at mount (empty-dependency
+      useMemo) and never recompute. Returning to the foreground calls
+      `refresh()`/`retry()`, neither of which recomputes the week. Leave the
+      app open across a week boundary (Sunday night → Monday) and it still
+      treats the finished week as "this week" – so a meal added to what looks
+      like the current week actually lands on the PREVIOUS week's plan and
+      list. Depends on iOS keeping the app alive across that exact boundary.
+      FIX: recompute `currentWeekStart` on the AppState "active" handler and
+      inside `refresh()`, instead of memoizing once at mount.
+- [ ] **4. Imported text shows raw codes, and some amounts vanish.**
+      [src/lib/recipe-import.ts:362](../src/lib/recipe-import.ts)-385.
+      `cleanText` decodes NUMERIC HTML entities but not named ones, so
+      `&rsquo;` `&eacute;` `&ndash;` survive as gibberish in titles, steps and
+      ingredient names. Worse, `&frac12;` is not folded to ½ and the amount
+      parser is ASCII-only, so `&frac12; cup sugar` fails to match a leading
+      amount and is stored as the NAME with no quantity – the amount is
+      silently lost on the shopping list. Mostly affects sites using the
+      microdata/meta fallback rather than the dominant JSON-LD path.
+      FIX: add a named-entity decode step (smart quotes, accented Latin,
+      dashes, ellipsis, and `&frac12;`/`&frac14;`/`&frac34;` → ½ ¼ ¾) BEFORE
+      the amount regex runs. Sits with the parser work already done 2026-07-29.
+- [ ] **5. Three screens can still strand the user on an endless spinner.**
+      [src/app/recipes/index.tsx:114](../src/app/recipes/index.tsx) (and
+      42-46), `src/app/recipes/[id].tsx`:115-140, and the shopping week-switch
+      at [src/app/shopping.tsx:150](../src/app/shopping.tsx).
+      All only log load failures to the console, then render a bare spinner
+      forever – the recipe-detail spinner has no header, so there is not even
+      a visible Back button. A failed first load (offline, or a recipe another
+      member just deleted) leaves the user stuck. The shopping week-switch is
+      not covered by the boot-only error banner, so the list can go blank with
+      no spinner and no message.
+      **This is exactly the Plan-tab silent-spinner class fixed on 2026-07-27** –
+      the shared `LoadError`/"Try again" component already exists and was
+      simply never applied here. Reuse it; give the detail screen's loading
+      state a header with Back.
+- [ ] **6. The invite code is printed in low-contrast lime, ~2.0:1.**
+      [src/components/onboarding/onboarding-flow.tsx:267](../src/components/onboarding/onboarding-flow.tsx)
+      On the "household is ready" step the code is rendered in link-lime
+      #56C91D on the near-white #F8F7F7 panel – below the 4.5:1 AA minimum and
+      below even the 3:1 large-text floor. This is the ANSWER to the "not yet
+      checked inside the app" question on the DS `text/link` nit under Code
+      debts: yes, it is in the app, and it landed on the worst possible text –
+      the code a new user must read accurately to give a family member full
+      access to the household.
+      FIX: render the code in a high-contrast dark text token (or on a darker
+      chip) so it clears 4.5:1. The DS-side retune of `text/link` is the
+      separate, slower fix.
+- [ ] **7. The invite-code guess limit is per-account, so extra sign-ups
+      bypass it.** `supabase/migrations/0012_throttle_invite_redemption.sql`
+      :37-49. Joining is the one action that crosses the household boundary
+      for a non-member, and the only guard on the 4-character code is 10
+      tries/hour keyed to the individual ACCOUNT – so N throwaway accounts get
+      10×N parallel guesses. A hit lands the guesser in a stranger's
+      household with full access to its recipes, plan, list and every member's
+      name and email. Mitigated by the tiny launch user base, the 14-day
+      expiry, and that it only ever lands them in a RANDOM household, never a
+      chosen one. Not a launch blocker – the verifier said so explicitly.
+      FIX (post-launch): throttle by the CODE being guessed (or by IP) rather
+      than by account, so total guesses against a code are capped however many
+      accounts try. A longer code would also help.
+- [ ] **8. `liter` and `liters` split into two shopping rows – a regression
+      from migration 0024.** `supabase/migrations/0024_merge_key_ignores_unit_
+      plural.sql`:61. The unit normalizer strips a trailing `s` OR `r` to
+      merge duplicates. That fixes clove/cloves but breaks any unit whose
+      singular ends in r: `liter` → `lite` while `liters` → `liter`, so
+      "1 liter milk" and "2 liters milk" never merge. Same shape for
+      container/containers. Narrow (units only, r-ending forms only) but it
+      shipped on 2026-07-30, three days before this audit.
+      FIX: strip only a trailing plural `s`, or use a small known-unit synonym
+      map instead of blanket letter-stripping. New migration.
+- [ ] **9. A raw API call can leave an account belonging to zero households.**
+      `supabase/migrations/0001_households_and_shopping_lists.sql`:157.
+      The leave rules – reject leaving your only household, snapshot recipes
+      on the way out for GDPR – live in the `leave_household` FUNCTION, which
+      the app always calls. But the underlying delete-your-own-membership
+      permission has no such guard, so a direct API client using the shipped
+      anon key could delete its only membership row and break the "every user
+      always belongs to a household" invariant, or leave a shared household
+      with no copy-on-leave snapshot. Unreachable from the UI; blast radius is
+      the caller's own account only.
+      FIX: tighten the delete-self policy so it cannot remove a solo
+      membership, or revoke direct delete on `household_members` and force
+      every leave through the function.
+- [ ] **10. A member can mint a never-expiring invite code via raw API.**
+      `supabase/migrations/0001_households_and_shopping_lists.sql`:165-169
+      (and :52). The 14-day expiry is enforced only in the rotate function,
+      not in the database: the expiry column is nullable with no default, the
+      insert permission never checks it, and the redeem function still accepts
+      codes with no expiry. So a CURRENT member using the anon key directly
+      could plant an indefinitely-valid code – e.g. to rejoin after leaving.
+      Requires an already-trusted insider using off-app tooling, exposes
+      nothing to outsiders, and self-heals: the next "New code" rotation
+      retires the planted code.
+      FIX: make the expiry NOT NULL with a 14-day default plus a CHECK that it
+      is in the future, and drop the "no expiry" branch from redeem.
+
 Closed 2026-07-27:
 
 - **The Plan tab spun forever on the phones.** Migration 0022 dropped
@@ -392,10 +537,14 @@ Closed 2026-07-27:
       website uses that for links and underlines them as well, keeping colour
       off the critical path. Everything else measured clean: text/default 9.75:1,
       text/subtle 7.79:1, button label on lime 6.22:1.
-      NOT yet checked inside the APP – wherever the app renders a link with
-      text/link on white it has the same problem. Worth a sweep. The DS fix is
-      to retune the link token; until then this is a real accessibility defect,
-      not hygiene like the nit below.
+      **SWEPT 2026-08-02, and it IS in the app** – see finding 6 of the
+      pre-build audit under Known bugs. The onboarding "household is ready"
+      step prints the INVITE CODE in this token on the near-white panel
+      (~2.0:1), which is the worst possible place for it: the code a new user
+      must read accurately to give a family member full access. Fix that screen
+      directly (a dark text token or a darker chip); the DS-side retune of the
+      link token is the separate, slower fix. Until both land this is a real
+      accessibility defect, not hygiene like the nit below.
 - [ ] **DS nit** (diagnosed 2026-07-27, fix is in FIGMA not in code):
       in the **prep-eat** brand `color/text/contrast-text` aliases
       `{color.text.primary}` – i.e. the dark ink #4F4230 – where the **sebell**
