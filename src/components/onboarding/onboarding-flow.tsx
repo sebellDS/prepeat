@@ -264,7 +264,14 @@ function HouseholdSteps({ onHouseholdReady }: { onHouseholdReady: (h: Household)
               </View>
               <View className="w-full gap-layout-small">
                 <View className="w-full flex-row items-center rounded-large bg-surface-neutral-lightest p-layout-small">
-                  <Text className="flex-1 text-center font-header text-display-4 font-emphasized leading-medium text-text-link">
+                  {/* text/default, not text/link: the lime measures 2.01:1 on
+                      this panel – below even the 3:1 large-text floor – and
+                      this is the one string a user must read accurately and
+                      say out loud to get their family in (audit 2026-08-02).
+                      IMPROVISED – no Figma frame exists for the fixed state;
+                      a designed treatment (e.g. a filled brand chip) is still
+                      open in the backlog. */}
+                  <Text className="flex-1 text-center font-header text-display-4 font-emphasized leading-medium text-text-default">
                     {created.inviteCode}
                   </Text>
                   <Pressable

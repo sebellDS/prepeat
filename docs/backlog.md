@@ -81,8 +81,21 @@ crash, no hard-blocked flow – the security angle came back clean, and
 unaffected by all of this** – these are for build 13 and after. Suggested
 cut: fix 1 and 6 before the next build, the rest as a fast follow.
 
-- [ ] **1. HIGH – an imported recipe is silently thrown away when its photo
-      can't be fetched.** [src/app/recipes/new.tsx:204](../src/app/recipes/new.tsx)
+- [x] **1. FIXED 2026-08-02. HIGH – an imported recipe was silently thrown
+      away when its photo couldn't be fetched.**
+      [src/app/recipes/new.tsx](../src/app/recipes/new.tsx)
+      Fixed in two halves, matching the audit's advice: (a) the photo upload is
+      now wrapped in its own try/catch, so a failed image saves the recipe
+      WITHOUT the picture instead of losing everything – recoverable later from
+      Edit; (b) any remaining save failure sets an error banner and leaves the
+      form fully populated, so Save can just be pressed again. The banner is
+      the SAME designed component already used by the onboarding and household
+      modals (`bg-error-lightest` + `error-outline`), and it lives in the
+      pinned footer beside the button that failed so it cannot scroll out of
+      view on a long recipe. Message text goes through the existing
+      `friendlyError()`, so "offline" reads as plain language.
+      NOT yet verified on a device – see the verification note at the end of
+      this block.
       On import, `photoUri` is set to the external image URL taken straight
       off the page (new.tsx:139), unvalidated. Save re-downloads that URL and
       uploads it (new.tsx:161-163). If the download fails – a relative path, a
@@ -152,7 +165,8 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       the shared `LoadError`/"Try again" component already exists and was
       simply never applied here. Reuse it; give the detail screen's loading
       state a header with Back.
-- [ ] **6. The invite code is printed in low-contrast lime, ~2.0:1.**
+- [x] **6. FIXED 2026-08-02 (stopgap, improvisation flagged). The invite code
+      was printed in low-contrast lime, 2.01:1.**
       [src/components/onboarding/onboarding-flow.tsx:267](../src/components/onboarding/onboarding-flow.tsx)
       On the "household is ready" step the code is rendered in link-lime
       #56C91D on the near-white #F8F7F7 panel – below the 4.5:1 AA minimum and
@@ -161,9 +175,21 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       debts: yes, it is in the app, and it landed on the worst possible text –
       the code a new user must read accurately to give a family member full
       access to the household.
-      FIX: render the code in a high-contrast dark text token (or on a darker
-      chip) so it clears 4.5:1. The DS-side retune of `text/link` is the
-      separate, slower fix.
+      DONE: swapped to `text/default` (#4F4230), measured **9.12:1** on the
+      #F8F7F7 panel – clears both the 3:1 large-text floor and the 4.5:1 body
+      bar with room to spare. One token, no layout change.
+      - [ ] ⚠️ **IMPROVISED, flagged per the 2026-07-17 rule – a designed
+            treatment is still open.** No Figma frame exists for the fixed
+            state. `text/default` is the minimum change that stops the
+            accessibility defect; it also makes the code read like body text
+            rather than something to copy. Two better options were measured
+            and both pass: `text/brand` #378112 at 4.55:1, or **white on a
+            filled #378112 chip at 4.87:1** – the last keeps the brand green
+            AND makes the code look like a thing to be copied, which is what
+            it is. Design it and I'll build exactly that; until then this is
+            Claude's stopgap, not Thomas's design.
+      The DS-side retune of `text/link` is the separate, slower fix – see the
+      DS nit under Code debts.
 - [ ] **7. The invite-code guess limit is per-account, so extra sign-ups
       bypass it.** `supabase/migrations/0012_throttle_invite_redemption.sql`
       :37-49. Joining is the one action that crosses the household boundary
@@ -212,6 +238,18 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       retires the planted code.
       FIX: make the expiry NOT NULL with a 14-day default plus a CHECK that it
       is in the future, and drop the "no expiry" branch from redeem.
+
+**Verification status of the 1 + 6 fixes (2026-08-02).** Typecheck and lint
+both clean, and every NativeWind class used was checked to exist elsewhere in
+`src/` – worth doing explicitly, because `tsc` does NOT catch an invented
+class name (they are just strings, so a typo fails silently at runtime as
+unstyled text). **NOT yet seen running.** Neither change is reachable in the
+web preview: the invite-code panel needs a real signed-in session that has
+just created a household, and the save banner needs a forced upload failure.
+So per the definition-of-done rule from
+[lessons-from-building-prepeat.md](lessons-from-building-prepeat.md), these
+are NOT done yet – they are committed, not confirmed. Check both on-device on
+the next build, and note the build number here when they are seen working.
 
 Closed 2026-07-27:
 
@@ -537,14 +575,18 @@ Closed 2026-07-27:
       website uses that for links and underlines them as well, keeping colour
       off the critical path. Everything else measured clean: text/default 9.75:1,
       text/subtle 7.79:1, button label on lime 6.22:1.
-      **SWEPT 2026-08-02, and it IS in the app** – see finding 6 of the
+      **SWEPT 2026-08-02, and it WAS in the app** – see finding 6 of the
       pre-build audit under Known bugs. The onboarding "household is ready"
-      step prints the INVITE CODE in this token on the near-white panel
-      (~2.0:1), which is the worst possible place for it: the code a new user
-      must read accurately to give a family member full access. Fix that screen
-      directly (a dark text token or a darker chip); the DS-side retune of the
-      link token is the separate, slower fix. Until both land this is a real
-      accessibility defect, not hygiene like the nit below.
+      step printed the INVITE CODE in this token on the near-white panel
+      (2.01:1), the worst possible place for it: the code a new user must read
+      accurately to give a family member full access. **That screen is now
+      fixed** (swapped to `text/default`, 9.12:1), and the sweep found no other
+      app surface using `text/link`.
+      **The TOKEN is still wrong**, so this stays open: #56C91D is 2.15:1 on
+      white and its whole job is "this is a link". The DS-side retune is the
+      real fix, and until it lands any NEW use of `text/link` reintroduces the
+      defect. A real accessibility bug in the DS, not hygiene like the nit
+      below.
 - [ ] **DS nit** (diagnosed 2026-07-27, fix is in FIGMA not in code):
       in the **prep-eat** brand `color/text/contrast-text` aliases
       `{color.text.primary}` – i.e. the dark ink #4F4230 – where the **sebell**

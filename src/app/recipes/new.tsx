@@ -26,6 +26,7 @@ import { SwipeHint } from "@/components/ui/swipe-hint";
 import { Input } from "@/components/ui/input";
 import { ds } from "@/constants/ds";
 import { Spacing, tabBarClearance } from "@/constants/theme";
+import { friendlyError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth";
 import { useHousehold } from "@/lib/household-context";
 import {
@@ -75,6 +76,7 @@ export default function AddRecipeScreen() {
   const [ingredients, setIngredients] = useState<DraftIngredient[]>([]);
   const [steps, setSteps] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(!editing);
   const [reordering, setReordering] = useState<"ingredients" | "steps" | null>(
     null,
@@ -156,10 +158,22 @@ export default function AddRecipeScreen() {
     // An emptied field means "no source", not an empty string.
     const trimmedSource = sourceUrl.trim() || null;
     setBusy(true);
+    setSaveError(null);
     try {
       let imageUrl = existingPhotoUrl;
       if (photoUri != null) {
-        imageUrl = await uploadRecipePhoto(household.id, photoUri);
+        // The photo must never cost you the recipe. On import photoUri is an
+        // external URL taken straight off the page (applyImport), so this
+        // upload is the most likely thing to fail here – a hotlink-blocked or
+        // moved image, a relative path, a flaky connection. Losing the whole
+        // reviewed recipe to that is the worst outcome; saving it without the
+        // picture is recoverable (add one later from Edit). Audit 2026-08-02.
+        try {
+          imageUrl = await uploadRecipePhoto(household.id, photoUri);
+        } catch (photoError) {
+          console.warn("[recipes] photo upload failed, saving without it", photoError);
+          imageUrl = existingPhotoUrl;
+        }
       }
       if (editing) {
         await updateRecipeFacts(id, {
@@ -202,7 +216,10 @@ export default function AddRecipeScreen() {
         router.replace(`/recipes/${recipeId}`);
       }
     } catch (error) {
+      // Never fail silently: the form keeps everything the user typed (or
+      // imported and reviewed) so Save can simply be pressed again.
       console.warn("[recipes] save failed", error);
+      setSaveError(friendlyError(error));
       setBusy(false);
     }
   };
@@ -496,8 +513,19 @@ export default function AddRecipeScreen() {
           at the end of the page and has no sticky-footer frame yet. */}
       <View
         style={{ paddingBottom: tabBarClearance(insets, Spacing.three) }}
-        className="w-full border-t border-border-subtle bg-surface-neutral-lightest px-layout-small pt-comp-medium"
+        className="w-full gap-comp-small border-t border-border-subtle bg-surface-neutral-lightest px-layout-small pt-comp-medium"
       >
+        {/* Sits in the pinned footer, beside the button that failed, so it
+            cannot scroll out of view on a long recipe. Same banner as the
+            onboarding/household modals. */}
+        {saveError != null && (
+          <View className="w-full flex-row items-start gap-comp-large rounded-medium bg-error-lightest px-comp-large py-comp-small">
+            <Text className="flex-1 font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+              {saveError}
+            </Text>
+            <MaterialIcons name="error-outline" size={24} color={ds.colors.icon.default} />
+          </View>
+        )}
         <Pressable
           onPress={save}
           disabled={busy || title.trim().length === 0}
