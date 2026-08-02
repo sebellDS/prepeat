@@ -178,16 +178,22 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       DONE: swapped to `text/default` (#4F4230), measured **9.12:1** on the
       #F8F7F7 panel – clears both the 3:1 large-text floor and the 4.5:1 body
       bar with room to spare. One token, no layout change.
-      - [ ] ⚠️ **IMPROVISED, flagged per the 2026-07-17 rule – a designed
-            treatment is still open.** No Figma frame exists for the fixed
-            state. `text/default` is the minimum change that stops the
-            accessibility defect; it also makes the code read like body text
-            rather than something to copy. Two better options were measured
-            and both pass: `text/brand` #378112 at 4.55:1, or **white on a
-            filled #378112 chip at 4.87:1** – the last keeps the brand green
-            AND makes the code look like a thing to be copied, which is what
-            it is. Design it and I'll build exactly that; until then this is
-            Claude's stopgap, not Thomas's design.
+      **CLOSED 2026-08-02 – the improvisation flag was withdrawn, correctly.**
+      It was raised because no Figma frame exists for the fixed state, and
+      Thomas challenged it: *"didn't we just fix that with making the text
+      color text/default"*. He is right, on both counts the flag rested on:
+      - **It was never an invention.** The 2026-07-17 rule exists to stop
+        Claude's improvisation passing as Thomas's design. `text/default` is
+        what [invite-someone-sheet.tsx:145](../src/components/household/invite-someone-sheet.tsx)
+        ALREADY used for the very same code – so this change made two screens
+        agree with a decision Thomas had already made, rather than inventing a
+        third treatment. Matching an existing design is not improvising.
+      - **"It now reads like body text" was wrong**, and the on-device
+        screenshot settles it: 32px, emphasized, centred in its own chip with
+        a copy icon. It reads as a code.
+      A filled brand chip (white on #378112, 4.87:1) was measured and would
+      also work, but that is an ENHANCEMENT IDEA, not an outstanding defect –
+      logged under Ideas, not carried here as unfinished work.
       The DS-side retune of `text/link` is the separate, slower fix – see the
       DS nit under Code debts.
 - [ ] **7. The invite-code guess limit is per-account, so extra sign-ups
@@ -652,6 +658,12 @@ Closed 2026-07-27:
 
 ## Ideas – not yet committed
 
+- [ ] **Invite code as a filled brand chip** (measured 2026-08-02, not
+      committed to). White on #378112 clears AA at 4.87:1 and would make the
+      code look like a thing to be copied while keeping the brand green. Purely
+      an enhancement – the accessibility defect is already fixed with
+      `text/default` (9.12:1) and both invite surfaces now agree, so there is
+      nothing wrong to repair. Only worth doing if Thomas wants to design it.
 - [ ] **Per-store category layouts** (Thomas, 2026-07-06): save the category
       order per named store ("Netto", "Bilka"…), so entering a store sorts
       the list to that store's layout. Simple version: pick the store when
