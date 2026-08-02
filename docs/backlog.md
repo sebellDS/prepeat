@@ -435,6 +435,15 @@ Closed 2026-07-27:
 
 ## Pre-launch checklist (v1 ship)
 
+- [x] **🚀 SUBMITTED FOR REVIEW 2026-07-31.** All App Store Connect metadata
+      entered and the version sent to Apple ("Add for Review" → Submit). Build
+      12, EU-27 only, Free, 4+, privacy label published, manual release – so
+      after Apple approves, Thomas presses the release button to go live. See
+      the itemised entries below and
+      [app-store-connect-answers.md](app-store-connect-answers.md). NEXT: watch
+      for Apple's review result; if the demo mailbox OTP is the sticking point,
+      the Supabase test-OTP trigger is the documented fallback (see the demo
+      account item).
 - [x] **First-look trademark search done 2026-07-27** – full write-up in
       [trademark-search.md](trademark-search.md). Headline: the NAME is clear
       (nobody holds "Prepeat" anywhere; no EU/DK registration; Prepear Inc.
@@ -729,38 +738,48 @@ missing from it entirely.
             "this week" populated). Verified recipes 9, entries 14. SEPARATE
             from "The Hanson Kitchen" (Thomas's own account, used only for the
             App Store screenshots) – the reviewer never sees the real household.
-            REMAINING: Thomas fills the App Review notes in App Store Connect
-            with the webmail URL + mailbox password – draft ready in
-            [app-store-connect-answers.md](app-store-connect-answers.md) §3.
-- [ ] **Screenshots** – `app-store-assets/screenshots/` exists and is EMPTY.
-      iPhone-only (no `supportsTablet` in app.json), so one required size
-      rather than a matrix. The folder is gitignored on purpose: real household
-      data, public repo.
-- [ ] **App Privacy card in App Store Connect** – the "nutrition label", a
-      SEPARATE mandatory questionnaire from the privacy policy document.
-      Declares data types collected and whether they are linked to identity or
-      used for tracking. Ours is unusually easy: email, first name, user
-      content; no analytics SDK, no advertising, no tracking – which is what
-      the listing's "NO ADS. NO TRACKING." section promises, so the two must
-      agree.
-      **ANSWERS DRAFTED 2026-07-30 –
-      [app-store-connect-answers.md](app-store-connect-answers.md).**
-      Verified against the code (no tracking/analytics/ads SDK; expo-device
-      unused; no push/location/IDFA). Field-by-field table ready to enter. One
-      CONFIRM: whether to declare the internal account "User ID" (recommended
-      yes) – for the attorney. Still to DO in App Store Connect by Thomas.
-- [ ] **The remaining App Store Connect paperwork**: age-rating questionnaire,
-      primary category (Food & Drink), copyright line, and the **territory
-      selection** – which is where the UK tagline decision above actually gets
-      made.
-      **AGE-RATING ANSWERS DRAFTED 2026-07-30 –
-      [app-store-connect-answers.md](app-store-connect-answers.md):** target
-      4+, every content question None/No, do NOT enrol in the Kids Category.
-      Two CONFIRMs noted there – alcohol as a recipe ingredient (answer None;
-      fallback is the lowest tier), and that the v1.1 sharing feature turns on
-      real user-generated content and MUST re-trigger this questionnaire plus
-      report/block controls. Category/copyright/territory still Thomas's to
-      enter; territory is the UK-tagline call.
+            **App Review Information ENTERED in App Store Connect 2026-07-31:**
+            sign-in required = yes, username `appreview@sebell.dk`, mailbox
+            password, contact (Thomas Sebell + phone + thomas@sebell.dk) and the
+            §3 Notes (with the real webmail URL + password) all filled and saved.
+            Prerequisite still on Thomas: the `appreview@sebell.dk` mailbox must
+            be live so the reviewer can read the emailed OTP.
+- [x] **Screenshots** – 4 iPhone 6.5"/6.9" screenshots (Weekly plan, Recipes,
+      Shopping list, Household) uploaded to App Store Connect (verified
+      2026-07-31). iPhone-only build confirmed – App Store Connect shows NO iPad
+      screenshot requirement, so the iPad tab is correctly empty. The
+      `app-store-assets/screenshots/` folder stays gitignored (real household
+      data, public repo).
+- [x] **App Privacy card in App Store Connect – ENTERED and PUBLISHED
+      2026-07-31.** Declared as "Data Linked to You": Email Address, Name,
+      Photos or Videos, Other User Content, User ID – every one for App
+      Functionality, none for tracking, so the label has NO "Data Used to Track
+      You" section, matching the listing's "NO ADS. NO TRACKING." promise.
+      Resolved the CONFIRM: **User ID declared** (conservative, adds no tracking
+      disclosure). Added **"Photos or Videos"** beyond the original draft –
+      the app stores user recipe photos, a distinct Apple data type, and
+      under-declaring is what gets labels rejected. Privacy Policy URL
+      (prepeat.app/privacy.html) also set. Original draft:
+      [app-store-connect-answers.md](app-store-connect-answers.md).
+- [x] **The remaining App Store Connect paperwork – ENTERED 2026-07-31.**
+      - **Age rating: 4+** (every content question None/No, "Made for Kids" NOT
+        enrolled). Resolved the alcohol CONFIRM = None. Apple's new 2025
+        social-media/UGC questions (which the draft predated) all answered No.
+        **⚠️ The "User-Generated Content = No" answer MUST be revisited when the
+        public recipe-sharing feature ships (v1.1+)** – that turns on real UGC
+        visible to strangers and needs report/block controls (Guideline 1.2).
+      - **Category: Food & Drink.** Subtitle "prep. cook. eat. repeat."
+        Copyright "2026 Thomas Sebell".
+      - **Territory: EU-27 only** – the UK-tagline call, decided EU-only so both
+        the "Prep Eat Repeat" UK registration and Prepear (US/UK/CA/AU) are
+        sidestepped entirely. Price Free, base country Denmark (DKK), manual
+        release. Revisit territory before any US/UK launch.
+      - **Content Rights: No** (does not contain third-party content) – business
+        call, not legal advice: recipe link-import is user-initiated into a
+        private household with attribution + source link. Thomas has no attorney
+        and may not get one; the EU-only territory is the main trademark
+        de-risk, so the attorney is now an expansion-time concern, not a
+        launch gate.
 - [x] **Build 12 shipped to TestFlight, VALID (2026-07-30).** Supersedes the
       "ship build 11" item – build 12 carries the Plan-tab retry screen, all
       the import/parser fixes, migration 0024's behaviour, the ds-check
