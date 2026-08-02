@@ -2,11 +2,6 @@
 
 # Prep+Eat
 
-**The project owner is not a developer.** Claude does all coding and terminal
-work; explain technical matters in plain language, give click-by-click steps
-when the owner must do something himself (accounts, websites, simulators), and
-frame decisions as product trade-offs rather than technical ones.
-
 Meal-planning app for families: recipes, weekly meal plan, auto-generated
 shopping list with real-time sync across household members. Target: iOS App
 Store first, Android later.
@@ -105,8 +100,3 @@ values in Figma lag behind the DS repo).
    genuinely has a gap (a state not drawn, a flow not designed), say so
    and mark the improvisation in the backlog – never quietly fill the gap
    and let it read as Thomas's design.
-
-## Writing style
-
-- Never use em-dashes (—); use an en-dash (–) instead, in prose, code comments
-  and commit messages.
