@@ -1243,12 +1243,21 @@ missing from it entirely.
 
 ## Recurring
 
-- **Keep [release-notes.md](release-notes.md) current** (started 2026-08-03,
-  Thomas wants something ready to post whenever the app updates). Add the
-  user-facing line when a change lands, not when a build ships – by build
-  time the reasoning is cold. Keep the three buckets honest: unreleased,
-  per build, and server changes (which reach every phone regardless of
-  version).
+- **Keep [release-notes.md](release-notes.md) current, INCLUDING the version
+  number** (started 2026-08-03; Thomas wants something ready to post whenever
+  the app updates, and has explicitly handed the number over: "I will
+  forget"). Three standing jobs, in order of how easily they rot:
+  1. **Add the user-facing line when a change lands**, not when a build
+     ships – by build time the reasoning is cold and the wording is guesswork.
+  2. **Re-check the NEXT VERSION line in the same edit.** Semver decides it,
+     so this is bookkeeping: a feature raises a pending 1.0.1 to 1.1.0, and
+     the number never drops again within one release.
+  3. **Keep the three buckets honest** – accumulating (dev build only), per
+     TestFlight build, and server changes, which reach every phone whatever
+     version it runs and so belong to no version at all.
+  At submission time, and only then: bump `app.json` `expo.version` to the
+  number that line has been carrying, and move the section under its own
+  heading with the date.
 
 - **HOW TO RUN A BIG SQL SCRIPT: the Supabase SQL editor TRUNCATES long
   pastes.** Standing note, learned the hard way 2026-07-30 – five failed
