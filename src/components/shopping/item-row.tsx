@@ -22,13 +22,20 @@ interface ItemRowProps {
   checkedByMe?: boolean;
 }
 
+// The DS checkbox (Figma I434:7234;32:6723;2561:1204 unchecked,
+// ;2561:1434 checked) binds the forms/* recipe, the same group the shared
+// text input uses – not the generic surface/border tokens this reached for
+// until 2026-08-03. The checked fill happens to be the same #56C91D as
+// surface/primary/main today, so only the unchecked box changes on screen
+// (a slightly darker border, a slightly lighter fill) – but naming the right
+// token is what keeps it correct through the next DS retune.
 function Checkbox({ checked }: { checked: boolean }) {
   return (
     <View
       className={
         checked
-          ? 'size-[18px] items-center justify-center rounded-xsmall bg-surface-primary-main'
-          : 'size-[18px] rounded-xsmall border border-border bg-surface-neutral-lightest'
+          ? 'size-[18px] items-center justify-center rounded-xsmall bg-forms-surface-active'
+          : 'size-[18px] rounded-xsmall border border-forms-border-enabled bg-forms-background-default'
       }>
       {checked && (
         <SymbolView

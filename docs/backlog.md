@@ -72,13 +72,17 @@ below is open.
       on, and rows missed the designed 56/72 heights.
       On the dev build only – it reaches the family with the next TestFlight
       build.
-      - [ ] **Spotted while reading the spec, NOT changed:** the checkbox
-            itself is drawn with `forms/background/default` (#F8F7F7) and
-            `forms/border/enabled` (#B5B1AB); the code uses
-            `surface/neutral/lightest` and `border/default` (#C5C2BE). A
-            slightly lighter border than designed. Left alone because it is a
-            visual change Thomas has not asked for – worth a look next time
-            the row is open.
+      - [x] **Checkbox now binds the forms/* recipe** (Thomas asked for it the
+            same day): `forms/background/default` + `forms/border/enabled`
+            unchecked, `forms/surface/active` checked – the same group the
+            shared text input already uses. Only the unchecked box changes on
+            screen; the checked fill is the same #56C91D either way, but the
+            right token name is what survives the next DS retune.
+      - [ ] **The designed checkbox looks SQUARE, ours is `radius/xsmall`.**
+            The Figma code emits a radius for the initials badge right beside
+            it and none for the checkbox in either state, which reads as
+            radius 0. Not changed – that is a shape change rather than a
+            token, and worth Thomas's eye before it lands.
 
 ## Blocked on other people
 
