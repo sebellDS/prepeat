@@ -73,18 +73,28 @@ export function ItemRow({
       accessibilityState={{ checked: item.isChecked }}
       accessibilityLabel={item.name}
       className="w-full flex-row items-center gap-comp-small bg-surface-neutral-white p-layout-small">
-      <View className="h-[24px] justify-center">
-        <Checkbox checked={item.isChecked} />
-      </View>
-      <View className="min-w-0 flex-1 justify-center">
-        <Text className="font-paragraph text-paragraph font-default text-text-default">
-          {item.name}
-        </Text>
-        {item.quantity != null && (
-          <Text className="font-paragraph text-small font-default text-text-subtle">
-            {item.quantity}
+      {/* checkboxField (Figma I434:7234;32:6723) is items-START, not centred:
+          the box sits against the NAME, and a quantity line hangs below it.
+          Centring the pair – which is what this did until 2026-08-03 – drops
+          the box into the gap between the two lines on every row that has an
+          amount (Thomas, on device). The explicit leadings are the designed
+          ones (label 24, hint 16); without them the name's line box is not 24
+          tall, so the 24-tall checkbox slot has nothing exact to centre on,
+          and the row misses its designed 56/72 height. */}
+      <View className="min-w-0 flex-1 flex-row items-start gap-layout-xsmall">
+        <View className="h-[24px] justify-center">
+          <Checkbox checked={item.isChecked} />
+        </View>
+        <View className="min-w-0 flex-1 justify-center">
+          <Text className="font-paragraph text-paragraph font-default leading-xsmall text-text-default">
+            {item.name}
           </Text>
-        )}
+          {item.quantity != null && (
+            <Text className="font-paragraph text-small font-default leading-xxsmall text-text-subtle">
+              {item.quantity}
+            </Text>
+          )}
+        </View>
       </View>
       {showInitial && item.checkedByInitial != null && (
         // Figma initicial component (35:8260): outlined for your own
