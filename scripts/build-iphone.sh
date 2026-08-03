@@ -60,6 +60,38 @@ if ! xcrun xctrace list devices 2>/dev/null | grep -q "$UDID"; then
   exit 1
 fi
 
+# PAIRED IS NOT REACHABLE. The check above only asks whether Xcode KNOWS this
+# phone, so an unplugged, sleeping or off-network handset sails through it and
+# xcodebuild then dies with "Unable to find a destination matching…" followed
+# by a wall of simulator names – which reads like a broken build rather than an
+# unplugged phone (wasted a round on 2026-08-03). devicectl reports the real
+# state: an unreachable device is "unavailable", while "disconnected" is the
+# normal resting state of a phone that IS reachable (it opens the tunnel on
+# demand). Only "unavailable" is worth refusing on.
+DEV_JSON="$(mktemp -t prepeat-devices)"
+if xcrun devicectl list devices --json-output "$DEV_JSON" >/dev/null 2>&1; then
+  TUNNEL_STATE="$(python3 -c '
+import json, sys
+try:
+    devices = json.load(open(sys.argv[1]))["result"]["devices"]
+except Exception:
+    devices = []
+for d in devices:
+    if d.get("hardwareProperties", {}).get("udid") == sys.argv[2]:
+        print(d.get("connectionProperties", {}).get("tunnelState", ""))
+        break
+' "$DEV_JSON" "$UDID" 2>/dev/null)"
+  rm -f "$DEV_JSON"
+  if [ "$TUNNEL_STATE" = "unavailable" ]; then
+    echo "[build-iphone] The iPhone is paired but NOT reachable right now." >&2
+    echo "[build-iphone] Unlock it and plug in the cable (or put it on the same" >&2
+    echo "[build-iphone] Wi-Fi as this Mac), then run this again." >&2
+    exit 1
+  fi
+else
+  rm -f "$DEV_JSON"
+fi
+
 echo "[build-iphone] $(date +%H:%M:%S) syncing the dev app config (dev icon + app.prepeat.dev)…"
 # Regenerate the native project from app.config.js so the dev icon and bundle
 # id are actually baked in. The direct build compiles the existing ios/ folder
