@@ -44,14 +44,17 @@ below is open.
             flagging a component state as a design gap, look it up in
             `ds-theme.cjs` and the DS component; a gap is a state nothing
             defines anywhere, not a state this particular frame did not draw.
-      - [ ] **One real gap: a past week too long to fit the screen.** The
-            frames only show short lists, where the button sits at the bottom
-            of the area. It is built the way the frame's auto-layout reads –
-            ending the scrolling content – so on a long list it follows the
-            last row instead of staying above the tab bar. Not a DS question
-            (there is no footer/action-bar component, and no screen in the app
-            pins an action today), so it needs Thomas's call: scroll with the
-            list, or pin it.
+      - [x] **PINNED above the tab bar** (Thomas, 2026-08-03), resolving the
+            one gap the frames left. They only show short weeks, where the
+            button sits at the bottom of the list area either way – but a week
+            with twenty leftovers would have hidden it below the fold, the
+            same trap the recipe Save button fell into on a long recipe
+            (2026-07-28). So it reuses that footer exactly: top border in
+            `border/subtle`, the screen's own background so rows scroll under
+            rather than through, and the scroll area drops its tab-bar
+            clearance while the footer is there. Note the footer chrome itself
+            is still undrawn in Figma on both screens – worth a frame if a
+            third one ever needs it.
       - [ ] **It inherits known bug 3** (frozen "this week"). The move targets
             the current week as computed at app launch, so an app left open
             across Sunday midnight would push into what is by then last week.

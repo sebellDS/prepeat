@@ -1,24 +1,34 @@
 import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Spacing, tabBarClearance } from '@/constants/theme';
 
 /**
- * "Move all items to this week" – the end of a past week's list (Figma
+ * "Move all items to this week" – the action on a past week's list (Figma
  * 434:7148 "transfer items from last week", designed 2026-08-03).
  *
- * Only drawn on a PAST week that still has unchecked items on it: the current
+ * Only rendered on a PAST week that still has unchecked items: the current
  * week has nowhere to push to, and a week that was fully bought has nothing
- * to push. The full-width solid button sits below the last category group,
- * pushed to the bottom of the list area when the list is short (the frame's
- * auto-layout ends in justify-end) and simply following the last row when it
- * is long.
+ * to push.
  *
- * Pressed is the DS's own button/solid/fill/pressed – the frames show only
- * the default state, but React Native inherits no press feedback of its own
- * and the DS defines the token (CLAUDE.md: interactive states are built, not
- * inherited).
+ * PINNED above the tab bar rather than ending the scrolling content (Thomas,
+ * 2026-08-03). The frame shows a short week, where the button sits at the
+ * bottom of the list area either way – but a week with twenty leftovers would
+ * have hidden it below the fold, which is the same trap the recipe Save
+ * button fell into on a long recipe (2026-07-28). This is that same footer:
+ * a top border and the screen's own background, so rows scroll under it
+ * instead of showing through.
+ *
+ * Pressed is the DS's `button/solid/fill/pressed` – React Native inherits no
+ * press feedback of its own, and states live on the DS component rather than
+ * on each frame that uses it.
  */
 export function MoveWeekButton({ onPress }: { onPress: () => void }) {
+  const insets = useSafeAreaInsets();
   return (
-    <View className="mt-auto w-full px-layout-small">
+    <View
+      style={{ paddingBottom: tabBarClearance(insets, Spacing.three) }}
+      className="w-full border-t border-border-subtle bg-surface-neutral-lightest px-layout-small pt-comp-medium">
       <Pressable accessibilityRole="button" onPress={onPress}>
         {({ pressed }) => (
           <View

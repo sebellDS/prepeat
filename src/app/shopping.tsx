@@ -185,15 +185,13 @@ function ShoppingListScreen() {
             keyboardDismissMode="on-drag"
             contentContainerStyle={{
               // 56 (off the Spacing scale): the list wants extra breathing room
-              // under the last row before the tab bar.
-              paddingBottom: tabBarClearance(insets, 56),
+              // under the last row before the tab bar. On a past week the move
+              // footer below is a real footer and covers the tab bar itself,
+              // so the scroll area only needs a little room at the end.
+              paddingBottom: canMoveToThisWeek
+                ? Spacing.three
+                : tabBarClearance(insets, 56),
               gap: 16,
-              // The move button ends the list and is pushed to the bottom of
-              // the area when the week is short of items – the frame's
-              // auto-layout ends in justify-end (Figma 434:7148). Needs the
-              // content to fill the ScrollView before mt-auto has any room to
-              // work with.
-              flexGrow: 1,
             }}>
             {items.length === 0 ? (
               // While the first fetch is in flight the list area stays blank –
@@ -227,12 +225,16 @@ function ShoppingListScreen() {
                   onDelete={removeItem}
                   onClear={clearCompleted}
                 />
-                {/* Past weeks only, and only while something is left on them. */}
-                {canMoveToThisWeek && <MoveWeekButton onPress={moveItemsToThisWeek} />}
               </>
             )}
           </ScrollView>
         )}
+
+        {/* Past weeks only, and only while something is left to move. Outside
+            the ScrollView so it stays put above the tab bar instead of
+            scrolling away at the end of a long week (Thomas, 2026-08-03 –
+            the same call as the recipe Save footer). */}
+        {canMoveToThisWeek && <MoveWeekButton onPress={moveItemsToThisWeek} />}
 
         {dragging != null && (
           <InlineReorderOverlay
