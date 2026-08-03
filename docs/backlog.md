@@ -15,6 +15,14 @@ Pruned 2026-07-25 (second pass): the 2026-07-18 tech-debt track, the
 dev-build bug round and decision #8 all landed and were removed. Everything
 below is open.
 
+Pruned 2026-08-03: the whole "Blocked on other people" section (the TestFlight
+tester chase) is gone at Thomas's call – v1.0 is with Apple and no more test
+feedback is expected before launch, so chasing the third tester is not work
+the launch is waiting on. The diagnostic worth remembering, if a family member
+ever "never got the invite": TestFlight tester membership and App Store
+Connect TEAM membership are two separate lists, and being on the team sends no
+invite. Check betaTesters vs Users-and-Access before blaming email or spam.
+
 ## In flight (built, not yet live)
 
 - [ ] **Move a past week's leftovers to this week** (Thomas 2026-08-03; Figma
@@ -88,26 +96,6 @@ below is open.
             per brand just like colour and type, so the ABSENCE of a property
             in `get_design_context` is as brand-dependent as its value. A
             missing radius is not evidence of radius 0. `ds-theme.cjs` decides.
-
-## Blocked on other people
-
-- [x] **Second tester on TestFlight** – DONE 2026-07-27, state=INSTALLED in
-      App Store Connect. The family now updates cable-free; the weekly-signing
-      chore below is closed too. What actually went wrong (worth remembering):
-      "never got the invite" was NOT the two-emails trap. She had accepted the
-      App Store Connect TEAM invite (as an Admin) but was never added to the
-      internal tester GROUP "Prep+Eat v. 1.0 test" – team membership does not
-      make you a TestFlight tester, the two lists are separate. No tester slot
-      → no invite email ever sent. Diagnosed via the ASC API (scratchpad
-      tf-diag.mjs: /v1/betaTesters filtered by app vs /v1/users); the fix was
-      adding her to that group. Whenever a family member "doesn't get the
-      invite", check betaTesters vs Users-and-Access before assuming
-      email/spam.
-      Everything else in the pipeline works end to end (EAS cloud build →
-      `eas submit` → TestFlight; builds 3-10 shipped). **Build 10
-      (2026-07-25) is the current one.**
-      - [ ] **Third tester** invited to TestFlight 2026-07-27, state=INVITED
-            (not yet accepted). Send the [tester guide](testflight-tester-guide.md).
 
 ## Known bugs (open)
 
