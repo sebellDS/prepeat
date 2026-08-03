@@ -32,8 +32,11 @@ import { formatQuantity, parseQuantity } from '@/lib/quantity';
 import {
   CATEGORIES,
   getOrCreateListId,
+  moveWeekLeftovers,
   normalizeItemName,
+  undoMoveWeekLeftovers,
   type Category,
+  type MoveReceipt,
 } from '@/lib/shopping-core';
 import { supabase } from '@/lib/supabase';
 import { addWeeksKey, weekStartOf } from '@/lib/week';
@@ -136,6 +139,11 @@ interface State {
   // reducer state, not a ref, so the snapshot always sees the true current
   // items rather than a render-behind copy.
   removed: ShoppingItem[];
+  // Set when `removed` left via "Move all items to this week" (2026-08-03).
+  // That undo cannot just clear deleted_at: the items also arrived on another
+  // week, where they may have merged into a line that was already there. The
+  // server's receipt is what reverses both halves exactly.
+  moveReceipt: MoveReceipt | null;
 }
 
 type Action =
@@ -161,6 +169,11 @@ type Action =
     }
   | { type: 'remove'; id: string }
   | { type: 'clear-completed' }
+  // Two halves of the week move: the items leave the screen the instant the
+  // button is pressed, and the undo offer only appears once the server has
+  // confirmed what it actually did (there is nothing to undo before that).
+  | { type: 'move-out'; ids: string[] }
+  | { type: 'moved'; items: ShoppingItem[]; receipt: MoveReceipt }
   | { type: 'restore' }
   | { type: 'dismiss-undo' }
   | { type: 'set-order'; order: Category[] }
@@ -189,6 +202,7 @@ function reducer(state: State, action: Action): State {
         // A week switch clears the pending undo in 'begin-load'; a plain
         // (re)load must not swallow a toast the shopper is still looking at.
         removed: state.removed,
+        moveReceipt: state.moveReceipt,
       };
     case 'refresh':
       return {
@@ -293,6 +307,7 @@ function reducer(state: State, action: Action): State {
         ...state,
         items: state.items.filter((item) => item.id !== action.id),
         removed: removed ? [removed] : [],
+        moveReceipt: null,
       };
     }
     case 'clear-completed': {
@@ -304,8 +319,24 @@ function reducer(state: State, action: Action): State {
         ...state,
         items: state.items.filter((item) => !item.isChecked),
         removed: cleared,
+        moveReceipt: null,
       };
     }
+    case 'move-out': {
+      // Optimistic half: the past week empties immediately, which also takes
+      // the button away with it (it only exists where there is something to
+      // move). No undo offer yet – see 'moved'.
+      const ids = new Set(action.ids);
+      return {
+        ...state,
+        items: state.items.filter((item) => !ids.has(item.id)),
+        removed: [],
+        moveReceipt: null,
+      };
+    }
+    case 'moved':
+      // The server has confirmed the move, so it can now be taken back.
+      return { ...state, removed: action.items, moveReceipt: action.receipt };
     case 'restore': {
       // Undo: put the snapshot(s) back. Anything a realtime echo already
       // re-added (deleted_at cleared on the server) is left alone.
@@ -316,10 +347,13 @@ function reducer(state: State, action: Action): State {
         ...state,
         items: missing.length > 0 ? [...state.items, ...missing] : state.items,
         removed: [],
+        moveReceipt: null,
       };
     }
     case 'dismiss-undo':
-      return state.removed.length === 0 ? state : { ...state, removed: [] };
+      return state.removed.length === 0
+        ? state
+        : { ...state, removed: [], moveReceipt: null };
     case 'set-order':
       return { ...state, categoryOrder: action.order };
     case 'begin-load':
@@ -331,6 +365,7 @@ function reducer(state: State, action: Action): State {
         listId: null,
         items: [],
         removed: [],
+        moveReceipt: null,
       };
     case 'load-failed':
       // Stop pretending to load. `loading` stays true so nothing downstream
@@ -460,14 +495,23 @@ interface ShoppingListApi {
   ) => void;
   removeItem: (id: string) => void;
   /** The most recently deleted item, offered for undo; null once undone or dismissed. */
-  /** What the last delete took: one item, or the whole cleared done section. */
+  /** What the last delete took: one item, the cleared done section, or a week move. */
   undoItems: ShoppingItem[];
+  /** How those items left, for the toast's wording ("deleted"/"cleared"/"moved"). */
+  undoVerb: string;
   /** Restore the last-deleted item (clears deleted_at). */
   undoRemove: () => void;
   /** Drop the undo offer without restoring (the toast timed out). */
   dismissUndo: () => void;
   /** Soft-deletes every checked item (the manual "Clear" in the done section). */
   clearCompleted: () => void;
+  /**
+   * True on a PAST week that still has unchecked items – the only place the
+   * "Move all items to this week" button is drawn (Figma 434:7148).
+   */
+  canMoveToThisWeek: boolean;
+  /** Send this past week's unchecked items to the current week's list. */
+  moveItemsToThisWeek: () => void;
   fillFromWeeklyPlan: () => Promise<number>;
   setCategoryOrder: (order: Category[]) => void;
   /** Re-run the initial load after it failed at launch (the offline retry). */
@@ -491,6 +535,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     memory: {},
     categoryOrder: [...CATEGORIES],
     removed: [],
+    moveReceipt: null,
   });
   const [live, setLive] = useState<LiveStatus>('connecting');
   // Read back inside refresh(), which has to stay stable (the realtime effect
@@ -847,6 +892,20 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const undoRemove = useCallback(() => {
     const ids = stateRef.current.removed.map((item) => item.id);
     if (ids.length === 0) return;
+    // A week move went two places at once (out of this week, into the current
+    // one, possibly merged into a line already there), so clearing deleted_at
+    // would only undo half of it. The server reverses both halves from its
+    // receipt; the refresh then shows whichever week is on screen as it now
+    // truly is.
+    const receipt = stateRef.current.moveReceipt;
+    if (receipt) {
+      dispatch({ type: 'restore' });
+      undoMoveWeekLeftovers(receipt).then(refresh, (error) => {
+        console.warn('[shopping] undo move failed', error);
+        refresh();
+      });
+      return;
+    }
     dispatch({ type: 'restore' });
     // Clearing deleted_at revives the rows; the set_updated_at trigger bumps
     // updated_at, so the realtime echo re-adds them on the other phones too.
@@ -856,7 +915,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       'restore',
       supabase.from('shopping_list_items').update({ deleted_at: null }).in('id', ids),
     );
-  }, [guard]);
+  }, [guard, refresh]);
 
   const dismissUndo = useCallback(() => dispatch({ type: 'dismiss-undo' }), []);
 
@@ -893,6 +952,38 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     [guard, household.id],
   );
 
+  // "Move all items to this week" (Figma 434:7148, built 2026-08-03). Only
+  // ever reachable from a past week. The items go the instant it is pressed –
+  // the undo toast, not a confirmation dialog, is what makes that safe – but
+  // the toast itself waits for the server, because until the move has actually
+  // happened there is nothing to take back. A failure puts everything back by
+  // refetching, and offers no undo.
+  const moveItemsToThisWeek = useCallback(() => {
+    const listId = stateRef.current.listId;
+    const week = viewedWeekRef.current;
+    if (!listId || week >= currentWeekStart) return;
+    const moving = stateRef.current.items.filter((item) => !item.isChecked);
+    if (moving.length === 0) return;
+    dispatch({ type: 'move-out', ids: moving.map((item) => item.id) });
+    moveWeekLeftovers(listId, currentWeekStart).then(
+      (receipt) => {
+        // Whatever the server actually moved is the truth – another phone may
+        // have ticked one off a second earlier, and the old week has to settle
+        // back onto exactly what is left.
+        refresh();
+        if (receipt.moved === 0) return;
+        // Navigated on: the move stands, but an undo toast belongs to the week
+        // it happened on, not the one now on screen.
+        if (viewedWeekRef.current !== week) return;
+        dispatch({ type: 'moved', items: moving, receipt });
+      },
+      (error) => {
+        console.warn('[shopping] move to this week failed', error);
+        refresh();
+      },
+    );
+  }, [currentWeekStart, refresh]);
+
   const fillFromWeeklyPlan = useCallback(async (): Promise<number> => {
     const listId = stateRef.current.listId;
     if (!listId) return 0;
@@ -925,6 +1016,20 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       return 0;
     }
   }, [household.id, clearCompleted, refresh]);
+
+  // The move button belongs to a past week that still has something on it –
+  // a week whose items were all bought has nothing to move, and the current
+  // week has nowhere to move them to (Thomas, 2026-08-03).
+  const canMoveToThisWeek =
+    viewedWeekStart < currentWeekStart && state.items.some((item) => !item.isChecked);
+
+  // One item keeps its name ("Milk deleted"); a batch is counted. The verb
+  // says which of the three ways it left.
+  const undoVerb = state.moveReceipt
+    ? 'moved'
+    : state.removed.length === 1
+      ? 'deleted'
+      : 'cleared';
 
   // Week navigation derived state: chevrons disable at the edges.
   const viewedIndex = weekOptions.indexOf(viewedWeekStart);
@@ -974,9 +1079,12 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       updateItem,
       removeItem,
       undoItems: state.removed,
+      undoVerb,
       undoRemove,
       dismissUndo,
       clearCompleted,
+      canMoveToThisWeek,
+      moveItemsToThisWeek,
       fillFromWeeklyPlan,
       setCategoryOrder,
       retry: retryLoad,
@@ -998,9 +1106,12 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       updateItem,
       removeItem,
       state.removed,
+      undoVerb,
       undoRemove,
       dismissUndo,
       clearCompleted,
+      canMoveToThisWeek,
+      moveItemsToThisWeek,
       fillFromWeeklyPlan,
       setCategoryOrder,
       retryLoad,

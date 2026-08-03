@@ -15,6 +15,40 @@ Pruned 2026-07-25 (second pass): the 2026-07-18 tech-debt track, the
 dev-build bug round and decision #8 all landed and were removed. Everything
 below is open.
 
+## In flight (built, not yet live)
+
+- [ ] **Move a past week's leftovers to this week** (Thomas 2026-08-03; Figma
+      434:7148 "transfer items from last week"). Built the same day it was
+      designed. A past week whose list still has unchecked items ends in a
+      full-width **"Move all items to this week"**; pressing it empties that
+      week onto the current one and offers the undo toast. Graduated out of
+      Ideas – the decisions that shaped it are in the log below.
+      - [ ] **APPLY `0026_move_week_leftovers.sql`** in the Supabase SQL
+            editor. Until it runs, the button is in the code but the RPC it
+            calls does not exist, so pressing it fails and the list refetches
+            unchanged. Expect both columns true (move_fn, undo_fn).
+            **SAFE FOR THE PHONES** (the 0022 lesson): it only ADDS two
+            functions – nothing dropped, no signature changed – so TestFlight
+            build 13 is unaffected by it.
+      - [ ] **Verify on device** once the migration is applied: move a past
+            week with a mix of amounts and plain items, check the merge onto
+            an ingredient the new week already plans (one line, summed), then
+            undo and confirm both weeks come back exactly as they were.
+      - [ ] **Two states were not drawn** and are flagged rather than passed
+            off as Thomas's design. (a) A past week with MORE items than fit
+            the screen: the frames only show a short list, where the button
+            sits at the bottom of the area. The implementation follows the
+            frame's auto-layout – it ends the scrolling content, so on a long
+            list it comes after the last row rather than floating above it.
+            (b) The PRESSED state of the button, which uses the DS's own
+            `button/solid/fill/pressed` since React Native inherits no press
+            feedback. Both are cheap to change once seen on a phone.
+      - [ ] **It inherits known bug 3** (frozen "this week"). The move targets
+            the current week as computed at app launch, so an app left open
+            across Sunday midnight would push into what is by then last week.
+            The server refuses to move backwards, so the worst case is a move
+            that does nothing – not a wrong one. Fixing bug 3 fixes this too.
+
 ## Blocked on other people
 
 - [x] **Second tester on TestFlight** – DONE 2026-07-27, state=INSTALLED in
@@ -739,56 +773,6 @@ Closed 2026-07-27:
       bites: cache just the CURRENT week's list and show it read-only when the
       load fails, which covers the in-the-shop case without touching sync.
       Worth a decision before the family relies on it weekly.
-- [ ] **Move the remaining shopping items to next week** (Thomas, 2026-08-03).
-      At the end of a week the list still holds whatever was not bought –
-      out of stock, forgotten, or simply not needed yet. Today those items
-      just sit on a week nobody looks at again, so the shopper has to
-      re-add them by hand. Let them carry over to next week's list instead.
-      WHY IT FITS: the list is already per-week (`shopping_list_items.list_id`
-      points at that week's list) and the week picker already exists, so this
-      is a new ACTION on an existing structure, not a new data model.
-      SHAPE, and the one real subtlety: an item cannot simply have its
-      `list_id` repointed. Plan-fed items carry
-      `shopping_list_item_contributions` rows tied to THIS week's meal
-      entries, and those entries stay where they are – so a moved item should
-      land on next week's list as a fresh, user-owned row
-      (`added_manually = true`, no contributions) and be soft-deleted from the
-      old week. It stops being "the plan's" item and becomes "yours", which is
-      also what it means in real life.
-      It must MERGE, not duplicate: next week's list may already carry the
-      same ingredient from its own plan, so the move has to go through
-      `item_merge_key` the way `contribute_entry_into` does – otherwise
-      carrying over onions onto a week that already plans onions produces the
-      exact double-row the 2026-07-29 merge work was about.
-      DECIDED 2026-08-03 (Thomas), and these close the original open
-      questions:
-      - **Which items?** Unchecked only. A checked item was bought, so it
-        stays behind on the week it belongs to. No special case for a week
-        that was never shopped – the shopper can uncheck if they need to.
-      - **Manual, never automatic.** Nothing moves unless someone taps.
-        Items appearing on the list that nobody added reads as spooky, and
-        undoing an automatic move is worse than never making it.
-      - **Push, from the old week** (clarified by Thomas the same day, after
-        an initial mis-record as a pull). The button lives on a PRIOR week's
-        list and sends its leftovers to the CURRENT week: the items leave the
-        old week and show up on this one. So the surface is a week you have
-        navigated back to, and the button only exists on past weeks – never
-        on the current week, which has nowhere to push to.
-      - **All-at-once, with the count named.** The swipe actions already
-        cover single items, so per-item selection would only add taps.
-      - **Every prior week with items gets the button**, and every one of
-        them targets the CURRENT week – not the week after the one being
-        looked at. Two weeks back still pushes forward to today's list.
-      - **No confirmation dialog.** The items vanish on tap and the existing
-        undo toast appears, the same one the swipe-delete and "4 items
-        cleared" already use. Tapping is cheap and reversible rather than
-        guarded.
-      - **A week with nothing left does not show the button at all** – the
-        control appears only where there is something to move.
-      DESIGN IN PROGRESS – Thomas started designing the trigger 2026-08-03.
-      Until the frames exist nothing is built UI-side; the data half (a
-      merge-safe carry-over on the server) is design-free and is the cheaper
-      of the two.
 - [ ] **Invite code as a filled brand chip** (measured 2026-08-02, not
       committed to). White on #378112 clears AA at 4.87:1 and would make the
       code look like a thing to be copied while keeping the brand green. Purely
@@ -1276,6 +1260,47 @@ missing from it entirely.
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12).
 
 ## Decisions log (recent)
+
+- **2026-08-03 – moving a past week's leftovers onto this week.** Thomas's
+  idea in the morning, designed and built the same day (Figma 434:7148).
+  Product shape, all his calls:
+  - **Unchecked items only.** A ticked item was bought; it belongs to the
+    week it was bought in.
+  - **Manual, never automatic.** Rolling leftovers forward by themselves is
+    invisible and slightly spooky – things appear that nobody added, and by
+    the time you notice, the undo window is long gone.
+  - **Push, from the old week** – the button is drawn at the end of a PAST
+    week's list and always targets the current week, so two weeks back still
+    pushes forward to today rather than one week along. (First recorded
+    backwards, as a pull from this week; corrected the same day.)
+  - **No confirmation dialog.** The items vanish on tap and the existing undo
+    toast offers them back. Cheap-and-reversible beat guarded-and-annoying.
+  - **No button where there is nothing to move** – a fully-bought past week,
+    or the current week itself, which has nowhere to push to.
+  How it is built, and why it is not a `list_id` update. A plan-fed line
+  carries `shopping_list_item_contributions` rows tied to the OLD week's meal
+  entries, and those entries stay put – repointing the row would drag that
+  bookkeeping onto a week the meal was never on, where `withdraw_entry` would
+  later subtract from the wrong list. So a moved item arrives as a fresh,
+  user-owned row (`added_manually`, no contributions) and the old row is
+  soft-deleted: it stops being the plan's item and becomes yours, which is
+  what it means in real life anyway. It merges through `item_merge_key`, so
+  two leftover onions onto a week that already plans three give one line of
+  five – not the double row the 2026-07-29 merge work removed.
+  Two departures from `contribute_entry_into` worth knowing about, both
+  deliberate. It merges only into an UNCHECKED line, because folding a
+  leftover into something already ticked off this week would make it arrive
+  pre-bought and invisible. And it DOES fold into a hand-edited line, which
+  the plan reconciler refuses to do: those rails exist so automatic
+  reconciliation never overwrites a number the family set by hand, and this
+  is not automatic – somebody just asked for it, and folding adds to their
+  number rather than replacing it.
+  Undo reverses both halves from a server receipt rather than just clearing
+  `deleted_at`, because the items also landed somewhere else and may have
+  merged on arrival. Created lines are deleted; merged lines give back
+  exactly what was added and no more – the same lesson as 0025's
+  `applied_quantity`. It lives for the toast's five seconds and no longer, in
+  memory, exactly like every other undo on this screen.
 
 - **2026-07-30 – five small UI bugs from on-device testing** (PR #9,
   branch `fix/small-ui-bugs`). All reported by Thomas walking the app on his

@@ -14,6 +14,7 @@ import {
   InlineReorderOverlay,
 } from '@/components/shopping/inline-reorder-overlay';
 import { LiveBadge } from '@/components/shopping/live-badge';
+import { MoveWeekButton } from '@/components/shopping/move-week-button';
 import { ReorderCategoriesSheet } from '@/components/shopping/reorder-categories-sheet';
 import { LoadError } from '@/components/ui/load-error';
 import { UndoToast } from '@/components/ui/undo-toast';
@@ -44,9 +45,12 @@ function ShoppingListScreen() {
     updateItem,
     removeItem,
     undoItems,
+    undoVerb,
     undoRemove,
     dismissUndo,
     clearCompleted,
+    canMoveToThisWeek,
+    moveItemsToThisWeek,
     setCategoryOrder,
     retry,
   } = useShoppingList();
@@ -184,6 +188,12 @@ function ShoppingListScreen() {
               // under the last row before the tab bar.
               paddingBottom: tabBarClearance(insets, 56),
               gap: 16,
+              // The move button ends the list and is pushed to the bottom of
+              // the area when the week is short of items – the frame's
+              // auto-layout ends in justify-end (Figma 434:7148). Needs the
+              // content to fill the ScrollView before mt-auto has any room to
+              // work with.
+              flexGrow: 1,
             }}>
             {items.length === 0 ? (
               // While the first fetch is in flight the list area stays blank –
@@ -217,6 +227,8 @@ function ShoppingListScreen() {
                   onDelete={removeItem}
                   onClear={clearCompleted}
                 />
+                {/* Past weeks only, and only while something is left on them. */}
+                {canMoveToThisWeek && <MoveWeekButton onPress={moveItemsToThisWeek} />}
               </>
             )}
           </ScrollView>
@@ -250,7 +262,9 @@ function ShoppingListScreen() {
       {/* Keyed on what was deleted so each new delete remounts the toast –
           fresh entrance and a fresh 5s countdown. Sits above the tab bar (or
           the keyboard, which the toast handles itself). One item reads
-          "Milk deleted"; a cleared done section reads "4 items cleared". */}
+          "Milk deleted"; a cleared done section reads "4 items cleared"; a
+          week move reads "4 items moved" (the verb comes from the provider,
+          which is the only thing that knows which of the three happened). */}
       {undoItems.length > 0 && (
         <UndoToast
           key={undoItems.map((item) => item.id).join(',')}
@@ -259,7 +273,7 @@ function ShoppingListScreen() {
               ? undoItems[0].name
               : `${undoItems.length} items`
           }
-          verb={undoItems.length === 1 ? 'deleted' : 'cleared'}
+          verb={undoVerb}
           onUndo={undoRemove}
           onDismiss={dismissUndo}
           bottomInset={tabBarClearance(insets, Spacing.three)}
