@@ -29,7 +29,7 @@ import { Spacing, tabBarClearance } from '@/constants/theme';
 function ShoppingListScreen() {
   const {
     loading,
-    live,
+    failed,
     items,
     categoryOrder,
     userId,
@@ -147,11 +147,14 @@ function ShoppingListScreen() {
             listTop.value = y;
           });
         }}>
-        {items.length === 0 && loading && live === 'offline' ? (
-          // The initial load failed (launch-time outage). Offer a retry
-          // instead of a permanent blank; the tab also retries itself on
-          // foreground once the connection is back. Outside the ScrollView so
-          // the block can centre itself in the list area, as designed.
+        {failed ? (
+          // Any load that failed outright – launch OR a week switch. This used
+          // to read `loading && live === 'offline'`, which inferred failure
+          // from being offline and so missed every server-side failure (the
+          // 2026-07-27 outage shape): the list went blank with no spinner and
+          // no message. `failed` is now set by the provider's catch blocks.
+          // Outside the ScrollView so the block can centre itself in the list
+          // area, as designed.
           <LoadError
             title="Can't load your list"
             message="We couldn't load your shopping list. Check your connection and try again – nothing on your list is lost."

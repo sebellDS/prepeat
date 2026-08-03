@@ -116,6 +116,12 @@ function rowToItem(row: ItemRow, prev?: ShoppingItem): ShoppingItem {
 
 interface State {
   loading: boolean;
+  // A load actually FAILED, as opposed to still being in flight. Before this
+  // (audit 2026-08-02, finding 5) a failed week switch left loading:true with
+  // an empty list forever, and the screen inferred failure from
+  // "loading && offline" – which missed every server-side failure, like the
+  // 2026-07-27 outage, showing a blank list with no spinner and no message.
+  failed: boolean;
   listId: string | null;
   items: ShoppingItem[];
   // The household's learned name -> category mapping (item_category_memory).
@@ -160,7 +166,8 @@ type Action =
   | { type: 'set-order'; order: Category[] }
   // Week switch in flight: blank the list so the old week's items never
   // show under the new week's label.
-  | { type: 'begin-load' };
+  | { type: 'begin-load' }
+  | { type: 'load-failed' };
 
 function mergeRows(prevItems: ShoppingItem[], rows: ItemRow[]): ShoppingItem[] {
   const prevById = new Map(prevItems.map((item) => [item.id, item]));
@@ -174,6 +181,7 @@ function reducer(state: State, action: Action): State {
     case 'ready':
       return {
         loading: false,
+        failed: false,
         listId: action.listId,
         items: mergeRows(state.items, action.rows),
         memory: action.memory,
@@ -316,7 +324,18 @@ function reducer(state: State, action: Action): State {
       return { ...state, categoryOrder: action.order };
     case 'begin-load':
       // A pending undo belongs to the week we're leaving – drop it.
-      return { ...state, loading: true, listId: null, items: [], removed: [] };
+      return {
+        ...state,
+        loading: true,
+        failed: false,
+        listId: null,
+        items: [],
+        removed: [],
+      };
+    case 'load-failed':
+      // Stop pretending to load. `loading` stays true so nothing downstream
+      // treats an empty list as a real empty week.
+      return { ...state, failed: true };
   }
 }
 
@@ -420,6 +439,8 @@ async function migrateDevicePrefs(
 
 interface ShoppingListApi {
   loading: boolean;
+  /** A load failed outright – show the retry screen, not a spinner. */
+  failed: boolean;
   live: LiveStatus;
   items: ShoppingItem[];
   categoryOrder: Category[];
@@ -464,6 +485,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
 
   const [state, dispatch] = useReducer(reducer, {
     loading: true,
+    failed: false,
     listId: null,
     items: [],
     memory: {},
@@ -609,7 +631,10 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       });
     })().catch((error) => {
       console.warn('[shopping] initial load failed', error);
-      if (!cancelled) setLive('offline');
+      if (!cancelled) {
+        setLive('offline');
+        dispatch({ type: 'load-failed' });
+      }
     });
     return () => {
       cancelled = true;
@@ -633,7 +658,14 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
           memory: stateRef.current.memory,
           categoryOrder: stateRef.current.categoryOrder,
         });
-      })().catch((error) => console.warn('[shopping] week load failed', error));
+      })().catch((error) => {
+        // Only the week still on screen gets the error – a failure for a week
+        // the shopper has already navigated away from is not theirs to see.
+        console.warn('[shopping] week load failed', error);
+        if (viewedWeekRef.current === weekStart) {
+          dispatch({ type: 'load-failed' });
+        }
+      });
     },
     [household.id, userId],
   );
@@ -907,9 +939,19 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     if (index >= 0 && index < weekOptions.length - 1) viewWeek(weekOptions[index + 1]);
   }, [weekOptions, viewWeek]);
 
+  // Retry whatever actually failed. A failed launch re-runs the boot load
+  // (which also rebuilds the week options); a failed week SWITCH reloads that
+  // week, so the retry button doesn't silently drop the shopper back onto the
+  // current week (audit 2026-08-02, finding 5).
+  const retryLoad = useCallback(() => {
+    if (viewedWeekRef.current === currentWeekStart) retry();
+    else viewWeek(viewedWeekRef.current);
+  }, [currentWeekStart, retry, viewWeek]);
+
   const api = useMemo(
     () => ({
       loading: state.loading,
+      failed: state.failed,
       live,
       items: state.items,
       categoryOrder: state.categoryOrder,
@@ -929,10 +971,11 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,
-      retry,
+      retry: retryLoad,
     }),
     [
       state.loading,
+      state.failed,
       live,
       state.items,
       state.categoryOrder,
@@ -952,7 +995,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       clearCompleted,
       fillFromWeeklyPlan,
       setCategoryOrder,
-      retry,
+      retryLoad,
     ],
   );
 

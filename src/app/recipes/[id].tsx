@@ -23,6 +23,7 @@ import {
 import { IngredientSheet } from "@/components/recipes/ingredient-sheet";
 import { StepSheet } from "@/components/recipes/step-sheet";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { LoadError } from "@/components/ui/load-error";
 import { ReorderSheet } from "@/components/ui/reorder-sheet";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { SwipeActions } from "@/components/recipes/swipe-actions";
@@ -74,6 +75,7 @@ export default function RecipeDetailScreen() {
   const insets = useSafeAreaInsets();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [failed, setFailed] = useState(false);
   const [servings, setServings] = useState<number | null>(null);
   // Cooking mode: checked-off ingredients/steps live on this phone only –
   // they are progress through tonight's cooking, not shared state.
@@ -113,12 +115,14 @@ export default function RecipeDetailScreen() {
   const dismissUndo = useCallback(() => setUndoTarget(null), []);
 
   const reload = useCallback(async () => {
+    setFailed(false);
     try {
       const fresh = await fetchRecipe(id);
       setRecipe(fresh);
       setServings((current) => current ?? fresh.servings);
     } catch (error) {
       console.warn("[recipes] detail fetch failed", error);
+      setFailed(true);
     }
   }, [id]);
 
@@ -129,12 +133,36 @@ export default function RecipeDetailScreen() {
   );
 
   if (recipe == null) {
+    // Both states carry the header: without it a failed load (offline, or a
+    // recipe another member just deleted) left the screen with no Back button
+    // and no way out at all – the audit's "strand the user" case.
     return (
-      <SafeAreaView
-        edges={["top"]}
-        className="flex-1 items-center justify-center bg-surface-neutral-lightest"
-      >
-        <ActivityIndicator color={ds.colors.surface.primary.main} />
+      <SafeAreaView edges={["top"]} className="flex-1 bg-surface-neutral-lightest">
+        <View className="w-full flex-row items-center px-layout-small py-comp-small">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <MaterialIcons
+              name="arrow-back"
+              size={32}
+              color={ds.colors.surface.primary.main}
+            />
+          </Pressable>
+        </View>
+        {failed ? (
+          <LoadError
+            title="Can't load this recipe"
+            message="We couldn't open this recipe. Check your connection and try again – nothing in it is lost."
+            onRetry={reload}
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={ds.colors.surface.primary.main} />
+          </View>
+        )}
       </SafeAreaView>
     );
   }

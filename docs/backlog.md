@@ -111,7 +111,8 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       FIX: show a real error and keep the form populated so the user can
       retry; and make a failed photo upload NON-FATAL – save the recipe text
       without a photo rather than losing everything.
-- [ ] **2. Shopping quantities drift wrong when a line is checked/unchecked
+- [x] **2. FIXED IN CODE 2026-08-03 – migration 0025 written, NOT YET APPLIED.
+      Shopping quantities drifted wrong when a line was checked/unchecked
       around a plan change.** `supabase/migrations/0013_atomic_plan_push.sql`
       :185-191 and `0014_atomic_withdraw_rescale.sql`:83-96.
       `contribute` ALWAYS records that a meal contributed a quantity, but only
@@ -123,10 +124,24 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       it is unchecked, driving a quantity to zero even though another meal
       still needs the item. `rescale` has the same asymmetry.
       Hits the "the list builds itself from the plan" promise directly.
-      FIX: make contribute and withdraw symmetric – base the adjustment on the
-      contribution ROWS actually recorded, not the line's live state, or
-      recompute the line quantity from the sum of its live contribution rows
-      on every change. New numbered migration; never edit 0013/0014.
+      DONE, as `0025_contributions_track_what_was_applied.sql`: a new
+      `applied_quantity` column records the amount ACTUALLY folded into the
+      visible line (null = none), and withdraw/rescale reverse that instead of
+      the raw quantity – so a debit can never exceed the credit that was made.
+      Invariant restored: a line's quantity is the sum of its live
+      contributions' `applied_quantity`, plus whatever the user owns.
+      Chosen over "recompute the line from its contributions on every change"
+      because checked, hand-edited and manually-added lines are deliberately
+      frozen (0013's rails, decision #8) and a full recompute would overwrite
+      amounts the user owns. Existing rows backfill `applied_quantity =
+      quantity`, which is exactly today's behaviour, so applying the migration
+      cannot itself move a single number.
+      **SAFE FOR THE PHONES** (the 0022 lesson): it only ADDS a column and
+      replaces function bodies – no signature changes, nothing dropped – so
+      TestFlight build 12 keeps working unchanged.
+      - [ ] ⚠️ **THOMAS MUST RUN IT** in the Supabase SQL editor. It ends with
+            a verifying select – expect all four columns true. Until then the
+            bug is still live on the phones.
 - [ ] **3. "This week" is frozen at app launch, so a meal can land on last
       week.** [src/lib/shopping-list.tsx:489](../src/lib/shopping-list.tsx)
       and [src/lib/meal-plan.tsx:407](../src/lib/meal-plan.tsx).
@@ -151,7 +166,8 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       FIX: add a named-entity decode step (smart quotes, accented Latin,
       dashes, ellipsis, and `&frac12;`/`&frac14;`/`&frac34;` → ½ ¼ ¾) BEFORE
       the amount regex runs. Sits with the parser work already done 2026-07-29.
-- [ ] **5. Three screens can still strand the user on an endless spinner.**
+- [x] **5. FIXED 2026-08-03. Three screens could strand the user on an endless
+      spinner.**
       [src/app/recipes/index.tsx:114](../src/app/recipes/index.tsx) (and
       42-46), `src/app/recipes/[id].tsx`:115-140, and the shopping week-switch
       at [src/app/shopping.tsx:150](../src/app/shopping.tsx).
@@ -163,8 +179,25 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       no spinner and no message.
       **This is exactly the Plan-tab silent-spinner class fixed on 2026-07-27** –
       the shared `LoadError`/"Try again" component already exists and was
-      simply never applied here. Reuse it; give the detail screen's loading
-      state a header with Back.
+      simply never applied here.
+      DONE, all three reusing the designed `LoadError` (Figma 392:11911), no
+      new UI invented:
+      - **Recipes tab** – a failed FIRST load now offers a retry. A later
+        refocus that fails deliberately KEEPS the recipes already on screen
+        instead: stale rows beat an error block over content that is still
+        good.
+      - **Recipe detail** – both the loading and the error state now carry the
+        header, so there is always a Back button. Without it a failed load
+        (offline, or a recipe another member just deleted) left the screen
+        with no way out at all.
+      - **Shopping week switch** – the real fix was in the provider, not the
+        screen. The error condition was `loading && live === 'offline'`, which
+        INFERRED failure from being offline and so missed every server-side
+        failure (the 2026-07-27 outage shape) – the list just went blank, no
+        spinner, no message. `shopping-list.tsx` now has a real `failed` flag
+        set by the catch blocks of both the boot load and `viewWeek`, and
+        retry reloads the VIEWED week rather than silently dropping the
+        shopper back onto the current one.
 - [x] **6. FIXED 2026-08-02 (stopgap, improvisation flagged). The invite code
       was printed in low-contrast lime, 2.01:1.**
       [src/components/onboarding/onboarding-flow.tsx:267](../src/components/onboarding/onboarding-flow.tsx)

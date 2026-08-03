@@ -16,6 +16,7 @@ import {
 
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Chip } from "@/components/ui/chip";
+import { LoadError } from "@/components/ui/load-error";
 import { ds } from "@/constants/ds";
 import { Spacing, tabBarClearance } from "@/constants/theme";
 import { useHousehold } from "@/lib/household-context";
@@ -31,24 +32,29 @@ export default function RecipesListScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [recipes, setRecipes] = useState<RecipeSummary[] | null>(null);
+  const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   // No realtime on recipes (deliberate) – refetch whenever the tab gains
   // focus so edits from other phones appear on the next visit.
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      fetchRecipes(household.id)
-        .then((rows) => {
-          if (!cancelled) setRecipes(rows);
-        })
-        .catch((error) => console.warn("[recipes] fetch failed", error));
-      return () => {
-        cancelled = true;
-      };
-    }, [household.id]),
-  );
+  const load = useCallback(() => {
+    let cancelled = false;
+    setFailed(false);
+    fetchRecipes(household.id)
+      .then((rows) => {
+        if (!cancelled) setRecipes(rows);
+      })
+      .catch((error) => {
+        console.warn("[recipes] fetch failed", error);
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [household.id]);
+
+  useFocusEffect(load);
 
   const visible = useMemo(
     () =>
@@ -111,7 +117,16 @@ export default function RecipesListScreen() {
         </View>
       </View>
 
-      {recipes == null ? (
+      {failed && recipes == null ? (
+        // A failed FIRST load used to sit on a spinner forever. A later
+        // refocus that fails keeps the recipes already on screen instead –
+        // stale rows beat an error block over content that is still good.
+        <LoadError
+          title="Can't load your recipes"
+          message="We couldn't load your cookbook. Check your connection and try again – none of your recipes are lost."
+          onRetry={load}
+        />
+      ) : recipes == null ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={ds.colors.surface.primary.main} />
         </View>
