@@ -1151,6 +1151,24 @@ missing from it entirely.
         and may not get one; the EU-only territory is the main trademark
         de-risk, so the attorney is now an expansion-time concern, not a
         launch gate.
+- [x] **Build 13 shipped to TestFlight, VALID (2026-08-03).** Carries the
+      pre-build audit fixes: #1 (an imported recipe is no longer lost when its
+      photo can't be fetched, and a failed save shows a real error), #5 (the
+      Recipes tab, recipe detail and the shopping week switch all offer "Try
+      again"; Shopping also gained the loading spinner it never had), and #6
+      (the invite code is legible). #2 is NOT in this build – it is migration
+      0025 and has been live for everyone since it was applied the same day.
+      **The App Store review is untouched**: v1.0 is still bound to build 12
+      and was deliberately left alone (Thomas, 2026-08-03, choosing to ship to
+      testers without disturbing the queue). **So v1.0 will launch WITHOUT
+      these four fixes** – plan a 1.0.1 with build 13 or later once v1.0 is
+      approved and released.
+      SUBMIT WENT CLEANLY THIS TIME – no hang, unlike build 12. But note the
+      submit script's closing line printed "Build 12 is VALID" because Apple
+      had not finished processing 13 yet: **that line names the latest build it
+      can SEE, not the one you just shipped.** If the number is not yours, it
+      has not landed. Polling for build 13 specifically found it VALID after
+      3 minutes – much faster than build 12's ~25.
 - [x] **Build 12 shipped to TestFlight, VALID (2026-07-30).** Supersedes the
       "ship build 11" item – build 12 carries the Plan-tab retry screen, all
       the import/parser fixes, migration 0024's behaviour, the ds-check
