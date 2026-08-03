@@ -31,10 +31,9 @@ below is open.
             the server half is live for everybody now, but nothing can reach
             it until the app half ships in a build, so no phone behaves
             differently yet.
-      - [ ] **Verify on device** once the migration is applied: move a past
-            week with a mix of amounts and plain items, check the merge onto
-            an ingredient the new week already plans (one line, summed), then
-            undo and confirm both weeks come back exactly as they were.
+      - [x] **VERIFIED ON DEVICE 2026-08-03** – "it worked perfectly"
+            (Thomas, on the dev build installed 14:53). Still only on the dev
+            build: it reaches the family with the next TestFlight build.
       - [ ] **Two states were not drawn** and are flagged rather than passed
             off as Thomas's design. (a) A past week with MORE items than fit
             the screen: the frames only show a short list, where the button
@@ -43,7 +42,9 @@ below is open.
             list it comes after the last row rather than floating above it.
             (b) The PRESSED state of the button, which uses the DS's own
             `button/solid/fill/pressed` since React Native inherits no press
-            feedback. Both are cheap to change once seen on a phone.
+            feedback. NOT YET RULED ON: the device round confirmed the feature
+            works, not that these two read right – Thomas has not said either
+            way. Both are cheap to change.
       - [ ] **It inherits known bug 3** (frozen "this week"). The move targets
             the current week as computed at app launch, so an app left open
             across Sunday midnight would push into what is by then last week.
