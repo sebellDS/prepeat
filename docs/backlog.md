@@ -61,6 +61,25 @@ below is open.
             The server refuses to move backwards, so the worst case is a move
             that does nothing – not a wrong one. Fixing bug 3 fixes this too.
 
+- [x] **Shopping checkbox sat between the two lines of a row** – found by
+      Thomas on device 2026-08-03, fixed the same day. The checkbox and the
+      text column were centred against each other, so on every row WITH an
+      amount the box landed in the gap between name and amount; single-line
+      rows looked right, which is why it survived. The design's `checkboxField`
+      is `items-start` – box against the name, amount hanging below. The two
+      lines also lacked their designed leadings (label 24, hint 16), so the
+      name's line box was not 24 tall for the 24-tall checkbox slot to centre
+      on, and rows missed the designed 56/72 heights.
+      On the dev build only – it reaches the family with the next TestFlight
+      build.
+      - [ ] **Spotted while reading the spec, NOT changed:** the checkbox
+            itself is drawn with `forms/background/default` (#F8F7F7) and
+            `forms/border/enabled` (#B5B1AB); the code uses
+            `surface/neutral/lightest` and `border/default` (#C5C2BE). A
+            slightly lighter border than designed. Left alone because it is a
+            visual change Thomas has not asked for – worth a look next time
+            the row is open.
+
 ## Blocked on other people
 
 - [x] **Second tester on TestFlight** – DONE 2026-07-27, state=INSTALLED in
