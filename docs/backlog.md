@@ -23,13 +23,14 @@ below is open.
       full-width **"Move all items to this week"**; pressing it empties that
       week onto the current one and offers the undo toast. Graduated out of
       Ideas – the decisions that shaped it are in the log below.
-      - [ ] **APPLY `0026_move_week_leftovers.sql`** in the Supabase SQL
-            editor. Until it runs, the button is in the code but the RPC it
-            calls does not exist, so pressing it fails and the list refetches
-            unchanged. Expect both columns true (move_fn, undo_fn).
+      - [x] **APPLIED 2026-08-03** (`0026_move_week_leftovers.sql`), verifying
+            select returned move_fn and undo_fn both true.
             **SAFE FOR THE PHONES** (the 0022 lesson): it only ADDS two
             functions – nothing dropped, no signature changed – so TestFlight
-            build 13 is unaffected by it.
+            build 13 is unaffected by it. Note the asymmetry, the usual one:
+            the server half is live for everybody now, but nothing can reach
+            it until the app half ships in a build, so no phone behaves
+            differently yet.
       - [ ] **Verify on device** once the migration is applied: move a past
             week with a mix of amounts and plain items, check the merge onto
             an ingredient the new week already plans (one line, summed), then
