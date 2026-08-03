@@ -15,9 +15,15 @@ Two rules this file exists to keep straight:
 
 ---
 
-## Unreleased – on the dev build only
+## Accumulating toward the next release – v1.1 (Thomas, 2026-08-03)
 
-Not on TestFlight, not in review. Needs a build to reach anyone.
+More is going in before this ships, so this section grows. On the dev build
+only: not on TestFlight, not in review, and it needs a build to reach anyone.
+
+Note the version: the build 13 fixes below were logged as a "1.0.1" when they
+were the only thing waiting. Thomas has since called the next release **v1.1**,
+so build 13's fixes and everything here go out together under that number –
+whenever v1.0 is approved and released first.
 
 - **Move last week's leftovers to this week.** A past week's shopping list
   that still has unchecked items gets a "Move all items to this week"
