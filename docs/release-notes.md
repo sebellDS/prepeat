@@ -101,6 +101,11 @@ at launch.
 
 ## Server changes (live for everyone, no build needed)
 
+- **2026-08-03 – migration 0027.** "1 liter milk" and "2 liters milk" become
+  one line on the shopping list again, along with jars, containers and
+  pinches. **Live for everyone including v1.0's build 12.** Applies to weeks
+  planned from now on; a list that already shows an item twice keeps showing
+  it twice until that week is rebuilt.
 - **2026-08-03 – migration 0026.** Adds the move/undo functions the leftover
   move calls. Live, but unreachable until the app half ships, so no phone
   behaves differently yet.

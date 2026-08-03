@@ -102,18 +102,20 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
 - [ ] **The same ingredient can still appear twice on the shopping list**
       (Thomas, 2026-07-29, looking at the week-32 demo list: *"a lot of item
       are the same, but named differently"*). `item_merge_key` (migration
-      0013) is `norm_item_name(name) || ' ' || lower(trim(unit))`, so two rows
-      merge only on an exact name AND an exact unit string. The mechanical
-      halves are fixed (trailing unit words lifted out of the name, spelled-out
-      units folded onto abbreviations). Two causes remain:
-      - **Singular vs plural count units.** "1 clove garlic" and "5 cloves
-        garlic" have the same name and still split, because `clove` ≠ `cloves`.
-        Not folded in the parser on purpose: the merged row would print
-        "8 clove garlic". The clean fix is to singularise the unit INSIDE
-        `item_merge_key` (a new migration – never edit 0013) so rows merge
-        while the displayed text keeps whichever natural form was stored.
-        Same applies to cup/cups, slice/slices, sprig/sprigs, head/heads.
-        NEEDS A DECISION from Thomas: change the key, or accept the split.
+      0013) originally was `norm_item_name(name) || ' ' || lower(trim(unit))`,
+      so two rows merged only on an exact name AND an exact unit string. The
+      mechanical halves are fixed (trailing unit words lifted out of the name,
+      spelled-out units folded onto abbreviations). One cause remains:
+      - [x] **Singular vs plural count units – DONE, and the "needs a decision"
+        note here was stale.** Migration 0024 (2026-07-30) already singularises
+        the unit INSIDE `item_merge_key`, exactly as this entry proposed, so
+        clove/cloves, cup/cups, slice/slices and head/heads merge while the row
+        still prints whichever natural form was stored first. The decision was
+        therefore made and shipped three days before this entry was last read
+        aloud on 2026-08-03; 0024's rule then needed one correction of its own,
+        which is item 8 of the pre-build audit below.
+        LESSON: a bug entry that proposes a fix has to be re-read when the fix
+        lands, or it goes on asking for a decision that has already been made.
       - **Synonyms.** `onion` / `small onion` / `yellow onion`,
         `salt` / `kosher salt` / `cooking salt` / `flaky sea salt`,
         `olive oil` / `extra virgin olive oil`, `fresh cilantro` /
@@ -330,16 +332,58 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       FIX (post-launch): throttle by the CODE being guessed (or by IP) rather
       than by account, so total guesses against a code are capped however many
       accounts try. A longer code would also help.
-- [ ] **8. `liter` and `liters` split into two shopping rows – a regression
-      from migration 0024.** `supabase/migrations/0024_merge_key_ignores_unit_
-      plural.sql`:61. The unit normalizer strips a trailing `s` OR `r` to
+- [x] **8. FIXED AND APPLIED 2026-08-03 (migration 0027). `liter` and `liters`
+      split into two shopping rows, a regression from migration 0024.** `supabase/migrations/0024_merge_key_ignores_unit_
+      plural.sql`:61. The unit normalizer stripped a trailing `s` OR `r` to
       merge duplicates. That fixes clove/cloves but breaks any unit whose
       singular ends in r: `liter` → `lite` while `liters` → `liter`, so
       "1 liter milk" and "2 liters milk" never merge. Same shape for
-      container/containers. Narrow (units only, r-ending forms only) but it
-      shipped on 2026-07-30, three days before this audit.
-      FIX: strip only a trailing plural `s`, or use a small known-unit synonym
-      map instead of blanket letter-stripping. New migration.
+      jar/jars and container/containers. Narrow but it shipped on 2026-07-30,
+      three days before this audit.
+      THE `r` WAS NOT A TYPO, which is why the fix needed a decision rather
+      than a revert: Danish plurals end in -r (dåse → dåser, pakke → pakker),
+      so that half was doing real work. English singulars can end in r and
+      Danish plurals do, so no single letter rule serves both languages – the
+      two cases have to be told apart by name.
+      DECIDED 2026-08-03 (Thomas, option A of three offered): keep a blanket
+      strip for the English plural `s`, and handle the Danish -r/-er plurals
+      with a short explicit list. Rejected: a full unit map in SQL (a longer
+      list to keep in step with the client's for no extra coverage today), and
+      leaving it alone (cheap, but the fix is one small migration).
+      Blanket s-stripping is safe even on the Danish units that END in s, and
+      this is why the s half of 0024 never caused trouble: `glas` and `ris` are
+      the same word in the plural, so both forms fold to the same key whatever
+      the rule does to them. Only a rule that folds singular and plural
+      DIFFERENTLY splits a row.
+      DONE as `0027_merge_key_plural_s_only.sql`. It also fixes four cases 0024
+      got wrong that nobody had noticed: the English sibilant plurals
+      (`pinches` → `pinche`, and the same for bunches/dashes/boxes) now lose
+      the whole `es`. 0024's deliberate `gr` → `g` fold is carried over
+      explicitly so legacy gram rows keep merging.
+      **SAFE FOR THE PHONES** (the 0022 lesson): it replaces a function BODY
+      only – no signature change, nothing dropped – and `item_merge_key` is
+      called at runtime rather than stored in a column or an index, so there is
+      nothing to reindex. Builds 12 and 13 keep working and pick up the better
+      merging the moment it runs, because the merge happens on the server.
+      - [x] **APPLIED 2026-08-03**, verifying select returned all eight columns
+            true (liter_fixed, jar_fixed, container_fixed, cloves_still_merge,
+            danish_still_merges, pinches_now_merge, legacy_grams_kept,
+            short_units_untouched). **This one IS live for everybody already** –
+            a database change reaches every phone the moment it runs, so builds
+            12 and 13 both merge liters correctly from now on.
+      - **It does not repair existing rows**, same as 0024: this changes how
+        rows are MATCHED from now on. A week's list that already holds milk
+        twice keeps holding it twice until that week is rebuilt (remove the
+        meals and add them again). New weeks merge correctly.
+      - **Two-stage verification, worth copying** – there is no local Postgres
+        on the Mac, so the fold RULE was proved first by mirroring it in Python
+        and running it over every unit the importer knows plus the Danish ones
+        (all 36 singular/plural pairs merge, no two unrelated units collide,
+        and g/kg/ml/dl/l/oz/tsp/tbsp/stk/tsk/spsk/fed are untouched). That is
+        what caught the `pinches` → `pinche` case 0024 also got wrong. The SQL
+        itself was proved only by the verifying select above. Neither step
+        substitutes for the other: the simulation cannot catch a syntax error,
+        and an all-true select on three examples would not have found pinches.
 - [ ] **9. A raw API call can leave an account belonging to zero households.**
       `supabase/migrations/0001_households_and_shopping_lists.sql`:157.
       The leave rules – reject leaving your only household, snapshot recipes
