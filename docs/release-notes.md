@@ -15,15 +15,18 @@ Two rules this file exists to keep straight:
 
 ---
 
-## Accumulating toward the next release – v1.1 (Thomas, 2026-08-03)
+## Accumulating toward the next version
 
 More is going in before this ships, so this section grows. On the dev build
 only: not on TestFlight, not in review, and it needs a build to reach anyone.
 
-Note the version: the build 13 fixes below were logged as a "1.0.1" when they
-were the only thing waiting. Thomas has since called the next release **v1.1**,
-so build 13's fixes and everything here go out together under that number –
-whenever v1.0 is approved and released first.
+**The number is deliberately not decided** (Thomas, 2026-08-03) – it is "the
+next version" until it ships. Build 13's fixes below were briefly logged as a
+"1.0.1" when they were the only thing waiting; they now simply go out with
+this, whatever it ends up being called. Whenever the number IS wanted, the
+usual convention decides it: bug fixes only → 1.0.1, anything users would call
+a new feature → 1.1. As it stands this section has both. And either way v1.0
+has to be approved and released first.
 
 - **Move last week's leftovers to this week.** A past week's shopping list
   that still has unchecked items gets a "Move all items to this week"
