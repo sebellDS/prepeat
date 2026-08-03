@@ -944,8 +944,16 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   // week, so the retry button doesn't silently drop the shopper back onto the
   // current week (audit 2026-08-02, finding 5).
   const retryLoad = useCallback(() => {
-    if (viewedWeekRef.current === currentWeekStart) retry();
-    else viewWeek(viewedWeekRef.current);
+    if (viewedWeekRef.current === currentWeekStart) {
+      // 'begin-load' clears `failed` so the retry shows a spinner instead of
+      // leaving the error block on screen while it works – pressing "Try
+      // again" otherwise looked like it did nothing at all (Thomas, on device
+      // 2026-08-03). viewWeek below already dispatches it.
+      dispatch({ type: 'begin-load' });
+      retry();
+    } else {
+      viewWeek(viewedWeekRef.current);
+    }
   }, [currentWeekStart, retry, viewWeek]);
 
   const api = useMemo(

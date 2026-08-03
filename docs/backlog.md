@@ -198,6 +198,27 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
         set by the catch blocks of both the boot load and `viewWeek`, and
         retry reloads the VIEWED week rather than silently dropping the
         shopper back onto the current one.
+      **CONFIRMED ON DEVICE 2026-08-03** (dev build, `app.prepeat.dev`) –
+      screenshots of all three retry screens, Thomas: *"both works now"*. Not
+      on any tester's phone until the next EAS build.
+      Two follow-ups came straight out of that testing, both now fixed:
+      - **Shopping had no loading state at all.** The list area just stayed
+        blank while loading – a deliberate choice (a code comment explained it
+        avoided flashing the empty state at a household that has items) with
+        the wrong solution, since blank is indistinguishable from broken.
+        Plan and Recipes both spin; Shopping now matches, guarded on an empty
+        list so a background refresh never replaces rows with a spinner.
+      - **"Try again" looked dead on the launch-failure path.** It kicked off
+        a reload but never cleared `failed`, so the badge flipped to
+        "Connecting" while the error block sat there unchanged. Introduced by
+        the `failed` flag above – a new state with no loading state to fall
+        back to. `retryLoad` now dispatches `begin-load` first.
+      **The lesson, and it is the recurring one:** both were found by Thomas
+      in two minutes on the device and by nobody in review – the audit, the
+      typecheck, the lint and the adversarial verifiers all passed code whose
+      RETRY BUTTON DID NOTHING VISIBLE. Error paths are exactly the code that
+      is never exercised by ordinary use, so "it compiles" says almost nothing
+      about them. Walk them on a device.
 - [x] **6. FIXED 2026-08-02 (stopgap, improvisation flagged). The invite code
       was printed in low-contrast lime, 2.01:1.**
       [src/components/onboarding/onboarding-flow.tsx:267](../src/components/onboarding/onboarding-flow.tsx)
@@ -691,6 +712,65 @@ Closed 2026-07-27:
 
 ## Ideas – not yet committed
 
+- [ ] **The app is unusable offline, and the shopping list is where that
+      hurts** (found 2026-08-03 by Thomas testing the retry screens).
+      Force-quit the app, lose signal, reopen: you get "Can't reach your
+      kitchen" and nothing else – no plan, no recipes, and no shopping list.
+      Confirmed in code: `AsyncStorage` holds only the auth session, the
+      active household id and a one-time legacy-prefs migration. **No recipe,
+      meal plan or shopping item is cached on the device**; every screen
+      fetches from Supabase on each launch.
+      WHY IT MATTERS more than it looks: the shopping list is the one screen
+      used standing in a shop, which is exactly where signal is worst, and iOS
+      evicts backgrounded apps routinely on a long trip. While the app stays
+      in memory everything is fine – the failure needs a force-quit or an
+      eviction, which is not constant but is not rare either.
+      NOT A DEFECT – every error path behaves exactly as designed, which is
+      why the pre-build audit did not flag it. It is a product assumption
+      (the app assumes it is online) with no last-known-good fallback.
+      A real offline mode is significant work and touches the sync model
+      (last-write-wins via `updated_at`, realtime merges), so this is logged
+      as a known limitation rather than a task. A cheap first step, if it ever
+      bites: cache just the CURRENT week's list and show it read-only when the
+      load fails, which covers the in-the-shop case without touching sync.
+      Worth a decision before the family relies on it weekly.
+- [ ] **Move the remaining shopping items to next week** (Thomas, 2026-08-03).
+      At the end of a week the list still holds whatever was not bought –
+      out of stock, forgotten, or simply not needed yet. Today those items
+      just sit on a week nobody looks at again, so the shopper has to
+      re-add them by hand. Let them carry over to next week's list instead.
+      WHY IT FITS: the list is already per-week (`shopping_list_items.list_id`
+      points at that week's list) and the week picker already exists, so this
+      is a new ACTION on an existing structure, not a new data model.
+      SHAPE, and the one real subtlety: an item cannot simply have its
+      `list_id` repointed. Plan-fed items carry
+      `shopping_list_item_contributions` rows tied to THIS week's meal
+      entries, and those entries stay where they are – so a moved item should
+      land on next week's list as a fresh, user-owned row
+      (`added_manually = true`, no contributions) and be soft-deleted from the
+      old week. It stops being "the plan's" item and becomes "yours", which is
+      also what it means in real life.
+      It must MERGE, not duplicate: next week's list may already carry the
+      same ingredient from its own plan, so the move has to go through
+      `item_merge_key` the way `contribute_entry_into` does – otherwise
+      carrying over onions onto a week that already plans onions produces the
+      exact double-row the 2026-07-29 merge work was about.
+      OPEN QUESTIONS, all product not technical:
+      - **Which items?** Only unchecked ones, surely – a checked item was
+        bought. But what about a checked item on a week that never got
+        shopped?
+      - **Automatic or manual?** Automatic on the week rolling over is
+        invisible and slightly spooky (things appear you did not add); a
+        button ("Move 4 items to next week") is honest and skippable. A
+        button is the safer first version.
+      - **All or some?** All-at-once is one tap; per-item is more control and
+        more taps. Probably all-at-once with the count named, given the swipe
+        actions already handle single items.
+      - **Where does it live?** Nothing on the shopping screen is designed for
+        this yet.
+      DESIGN GAP – NO FIGMA EXISTS for the trigger or its confirmation. Per
+      the build-the-design rule this needs designing before it is built; the
+      data side can be built design-free.
 - [ ] **Invite code as a filled brand chip** (measured 2026-08-02, not
       committed to). White on #378112 clears AA at 4.87:1 and would make the
       code look like a thing to be copied while keeping the brand green. Purely

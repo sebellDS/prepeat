@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import {
   type Category,
   type ShoppingItem,
 } from '@/lib/shopping-list';
+import { ds } from '@/constants/ds';
 import { Spacing, tabBarClearance } from '@/constants/theme';
 
 function ShoppingListScreen() {
@@ -160,6 +161,15 @@ function ShoppingListScreen() {
             message="We couldn't load your shopping list. Check your connection and try again – nothing on your list is lost."
             onRetry={retry}
           />
+        ) : loading && items.length === 0 ? (
+          // Shopping never had a loading state – the area just stayed blank,
+          // so switching week or pressing "Try again" gave no sign anything
+          // was happening (Thomas, on device 2026-08-03). Plan and Recipes
+          // both spin here; this matches them. Guarded on an empty list so a
+          // background refresh never replaces rows with a spinner.
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={ds.colors.surface.primary.main} />
+          </View>
         ) : (
           <ScrollView
             className="flex-1"
