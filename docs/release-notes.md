@@ -4,7 +4,33 @@ What shipped in each build, in the App Store's "What's New" voice, so there
 is always something ready to post. Started 2026-08-03 – earlier builds are
 reconstructed from the backlog and git history.
 
-Two rules this file exists to keep straight:
+## Versioning – Semantic Versioning (Thomas, 2026-08-03)
+
+`MAJOR.MINOR.PATCH`, in `app.json`'s `expo.version`. Semver was written for
+libraries, where MAJOR means "I broke your code" – an app has no callers to
+break, so the digits are defined here in the app's own terms, otherwise the
+rule decides nothing:
+
+- **PATCH** (1.0.0 → 1.0.1) – fixes and polish. Nothing new to do, nothing
+  moved. A user who never reads notes should not notice anything except that
+  something stopped being broken.
+- **MINOR** (1.0.1 → 1.1.0) – a new capability. Anything that would be worth a
+  sentence in the App Store notes because the user can now do something they
+  could not before.
+- **MAJOR** (1.x → 2.0.0) – a release existing users have to re-learn: a
+  redesign, a change to what the app is for, a paid tier. Rare, and a
+  deliberate decision rather than a consequence of a big diff.
+
+The version is NOT the build number. EAS auto-increments builds (12, 13, …)
+and many builds can sit under one version – build 12 and build 13 are both
+"1.0.0". Only bump `expo.version` when preparing a release to submit; Apple
+requires it to increase between releases, not between builds.
+
+**A migration has no version.** It is live for every version at once the
+moment it runs, so it can never appear in a version's notes. That is why
+server changes have their own section at the bottom of this file.
+
+Two more rules this file exists to keep straight:
 
 1. **A build is not a release.** A build reaching TestFlight is not a build
    users have. v1.0 in App Store review is bound to build 12 and nothing
@@ -20,13 +46,14 @@ Two rules this file exists to keep straight:
 More is going in before this ships, so this section grows. On the dev build
 only: not on TestFlight, not in review, and it needs a build to reach anyone.
 
-**The number is deliberately not decided** (Thomas, 2026-08-03) – it is "the
-next version" until it ships. Build 13's fixes below were briefly logged as a
-"1.0.1" when they were the only thing waiting; they now simply go out with
-this, whatever it ends up being called. Whenever the number IS wanted, the
-usual convention decides it: bug fixes only → 1.0.1, anything users would call
-a new feature → 1.1. As it stands this section has both. And either way v1.0
-has to be approved and released first.
+**This will be 1.1.0** under the rule above – not a choice, just what the rule
+says: it carries a new capability (moving leftovers between weeks) alongside
+the fixes, and a feature makes it MINOR. It stays unnumbered in `app.json`
+until it is actually being prepared for submission, and v1.0.0 has to be
+approved and released first either way.
+
+Build 13's fixes below were briefly logged as a "1.0.1" when they were the
+only thing waiting. They go out with this instead.
 
 - **Move last week's leftovers to this week.** A past week's shopping list
   that still has unchecked items gets a "Move all items to this week"

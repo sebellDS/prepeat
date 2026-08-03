@@ -1308,6 +1308,22 @@ missing from it entirely.
 
 ## Decisions log (recent)
 
+- **2026-08-03 – Semantic Versioning, with the digits defined in app terms.**
+  Thomas, after going back and forth on whether the next release was 1.0.1 or
+  1.1: the value of the rule is that it decides instead of him. Semver was
+  written for libraries, where MAJOR means "I broke your callers" – an app has
+  none, so the digits are spelled out in
+  [release-notes.md](release-notes.md): PATCH = fixes and polish only, MINOR =
+  a new capability worth a sentence in the App Store notes, MAJOR = a release
+  existing users have to re-learn. By that rule the next release is 1.1.0,
+  because the leftover move is a feature.
+  Two things it deliberately does NOT number: the EAS build counter (12, 13, …
+  auto-increments, and many builds sit under one version – build 12 and 13 are
+  both 1.0.0), and migrations, which are live for every version at once the
+  moment they run.
+  `app.json` `expo.version` is bumped when preparing a submission, not when
+  work lands – v1.0.0 is in review and stays untouched.
+
 - **2026-08-03 – moving a past week's leftovers onto this week.** Thomas's
   idea in the morning, designed and built the same day (Figma 434:7148).
   Product shape, all his calls:
