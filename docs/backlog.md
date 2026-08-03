@@ -25,6 +25,31 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
 
 ## In flight (built, not yet live)
 
+- [ ] **BUILD 14 IS BUILT BUT NOT AT APPLE – three submits stalled**
+      (2026-08-03, ~15:40–16:40). The EAS build itself was clean: build 14,
+      version 1.0.0, id `5767549e-c87e-46fb-a5b1-be1c6b67c5a3`, carrying the
+      leftover move and the two checkbox fixes. Every upload then sat on
+      "Submitting" with no output and was killed by the watchdog at 600s;
+      App Store Connect still shows build 13 as the newest, so **Apple has
+      never received 14**. Nothing is at risk – testers keep build 13, and
+      v1.0/build 12 in review is untouched.
+      Attempt 2 also hit a local DNS drop mid-upload (`ENOTFOUND
+      api.expo.dev`), so it is not clean evidence; attempts 1 and 3 stalled
+      with the network fine.
+      NOT FLAKINESS ANY MORE: build 12 hung the same way on 2026-07-23, and
+      build 13 went through cleanly at 02:33 PT this same morning. The service
+      works sometimes and wedges often, and the CLI never says why – it prints
+      no error at all, it just stops.
+      NEXT STEP IS THOMAS'S, because the answer is behind an Expo login:
+      open a submission page and read the server-side log. Under
+      https://expo.dev/accounts/sebell/projects/prepeat/submissions/ –
+      `031c4a16-7106-4a72-b190-a4379a3daeb0`,
+      `59ac675d-75ec-425b-8b8f-be95d71d4908`,
+      `8676ad2c-9c50-4481-925d-222237a502c8`.
+      RELIABLE FALLBACK if it stays stuck: skip Expo's submit service and
+      upload the `.ipa` to App Store Connect with Apple's Transporter app.
+      The artifact is already built and needs no rebuild.
+
 - [ ] **Move a past week's leftovers to this week** (Thomas 2026-08-03; Figma
       434:7148 "transfer items from last week"). Built the same day it was
       designed. A past week whose list still has unchecked items ends in a
