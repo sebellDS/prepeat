@@ -768,19 +768,29 @@ Closed 2026-07-27:
       - **Manual, never automatic.** Nothing moves unless someone taps.
         Items appearing on the list that nobody added reads as spooky, and
         undoing an automatic move is worse than never making it.
-      - **Pull, not push.** The action lives on the week you are standing on
-        ("Bring 4 items from last week"), not on the old week you would have
-        to navigate back to. That is where the shopper already is.
+      - **Push, from the old week** (clarified by Thomas the same day, after
+        an initial mis-record as a pull). The button lives on a PRIOR week's
+        list and sends its leftovers to the CURRENT week: the items leave the
+        old week and show up on this one. So the surface is a week you have
+        navigated back to, and the button only exists on past weeks – never
+        on the current week, which has nowhere to push to.
       - **All-at-once, with the count named.** The swipe actions already
         cover single items, so per-item selection would only add taps.
-      STILL OPEN: Thomas also described it as "add a button to prior weeks",
-      which would be the push side as well. Whether the old week gets its own
-      "Move to next week" button in addition to the pull, or the pull is the
-      only surface, is not settled – decide it when the screen is designed.
-      DESIGN GAP – NO FIGMA EXISTS for the trigger or its confirmation. Per
-      the build-the-design rule this needs designing before it is built; the
-      data side (a merge-safe carry-over on the server) can be built
-      design-free whenever it is wanted, and is the cheaper half.
+      TO SETTLE WHEN DESIGNING – the states the screen needs, and the two
+      that are easy to forget:
+      - Standing two or more weeks back, the target is still the CURRENT
+        week (that is what "push to current week" means), not the week after
+        the one you are looking at.
+      - The items vanish from the old week the instant it is tapped, which
+        is the most destructive action on that list. The list already has an
+        undo toast (single delete, and "4 items cleared") – the move should
+        almost certainly reuse it rather than invent a confirmation dialog.
+      - Empty case: a past week with nothing unchecked left has no reason to
+        show the button at all.
+      DESIGN IN PROGRESS – Thomas started designing the trigger 2026-08-03.
+      Until the frames exist nothing is built UI-side; the data half (a
+      merge-safe carry-over on the server) is design-free and is the cheaper
+      of the two.
 - [ ] **Invite code as a filled brand chip** (measured 2026-08-02, not
       committed to). White on #378112 clears AA at 4.87:1 and would make the
       code look like a thing to be copied while keeping the brand green. Purely
