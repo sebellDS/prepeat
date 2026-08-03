@@ -78,11 +78,16 @@ below is open.
             shared text input already uses. Only the unchecked box changes on
             screen; the checked fill is the same #56C91D either way, but the
             right token name is what survives the next DS retune.
-      - [ ] **The designed checkbox looks SQUARE, ours is `radius/xsmall`.**
-            The Figma code emits a radius for the initials badge right beside
-            it and none for the checkbox in either state, which reads as
-            radius 0. Not changed – that is a shape change rather than a
-            token, and worth Thomas's eye before it lands.
+      - [x] **NOT A BUG: the square checkbox is the DEFAULT brand.** I read
+            the Figma output as specifying radius 0 (it emits a radius for the
+            initials badge beside it and none for the checkbox) and flagged
+            the app's `radius/xsmall` as a drift. Thomas, same day: "The
+            square check box is the default brand, not the Prep+Eat brand."
+            The rounded box was right; nothing changed.
+            LESSON, the 2026-07-22 one again in a new coat: geometry resolves
+            per brand just like colour and type, so the ABSENCE of a property
+            in `get_design_context` is as brand-dependent as its value. A
+            missing radius is not evidence of radius 0. `ds-theme.cjs` decides.
 
 ## Blocked on other people
 
