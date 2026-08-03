@@ -776,17 +776,15 @@ Closed 2026-07-27:
         on the current week, which has nowhere to push to.
       - **All-at-once, with the count named.** The swipe actions already
         cover single items, so per-item selection would only add taps.
-      TO SETTLE WHEN DESIGNING – the states the screen needs, and the two
-      that are easy to forget:
-      - Standing two or more weeks back, the target is still the CURRENT
-        week (that is what "push to current week" means), not the week after
-        the one you are looking at.
-      - The items vanish from the old week the instant it is tapped, which
-        is the most destructive action on that list. The list already has an
-        undo toast (single delete, and "4 items cleared") – the move should
-        almost certainly reuse it rather than invent a confirmation dialog.
-      - Empty case: a past week with nothing unchecked left has no reason to
-        show the button at all.
+      - **Every prior week with items gets the button**, and every one of
+        them targets the CURRENT week – not the week after the one being
+        looked at. Two weeks back still pushes forward to today's list.
+      - **No confirmation dialog.** The items vanish on tap and the existing
+        undo toast appears, the same one the swipe-delete and "4 items
+        cleared" already use. Tapping is cheap and reversible rather than
+        guarded.
+      - **A week with nothing left does not show the button at all** – the
+        control appears only where there is something to move.
       DESIGN IN PROGRESS – Thomas started designing the trigger 2026-08-03.
       Until the frames exist nothing is built UI-side; the data half (a
       merge-safe carry-over on the server) is design-free and is the cheaper
