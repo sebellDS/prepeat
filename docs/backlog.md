@@ -111,9 +111,9 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       FIX: show a real error and keep the form populated so the user can
       retry; and make a failed photo upload NON-FATAL – save the recipe text
       without a photo rather than losing everything.
-- [x] **2. FIXED IN CODE 2026-08-03 – migration 0025 written, NOT YET APPLIED.
-      Shopping quantities drifted wrong when a line was checked/unchecked
-      around a plan change.** `supabase/migrations/0013_atomic_plan_push.sql`
+- [x] **2. FIXED AND APPLIED 2026-08-03 (migration 0025). Shopping quantities
+      drifted wrong when a line was checked/unchecked around a plan change.**
+      `supabase/migrations/0013_atomic_plan_push.sql`
       :185-191 and `0014_atomic_withdraw_rescale.sql`:83-96.
       `contribute` ALWAYS records that a meal contributed a quantity, but only
       adds it to the visible line when the line is unchecked and not
@@ -139,9 +139,14 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
       **SAFE FOR THE PHONES** (the 0022 lesson): it only ADDS a column and
       replaces function bodies – no signature changes, nothing dropped – so
       TestFlight build 12 keeps working unchanged.
-      - [ ] ⚠️ **THOMAS MUST RUN IT** in the Supabase SQL editor. It ends with
-            a verifying select – expect all four columns true. Until then the
-            bug is still live on the phones.
+      - [x] **APPLIED 2026-08-03**, verifying select returned all four columns
+            true (applied_column, backfilled, withdraw_fn, rescale_fn).
+            **This one IS on everybody's phone already** – a database change
+            reaches every client the moment it runs, unlike app code which
+            waits for the next build. So #2 is fully fixed for the family and
+            for TestFlight build 12, while #1, #5 and #6 are still only on the
+            dev build. That asymmetry is the code-vs-live distinction the
+            2026-07-27 outage taught, running in the good direction for once.
 - [ ] **3. "This week" is frozen at app launch, so a meal can land on last
       week.** [src/lib/shopping-list.tsx:489](../src/lib/shopping-list.tsx)
       and [src/lib/meal-plan.tsx:407](../src/lib/meal-plan.tsx).
