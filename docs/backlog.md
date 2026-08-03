@@ -1243,6 +1243,13 @@ missing from it entirely.
 
 ## Recurring
 
+- **Keep [release-notes.md](release-notes.md) current** (started 2026-08-03,
+  Thomas wants something ready to post whenever the app updates). Add the
+  user-facing line when a change lands, not when a build ships – by build
+  time the reasoning is cold. Keep the three buckets honest: unreleased,
+  per build, and server changes (which reach every phone regardless of
+  version).
+
 - **HOW TO RUN A BIG SQL SCRIPT: the Supabase SQL editor TRUNCATES long
   pastes.** Standing note, learned the hard way 2026-07-30 – five failed
   attempts at one 46 KB rebuild script before it landed. Not a hypothesis: the
