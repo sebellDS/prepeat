@@ -760,22 +760,27 @@ Closed 2026-07-27:
       `item_merge_key` the way `contribute_entry_into` does – otherwise
       carrying over onions onto a week that already plans onions produces the
       exact double-row the 2026-07-29 merge work was about.
-      OPEN QUESTIONS, all product not technical:
-      - **Which items?** Only unchecked ones, surely – a checked item was
-        bought. But what about a checked item on a week that never got
-        shopped?
-      - **Automatic or manual?** Automatic on the week rolling over is
-        invisible and slightly spooky (things appear you did not add); a
-        button ("Move 4 items to next week") is honest and skippable. A
-        button is the safer first version.
-      - **All or some?** All-at-once is one tap; per-item is more control and
-        more taps. Probably all-at-once with the count named, given the swipe
-        actions already handle single items.
-      - **Where does it live?** Nothing on the shopping screen is designed for
-        this yet.
+      DECIDED 2026-08-03 (Thomas), and these close the original open
+      questions:
+      - **Which items?** Unchecked only. A checked item was bought, so it
+        stays behind on the week it belongs to. No special case for a week
+        that was never shopped – the shopper can uncheck if they need to.
+      - **Manual, never automatic.** Nothing moves unless someone taps.
+        Items appearing on the list that nobody added reads as spooky, and
+        undoing an automatic move is worse than never making it.
+      - **Pull, not push.** The action lives on the week you are standing on
+        ("Bring 4 items from last week"), not on the old week you would have
+        to navigate back to. That is where the shopper already is.
+      - **All-at-once, with the count named.** The swipe actions already
+        cover single items, so per-item selection would only add taps.
+      STILL OPEN: Thomas also described it as "add a button to prior weeks",
+      which would be the push side as well. Whether the old week gets its own
+      "Move to next week" button in addition to the pull, or the pull is the
+      only surface, is not settled – decide it when the screen is designed.
       DESIGN GAP – NO FIGMA EXISTS for the trigger or its confirmation. Per
       the build-the-design rule this needs designing before it is built; the
-      data side can be built design-free.
+      data side (a merge-safe carry-over on the server) can be built
+      design-free whenever it is wanted, and is the cheaper half.
 - [ ] **Invite code as a filled brand chip** (measured 2026-08-02, not
       committed to). White on #378112 clears AA at 4.87:1 and would make the
       code look like a thing to be copied while keeping the brand green. Purely
