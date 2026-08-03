@@ -34,17 +34,24 @@ below is open.
       - [x] **VERIFIED ON DEVICE 2026-08-03** – "it worked perfectly"
             (Thomas, on the dev build installed 14:53). Still only on the dev
             build: it reaches the family with the next TestFlight build.
-      - [ ] **Two states were not drawn** and are flagged rather than passed
-            off as Thomas's design. (a) A past week with MORE items than fit
-            the screen: the frames only show a short list, where the button
-            sits at the bottom of the area. The implementation follows the
-            frame's auto-layout – it ends the scrolling content, so on a long
-            list it comes after the last row rather than floating above it.
-            (b) The PRESSED state of the button, which uses the DS's own
-            `button/solid/fill/pressed` since React Native inherits no press
-            feedback. NOT YET RULED ON: the device round confirmed the feature
-            works, not that these two read right – Thomas has not said either
-            way. Both are cheap to change.
+      - [x] **The pressed state is the DS's, not an improvisation** (checked
+            2026-08-03 after Thomas pushed back on it being flagged at all,
+            and he was right). `button/solid/fill/*` defines
+            enabled #83E651 / pressed #56C91D with the label unchanged at
+            #4F4230, and that is exactly what is built. The screen's frames
+            not drawing a pressed state is normal – states live on the DS
+            component, not on every frame that uses it. LESSON: before
+            flagging a component state as a design gap, look it up in
+            `ds-theme.cjs` and the DS component; a gap is a state nothing
+            defines anywhere, not a state this particular frame did not draw.
+      - [ ] **One real gap: a past week too long to fit the screen.** The
+            frames only show short lists, where the button sits at the bottom
+            of the area. It is built the way the frame's auto-layout reads –
+            ending the scrolling content – so on a long list it follows the
+            last row instead of staying above the tab bar. Not a DS question
+            (there is no footer/action-bar component, and no screen in the app
+            pins an action today), so it needs Thomas's call: scroll with the
+            list, or pin it.
       - [ ] **It inherits known bug 3** (frozen "this week"). The move targets
             the current week as computed at app launch, so an app left open
             across Sunday midnight would push into what is by then last week.
