@@ -70,7 +70,7 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
             differently yet.
       - [x] **VERIFIED ON DEVICE 2026-08-03** – "it worked perfectly"
             (Thomas, on the dev build installed 14:53). Still only on the dev
-            build: it reaches the family with the next TestFlight build.
+            build: SHIPPED to the family in TestFlight build 15 (2026-08-04).
       - [x] **The pressed state is the DS's, not an improvisation** (checked
             2026-08-03 after Thomas pushed back on it being flagged at all,
             and he was right). `button/solid/fill/*` defines
@@ -107,8 +107,7 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
       lines also lacked their designed leadings (label 24, hint 16), so the
       name's line box was not 24 tall for the 24-tall checkbox slot to centre
       on, and rows missed the designed 56/72 heights.
-      On the dev build only – it reaches the family with the next TestFlight
-      build.
+      SHIPPED to the family in TestFlight build 15 (2026-08-04).
       - [x] **Checkbox now binds the forms/* recipe** (Thomas asked for it the
             same day): `forms/background/default` + `forms/border/enabled`
             unchecked, `forms/surface/active` checked – the same group the
@@ -581,10 +580,10 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
             it happens with a literal dash too – but decoding `&ndash;` made it
             visible. `beef – Wagyu` is untouched, since only a DANGLING
             separator is removed.
-      - [ ] **App code, so it needs a build.** Nothing about this is live for
-            any phone until the next EAS build; existing recipes imported before
-            it also keep their old text (see the re-import gap under Code
-            debts).
+      - [x] **SHIPPED in TestFlight build 15** (2026-08-04, VALID). Note that
+            recipes imported BEFORE it keep their old text – the fix only runs at
+            import time, and there is still no re-import action (see the
+            re-import gap under Code debts).
 - [x] **5. FIXED 2026-08-03. Three screens could strand the user on an endless
       spinner.**
       [src/app/recipes/index.tsx:114](../src/app/recipes/index.tsx) (and
@@ -619,7 +618,7 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
         shopper back onto the current one.
       **CONFIRMED ON DEVICE 2026-08-03** (dev build, `app.prepeat.dev`) –
       screenshots of all three retry screens, Thomas: *"both works now"*. Not
-      on any tester's phone until the next EAS build.
+      on any tester's phone until build 15, which shipped 2026-08-04.
       Two follow-ups came straight out of that testing, both now fixed:
       - **Shopping had no loading state at all.** The list area just stayed
         blank while loading – a deliberate choice (a code comment explained it
@@ -734,7 +733,7 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
             collapse: this one produces text a shopper reads, `norm_item_unit`
             produces a key nobody ever sees. Kept in the same shape so adding
             a missing unit is one obvious edit in each. **App code, so it is on
-            the dev build only** – unlike the migration, it needs a build.
+            dev build only** at the time; SHIPPED in TestFlight build 15.
             Known limit, not fixed: a multi-word unit never matches either list
             ("2 liters milk" typed wholly into the quantity field stays
             "1 liters milk"). Not reachable today, because name and quantity

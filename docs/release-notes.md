@@ -52,8 +52,9 @@ Two more rules this file exists to keep straight:
 
 ## Accumulating toward the next version
 
-More is going in before this ships, so this section grows. On the dev build
-only: not on TestFlight, not in review, and it needs a build to reach anyone.
+Whatever is here is on the dev build ONLY: not on TestFlight, not in review, and
+it needs a build to reach anyone. The section grows as changes land and empties
+each time a build ships – it is empty right now.
 
 **This will be 1.1.0** under the rule above – not a choice, just what the rule
 says: it carries a new capability (moving leftovers between weeks) alongside
@@ -61,12 +62,20 @@ the fixes, and a feature makes it MINOR. It stays unnumbered in `app.json`
 until it is actually being prepared for submission, and v1.0.0 has to be
 approved and released first either way.
 
-Builds 13 and 14 below were briefly logged as a "1.0.1" when fixes were the
+Builds 13, 14 and 15 below were briefly logged as a "1.0.1" when fixes were the
 only thing waiting. They all go out together under this instead.
 
+Nothing is accumulating here right now – everything committed so far is in
+build 15.
+
+## Build 15 – TestFlight 2026-08-04 (VALID, not in review)
+
+Uploaded 09:08 and confirmed VALID by asking App Store Connect directly. **v1.0
+is still bound to build 12 and untouched**, so these reach testers without
+disturbing the review queue – the same call as builds 13 and 14.
+
 - Amounts read properly whatever the serving count: "1 liter" and "2 liters",
-  not "1 liters" or "2 liter". Danish units too. (Built after build 14 – the
-  server half of this IS live, see migration 0027 below.)
+  not "1 liters" or "2 liter". Danish units too.
 - An app left open or asleep over Sunday midnight now knows it is a new week,
   and marks the right day as today. Before, it could still be showing last
   week, so a meal added to what looked like this week landed on the finished
@@ -74,6 +83,8 @@ only thing waiting. They all go out together under this instead.
 - Imported recipes read properly: no more "chef&rsquo;s" or "cr&egrave;me" in
   the middle of a title, and a recipe written with "½" keeps its amount instead
   of losing it off the shopping list.
+- Switching week on the shopping list can no longer leave the wrong week's
+  items under the right week's heading.
 
 ## Build 14 – TestFlight 2026-08-03 (VALID, not in review)
 
