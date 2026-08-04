@@ -1,179 +1,227 @@
 #!/usr/bin/env bash
 #
-# Nightly off-site backup of the LIVE Supabase database.
+# Backs up the live Supabase database - and decides for itself whether a backup
+# is due. One script, one scheduled job.
 #
-# Why this exists: the Supabase Free plan takes NO automatic backups at all,
-# and a migration reaches every user the moment it is applied. Until the
-# project moves to Pro at public launch, this is the only copy of the
-# production data that Supabase does not hold. See the 2026-08-04 decision in
-# docs/backlog.md.
+# WHY IT LOOKS LIKE THIS (Thomas, 2026-08-04: "too patched together, and I need
+# my Mac awake in the middle of the night"):
+#   - No 03:15 schedule. It runs AT LOGIN and every 6 hours while the Mac is on,
+#     and does nothing unless the newest backup is over 12 hours old. A laptop is
+#     not a server; asking it to be awake at a fixed hour was the wrong shape.
+#     Open the lid after a week away and it catches up by itself.
+#   - It also carries the "have the backups stopped?" warning, which used to be
+#     a second script and a second job. Half the moving parts.
+#
+# Two gaps this design knowingly accepts:
+#   - If the scheduled job is removed, no separate watchdog notices. That was
+#     the price of halving the parts.
+#   - The backup is on this Mac only. iCloud was tried and does not work for a
+#     background job (see DEST below); off-site means Time Machine or Pro.
 #
 # ---------------------------------------------------------------------------
-# THIS FILE IS THE SOURCE. IT IS NOT THE COPY THAT RUNS NIGHTLY.
-#
-# ~/Documents is a macOS privacy-protected folder, and a launchd job cannot
-# read from it – the first scheduled run failed with "Operation not permitted"
-# (exit 126) while the same script run by hand from Terminal worked fine.
-# So the job runs an installed copy in ~/Library/Application Support/Prepeat.
-#
-# AFTER EDITING THIS FILE, RUN:  npm run backup:install
-# ...otherwise the nightly job keeps running the old version.
-#
-# For the same reason this script depends on nothing inside the repo: no node,
-# no npx, no Supabase CLI. Only psql and curl.
+# THIS FILE IS THE SOURCE. IT IS NOT THE COPY THAT RUNS.
+# After editing, run:  npm run backup:install
+# (macOS forbids background jobs from reading ~/Documents, so the running copy
+# lives in ~/Library/Application Support/Prepeat.)
 # ---------------------------------------------------------------------------
 #
-# Secrets live in ~/.prepeat-backup.env (mode 600), never in this repo, which
-# is public. Backups land in ~/Prepeat-backups, outside the repo and outside
-# iCloud.
+# Depends on nothing but psql and curl - no Docker, no node, no Supabase CLI.
+# Credentials: ~/.prepeat-backup.env (mode 600), never in this repo, which is
+# public.
 #
-# Run by hand:  npm run backup
-#
-# WARNING: the archives contain real user data (email addresses, recipes).
-# Do not copy them into the repo, a shared drive, or cloud storage.
+#   npm run backup        back up now, whatever the schedule thinks
+#   (scheduled)           back up only if the newest is over 12 hours old
 
-set -euo pipefail
+set -uo pipefail
+
+# NOT iCloud Drive, though it was tried on 2026-08-04: a launchd job gets
+# partial, unreliable access there. It wrote the database archive, was refused
+# on all 267 photos ("Operation not permitted"), and could not read the folder
+# it had just written - so it re-fetched everything every run. Off-site has to
+# come from Time Machine or Supabase Pro, not from here.
+DEST="${PREPEAT_BACKUP_DIR:-$HOME/Prepeat-backups}"
 
 ENV_FILE="${PREPEAT_BACKUP_ENV:-$HOME/.prepeat-backup.env}"
-DEST="${PREPEAT_BACKUP_DIR:-$HOME/Prepeat-backups}"
-KEEP=30                     # how many nightly archives to retain
-MIN_BYTES=10240             # a smaller archive than this means something broke
+MIN_INTERVAL_HOURS="${PREPEAT_BACKUP_MIN_INTERVAL_HOURS:-12}"
+MAX_AGE_DAYS="${PREPEAT_BACKUP_MAX_AGE_DAYS:-3}"
+KEEP=30
+MIN_BYTES=10240
 PG_BIN="/opt/homebrew/opt/libpq/bin"
 BUCKET="recipe-photos"
+RUNTIME="$HOME/Library/Application Support/Prepeat"
+
+FORCE=0
+[ "${1:-}" = "--force" ] && FORCE=1
 
 log() { printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
-die() { log "FAILED: $*" >&2; exit 1; }
+
+newest_archive() { ls -1t "$DEST"/prepeat-*.tar.gz 2>/dev/null | head -1; }
+
+age_days() {   # age of $1 in whole days, or 9999 if it does not exist
+  [ -n "${1:-}" ] && [ -f "$1" ] || { echo 9999; return; }
+  echo $(( ( $(date +%s) - $(stat -f %m "$1" 2>/dev/null || echo 0) ) / 86400 ))
+}
+age_hours() {
+  [ -n "${1:-}" ] && [ -f "$1" ] || { echo 9999; return; }
+  echo $(( ( $(date +%s) - $(stat -f %m "$1" 2>/dev/null || echo 0) ) / 3600 ))
+}
+
+# Run by hand: say it in the terminal. Run by launchd: say it on screen, since
+# nobody is reading a log file. `giving up after` so an undismissed dialog can
+# never keep the job alive for ever.
+warn() {
+  local msg="$1"
+  log "WARNING: $msg"
+  [ -t 1 ] && return 0
+  osascript >/dev/null 2>&1 <<APPLESCRIPT
+    display dialog "$msg" ¬
+      with title "Prep+Eat backup" ¬
+      with icon caution ¬
+      buttons {"Later", "Try again now"} ¬
+      default button "Try again now" ¬
+      giving up after 300
+    if button returned of result is "Try again now" then
+      do shell script "'$RUNTIME/backup-supabase.sh' --force > /dev/null 2>&1 &"
+    end if
+APPLESCRIPT
+  osascript -e "display notification \"$msg\" with title \"Prep+Eat backup\"" >/dev/null 2>&1
+}
+
+# --- is a backup even due? --------------------------------------------------
+
+NEWEST="$(newest_archive)"
+HOURS="$(age_hours "$NEWEST")"
+
+if [ "$FORCE" -eq 0 ] && [ "$HOURS" -lt "$MIN_INTERVAL_HOURS" ]; then
+  log "skip – newest backup is ${HOURS}h old (backing up every ${MIN_INTERVAL_HOURS}h)"
+  exit 0
+fi
 
 # --- preconditions ----------------------------------------------------------
+# A missing tool or missing credentials is a real problem, not a transient one,
+# so it always warns.
 
-[ -x "$PG_BIN/pg_dump" ] || die "pg_dump not found in $PG_BIN (brew install libpq)"
-[ -x "$PG_BIN/psql" ]    || die "psql not found in $PG_BIN (brew install libpq)"
-[ -f "$ENV_FILE" ]       || die "missing $ENV_FILE – see docs/backlog.md for setup"
+fail_hard() { warn "$1"; exit 1; }
 
-# shellcheck source=/dev/null
-set -a; . "$ENV_FILE"; set +a
-[ -n "${SUPABASE_DB_URL:-}" ] || die "SUPABASE_DB_URL is not set in $ENV_FILE"
+[ -x "$PG_BIN/pg_dump" ] || fail_hard "Prep+Eat cannot back up: pg_dump is missing. Run: brew install libpq"
+[ -f "$ENV_FILE" ]      || fail_hard "Prep+Eat cannot back up: the database password file is missing ($ENV_FILE)."
 
-mkdir -p "$DEST"
-chmod 700 "$DEST"
+set -a; . "$ENV_FILE" 2>/dev/null; set +a
+[ -n "${SUPABASE_DB_URL:-}" ] || fail_hard "Prep+Eat cannot back up: no database connection string in $ENV_FILE."
 
-STAMP="$(date '+%Y-%m-%d-%H%M')"
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/prepeat-backup.XXXXXX")"
-trap 'rm -rf "$WORK"' EXIT
+mkdir -p "$DEST" && chmod 700 "$DEST"
 
-log "backing up to $DEST"
+# --- the backup itself ------------------------------------------------------
+# Wrapped so a failure can be judged against how old the last good backup is,
+# rather than firing a dialog at every flaky moment on the wifi.
 
-# --- the app's own data -----------------------------------------------------
-# Schema + data for `public`. This is the part worth reading by hand: recipes,
-# meal plans, shopping lists, households. --no-owner/--no-privileges so it can
-# be restored into a fresh Supabase project, whose roles differ.
+do_backup() {
+  local work stamp archive size
+  stamp="$(date '+%Y-%m-%d-%H%M')"
+  work="$(mktemp -d "${TMPDIR:-/tmp}/prepeat-backup.XXXXXX")" || return 1
+  trap 'rm -rf "$work"' RETURN
 
-log "dumping public schema (schema + data)"
-"$PG_BIN/pg_dump" "$SUPABASE_DB_URL" \
-  --schema=public \
-  --no-owner --no-privileges --no-password \
-  --quote-all-identifiers \
-  -f "$WORK/public.sql" || die "pg_dump of public failed"
+  log "dumping public schema (schema + data)"
+  "$PG_BIN/pg_dump" "$SUPABASE_DB_URL" \
+    --schema=public \
+    --no-owner --no-privileges --no-password --quote-all-identifiers \
+    -f "$work/public.sql" || { log "pg_dump of public failed"; return 1; }
 
-# --- accounts and file metadata ---------------------------------------------
-# auth and storage are Supabase-managed schemas: their TABLES come back with a
-# new project, so only the ROWS are ours to keep. auth.users is what makes a
-# restored database still belong to the same people.
+  # An ALLOWLIST of four tables, not the whole auth/storage schemas: dumping
+  # everything drags in service-owned tables a restore is refused outright
+  # (schema_migrations, then buckets_vectors - two rehearsal failures), and a
+  # denylist would break again the next time Supabase adds an internal table.
+  # Sessions and refresh tokens are deliberately dropped; people sign in again
+  # after a restore, which a rebuilt project would force anyway.
+  log "dumping accounts + storage metadata (data only)"
+  "$PG_BIN/pg_dump" "$SUPABASE_DB_URL" \
+    --table=auth.users --table=auth.identities \
+    --table=storage.buckets --table=storage.objects \
+    --data-only --no-owner --no-privileges --no-password --quote-all-identifiers \
+    -f "$work/auth-storage-data.sql" || { log "pg_dump of accounts failed"; return 1; }
 
-# An ALLOWLIST of four tables, not the whole schemas. Dumping everything in
-# auth/storage drags in service-owned tables that a restore is refused outright
-# ("permission denied for table schema_migrations", then buckets_vectors) - two
-# separate rehearsal failures on 2026-08-04, and a denylist would have broken
-# again the next time Supabase added an internal table.
-#
-# What is deliberately NOT kept: sessions, refresh tokens, MFA claims, one-time
-# tokens, audit logs. All transient. After a restore people sign in again -
-# which they would have to anyway, because a rebuilt project has a new JWT
-# secret that old tokens cannot match.
-log "dumping accounts + storage metadata (data only)"
-"$PG_BIN/pg_dump" "$SUPABASE_DB_URL" \
-  --table=auth.users \
-  --table=auth.identities \
-  --table=storage.buckets \
-  --table=storage.objects \
-  --data-only --no-owner --no-privileges --no-password \
-  --quote-all-identifiers \
-  -f "$WORK/auth-storage-data.sql" || die "pg_dump of accounts/storage failed"
+  archive="$DEST/prepeat-$stamp.tar.gz"
+  tar -czf "$archive" -C "$work" public.sql auth-storage-data.sql || return 1
+  chmod 600 "$archive"
 
-# --- seal the database side -------------------------------------------------
-# Done before the photos, so a photo problem can never cost us the dump.
+  size=$(wc -c < "$archive" | tr -d ' ')
+  if [ "$size" -lt "$MIN_BYTES" ]; then
+    log "archive is only ${size}B – discarding it rather than rotating good ones away"
+    rm -f "$archive"; return 1
+  fi
+  log "wrote $(basename "$archive") (${size} bytes)"
 
-ARCHIVE="$DEST/prepeat-$STAMP.tar.gz"
-tar -czf "$ARCHIVE" -C "$WORK" public.sql auth-storage-data.sql
-chmod 600 "$ARCHIVE"
-
-SIZE=$(wc -c < "$ARCHIVE" | tr -d ' ')
-[ "$SIZE" -ge "$MIN_BYTES" ] \
-  || die "archive is only ${SIZE}B – refusing to rotate good backups away"
-
-log "wrote $(basename "$ARCHIVE") (${SIZE} bytes)"
-
-# --- rotate -----------------------------------------------------------------
-# Only ever runs after a verified-good archive, so a run of failures can never
-# eat the history.
-
-ls -1t "$DEST"/prepeat-*.tar.gz 2>/dev/null | tail -n +$((KEEP + 1)) | while read -r old; do
-  log "rotating out $(basename "$old")"
-  rm -f "$old"
-done
+  # Rotation only ever runs after a verified-good archive, so a run of failures
+  # can never eat the history.
+  ls -1t "$DEST"/prepeat-*.tar.gz 2>/dev/null | tail -n +$((KEEP + 1)) | while read -r old; do
+    log "rotating out $(basename "$old")"; rm -f "$old"
+  done
+  return 0
+}
 
 # --- recipe photos ----------------------------------------------------------
-# The photo FILES live in Supabase Storage, not in Postgres – pg_dump sees only
-# their metadata rows. The bucket is public-read, so they need no credentials;
-# the object list comes from the database and each file is fetched by URL.
-#
-# This is a MIRROR, not a nightly snapshot: unchanged files are skipped, and a
-# photo deleted upstream is KEPT here. Deletion is the case a backup exists for.
+# The photo FILES are in Supabase Storage, not Postgres - pg_dump sees only
+# their metadata. The bucket is public-read, so no credentials are needed. This
+# is a MIRROR: unchanged files are skipped, and a photo deleted upstream is
+# KEPT here, deletion being the case a backup exists for.
 
-PHOTOS="$DEST/recipe-photos"
-mkdir -p "$PHOTOS"
+do_photos() {
+  local ref photos list target size got=0 skipped=0 failed=0
+  photos="$DEST/recipe-photos"; mkdir -p "$photos"
+  ref="${SUPABASE_PROJECT_REF:-$(printf '%s' "$SUPABASE_DB_URL" | sed -n 's|.*://postgres\.\([a-z0-9]*\):.*|\1|p')}"
+  [ -n "$ref" ] || { log "cannot work out the project ref – skipping photos"; return 1; }
 
-# Project ref sits in the pooler username: postgres.<ref>
-REF="${SUPABASE_PROJECT_REF:-$(printf '%s' "$SUPABASE_DB_URL" | sed -n 's|.*://postgres\.\([a-z0-9]*\):.*|\1|p')}"
-[ -n "$REF" ] || die "could not work out the project ref – set SUPABASE_PROJECT_REF in $ENV_FILE"
+  list="$(mktemp)"; trap 'rm -f "$list"' RETURN
+  "$PG_BIN/psql" "$SUPABASE_DB_URL" -w -A -t -F'|' \
+    -c "select name, coalesce((metadata->>'size')::bigint,0) from storage.objects where bucket_id='$BUCKET';" \
+    > "$list" 2>/dev/null || { log "could not list photos"; return 1; }
 
-log "mirroring photos from $BUCKET"
-LIST="$WORK/objects.txt"
-"$PG_BIN/psql" "$SUPABASE_DB_URL" -w -A -t -F'|' \
-  -c "select name, coalesce((metadata->>'size')::bigint, 0) from storage.objects where bucket_id = '$BUCKET';" \
-  > "$LIST" 2>/dev/null || { log "WARNING: could not list photos – database backup is still good"; LIST=""; }
-
-got=0; skipped=0; failed=0
-if [ -n "$LIST" ]; then
   while IFS='|' read -r name size; do
     [ -n "$name" ] || continue
-    target="$PHOTOS/$name"
-    # Already have it at the right size? Leave it alone.
+    target="$photos/$name"
     if [ -f "$target" ] && [ "$(wc -c < "$target" | tr -d ' ')" = "$size" ]; then
-      skipped=$((skipped + 1)); continue
+      skipped=$((skipped+1)); continue
     fi
     mkdir -p "$(dirname "$target")"
     if curl -fsS --max-time 60 \
-         "https://$REF.supabase.co/storage/v1/object/public/$BUCKET/$name" \
+         "https://$ref.supabase.co/storage/v1/object/public/$BUCKET/$name" \
          -o "$target.part" 2>/dev/null; then
-      mv "$target.part" "$target"
-      got=$((got + 1))
+      mv "$target.part" "$target"; got=$((got+1))
     else
-      rm -f "$target.part"
-      failed=$((failed + 1))
+      rm -f "$target.part"; failed=$((failed+1))
     fi
-  done < "$LIST"
+  done < "$list"
+
+  log "photos: $got fetched, $skipped already current, $failed failed"
+  [ "$failed" -eq 0 ]
+}
+
+# --- run, then judge --------------------------------------------------------
+
+log "backing up to $DEST"
+
+if do_backup; then
+  do_photos || log "photo mirror incomplete – the database backup is still good"
+else
+  # How bad is this? Judged against the last GOOD backup, so one flaky moment
+  # on the wifi is retried at the next tick instead of raising a dialog.
+  DAYS="$(age_days "$(newest_archive)")"
+  if [ "$DAYS" -ge 9999 ]; then
+    warn "Prep+Eat has no database backup at all, and the attempt just now failed."
+  elif [ "$DAYS" -gt "$MAX_AGE_DAYS" ]; then
+    warn "Prep+Eat backups have been failing. The newest one is $DAYS days old."
+  else
+    log "backup failed, but the newest is only ${DAYS}d old – will retry at the next run"
+  fi
+  exit 1
 fi
 
-log "photos: $got fetched, $skipped already current, $failed failed"
-[ "$failed" -eq 0 ] || log "WARNING: $failed photo(s) failed – database backup is still good"
-
-log "done – $(ls -1 "$DEST"/prepeat-*.tar.gz 2>/dev/null | wc -l | tr -d ' ') archives, $(find "$PHOTOS" -type f 2>/dev/null | wc -l | tr -d ' ') photos"
-
-# launchd appends to the log forever. Keep the last 1000 lines - roughly three
-# months of nightly runs, which is more history than anyone reads, and stops a
-# years-old file slowing down the freshness check that reads it.
-LOGFILE="$DEST/backup.log"
+# Keep the log from growing for ever - launchd appends to it. It lives in
+# ~/Library/Logs, NOT in iCloud: launchd cannot open a log file inside iCloud
+# Drive and silently refuses to start the job at all.
+LOGFILE="$HOME/Library/Logs/prepeat-backup.log"
 if [ -f "$LOGFILE" ] && [ "$(wc -l < "$LOGFILE" | tr -d ' ')" -gt 1000 ]; then
   tail -1000 "$LOGFILE" > "$LOGFILE.trim" && mv "$LOGFILE.trim" "$LOGFILE"
 fi
+
+log "done – $(ls -1 "$DEST"/prepeat-*.tar.gz 2>/dev/null | wc -l | tr -d ' ') archives, $(find "$DEST/recipe-photos" -type f 2>/dev/null | wc -l | tr -d ' ') photos"

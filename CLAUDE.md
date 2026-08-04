@@ -38,15 +38,24 @@ Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
 - `npm run lint` – ESLint via expo lint
 - `npx tsc --noEmit` – typecheck
 - `npm run db:reset` – replay EVERY migration onto an empty local database.
-  **Run this before any migration reaches production** – production is one
-  project serving every installed build at once. Needs Docker running.
+  Needs Docker running.
 - `npm run backup` / `npm run backup:verify` – back up the live database now /
-  restore the newest backup locally and check every row. Backups also run
-  nightly at 03:15 and need neither Docker nor node.
+  restore the newest backup locally and check every row. Backups also run on
+  their own (at login, then every 6h) and need neither Docker nor node.
   Full runbook: [docs/backups-and-local-db.md](docs/backups-and-local-db.md).
   **Editing `scripts/backup-supabase.sh` does nothing until
   `npm run backup:install` is re-run** – the scheduled job runs an installed
   copy, because macOS forbids background jobs from reading `~/Documents`.
+
+**These commands are yours to run, not Thomas's** (agreed 2026-08-04 – he is
+not a developer and should not have to remember them). Standing rules:
+1. **`npm run backup` before applying anything destructive** to the live
+   database – a migration, a bulk update, a delete. Takes seconds.
+2. **`npm run db:reset` before a migration reaches production.** A migration is
+   live for every installed build the moment it runs, so "it applied cleanly on
+   an empty database" is the cheapest check there is.
+3. **`npm run backup:verify` after any schema change**, since the restore
+   procedure depends on the schema.
 - `./scripts/build-iphone.sh` – build + install the Release app on
   Thomas's iPhone (unlocked; cable or same Wi-Fi – the pairing installs
   wirelessly too, cable is the fallback). Prints timestamped phases and

@@ -2,11 +2,11 @@
 
 Written 2026-08-04. The *why* lives in the backlog decisions log; this file is
 the **what and where** – what is installed on the Mac, what runs when, and what
-to actually do when something goes wrong.
+to do when something goes wrong.
 
-If you are reading this cold: the app's database lives on Supabase and is
-shared by every installed build at once. The Free plan takes **no automatic
-backups**, so everything below exists to make sure a copy exists anyway.
+The app's database lives on Supabase and is shared by every installed build at
+once. The Free plan takes **no automatic backups**, so everything below exists
+to make sure a copy exists anyway.
 
 ---
 
@@ -18,32 +18,37 @@ backups**, so everything below exists to make sure a copy exists anyway.
 | Check a backup can be restored | `npm run backup:verify` |
 | Test migrations before production | `npm run db:reset` |
 | Start / stop the local database | `npm run db:start` / `npm run db:stop` |
-| Re-install the scheduled jobs | `npm run backup:install` |
+| Re-install the scheduled job | `npm run backup:install` |
 
-**Docker only needs to run for the middle three.** Backups do not use it.
+**Docker is only needed for the middle three.** Backups do not use it, so quit
+Docker whenever you like.
+
+In practice all of these are Claude's to run during a session, not Thomas's.
+The only one worth remembering unaided is `npm run backup`.
 
 ---
 
 ## What runs automatically
 
-Two background jobs, both installed by `npm run backup:install`.
+**One** background job, `dk.sebell.prepeat.backup`, installed by
+`npm run backup:install`.
 
-**`dk.sebell.prepeat.backup` – 03:15 nightly**
-Dumps the database and mirrors the recipe photos into `~/Prepeat-backups`.
-Keeps 30 nights.
+- Runs **at login, then every 6 hours** while the Mac is on.
+- Does nothing unless the newest backup is **over 12 hours old**.
+- Keeps 30 archives. Mirrors the recipe photos, fetching only what changed.
+- If it fails **and** the newest backup is over 3 days old, it shows a warning
+  dialog with a **Try again now** button.
 
-**`dk.sebell.prepeat.backup-check` – at login, and 10:00 daily**
-Shows a warning dialog if the newest backup is more than 3 days old, if there
-is none at all, or if the last run failed. The dialog has a **Back up now**
-button.
+There is no fixed hour, and deliberately so: a laptop is not a server, and
+asking it to be awake at 03:15 was the wrong shape. Close the lid for a week
+and it catches up by itself at the next login.
 
-### The lid-closed question
+### Things this design knowingly does not cover
 
-A sleeping Mac runs nothing. launchd does the missed run **once on the next
-wake**, so a closed lid delays the backup, it never skips it. Shut for a week
-means a week with no backup – and the freshness alarm will say so when you open
-it. Nothing wakes the Mac for this on purpose (it would wake the machine in
-your bag).
+- **If the job itself is removed**, nothing notices. That was the price of
+  halving the moving parts (it used to be two scripts and two jobs).
+- **The backup is on this Mac only.** See "Getting a copy off the Mac" below.
+- **The Mac has to be switched on sometimes.** Not at any particular hour.
 
 ---
 
@@ -52,12 +57,13 @@ your bag).
 | What | Where | In git? |
 |---|---|---|
 | The scripts (source of truth) | `scripts/` in this repo | yes |
-| The copies that actually run | `~/Library/Application Support/Prepeat/` | no |
-| Schedules | `~/Library/LaunchAgents/dk.sebell.prepeat.*.plist` | no, generated |
-| Backups and log | `~/Prepeat-backups/` | no |
+| The copy that actually runs | `~/Library/Application Support/Prepeat/` | no |
+| Schedule | `~/Library/LaunchAgents/dk.sebell.prepeat.backup.plist` | no, generated |
+| Backups | `~/Prepeat-backups/` | no |
+| Log | `~/Library/Logs/prepeat-backup.log` | no |
 | Database password | `~/.prepeat-backup.env` (mode 600) | **never** |
 
-### ⚠️ Two traps
+### ⚠️ The one trap
 
 **Editing `scripts/backup-supabase.sh` changes nothing until you run
 `npm run backup:install`.** The job runs the installed copy, not the repo one.
@@ -66,6 +72,26 @@ your bag).
 anything in `~/Documents`. The first scheduled run failed with *Operation not
 permitted* even though the same script worked by hand. Anything scheduled must
 live outside `~/Documents`.
+
+---
+
+## Getting a copy off the Mac
+
+There isn't one today, and it is the weakest point of this arrangement.
+
+**iCloud Drive does not work** – tried and rejected on 2026-08-04. A launchd
+job gets partial, unreliable access there: it wrote the database archive, was
+refused on all 267 photos with *Operation not permitted*, and could not read
+the folder it had just written, so it re-fetched everything every run. Worse
+than useless, because it looks like it is working.
+
+The two options that do work:
+
+- **Time Machine to an external drive.** Not configured today (`tmutil
+  destinationinfo` says no destinations). Covers the whole Mac, not just this.
+- **Supabase Pro, $25/month.** Daily backups on their infrastructure, in
+  another building, whether the Mac is on or not. See the pre-launch checklist
+  for the triggers that mean it is time.
 
 ---
 
@@ -94,20 +120,22 @@ Not in the repo, so it has to be written down:
    Transaction pooler: it lacks the session features `pg_dump` needs.)
 4. `npm run backup` – check it writes an archive
 5. `npm run backup:install`
-6. `launchctl kickstart -k gui/$(id -u)/dk.sebell.prepeat.backup` – and read the
+6. `launchctl kickstart -k gui/$(id -u)/dk.sebell.prepeat.backup`, then read the
    exit code. **A scheduled job is not installed until it has been seen
    succeeding on the scheduler**; running the script yourself proves nothing.
+   That mistake has now been made twice – once with `~/Documents`, once with
+   iCloud – and both times the manual run worked perfectly.
 
 ---
 
 ## Restoring for real
 
-The rehearsal (`npm run backup:verify`) runs exactly this against the local
-database, which is what keeps the procedure honest. For a real recovery into a
-new Supabase project:
+`npm run backup:verify` runs exactly this against the local database, which is
+what keeps the procedure honest. For a real recovery into a new Supabase
+project:
 
 1. Create the project. **Postgres 17** – it must match production.
-2. Unpack the archive: `tar -xzf ~/Prepeat-backups/prepeat-YYYY-MM-DD-HHMM.tar.gz`
+2. Unpack: `tar -xzf ~/Prepeat-backups/prepeat-YYYY-MM-DD-HHMM.tar.gz`
 3. Against the new project's database, in this order:
 
    ```sql
@@ -121,7 +149,7 @@ new Supabase project:
 
 **The order is not optional.** The app's tables carry foreign keys into
 `auth.users`, so the accounts must exist before the app data lands on them.
-And the `drop schema public` is required because the dump opens with
+And `drop schema public` is required because the dump opens with
 `CREATE SCHEMA "public"`, which every fresh database already has.
 
 4. Re-upload the photos from `~/Prepeat-backups/recipe-photos/` into the
@@ -135,12 +163,3 @@ And the `drop schema public` is required because the dump opens with
 Sessions, refresh tokens, MFA claims, one-time tokens, audit logs. Everyone
 signs in again after a restore, which they would have to regardless: a rebuilt
 project has a new JWT secret that old tokens cannot match.
-
----
-
-## When to stop relying on this
-
-The local backup is real coverage – nightly, 30 days, and proven to restore.
-Its two weaknesses are that it needs the Mac switched on, and it is one copy in
-one building. See the **pre-launch checklist** for the three triggers that mean
-it is time to pay for Supabase Pro.

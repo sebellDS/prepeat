@@ -1894,8 +1894,46 @@ missing from it entirely.
   `npm run backup:verify` after any change to the schema, the dump, or the
   Supabase plan.
 
+- **2026-08-04 (later the same day) – cut it back, after Thomas said it had
+  become "too patched together".** His words: *"I need my mac awake in the
+  middle of the night. The back up is on my mac locally, seems unsafe. It feels
+  like a lot of ifs and uncertainty."* All three correct, and the drift is worth
+  naming: he asked whether he could monitor instead of paying $25/mo, I said
+  yes, and then built a scheduled job, a workaround for macOS blocking it, an
+  installer so the copy could not drift, an alarm to watch the job, and a
+  rehearsal to prove the alarm's subject worked. **Each step was a sound answer
+  to the previous step's weakness; the sum was machinery with more failure modes
+  than the thing it replaced.** He declined Pro, so the fix had to be removal,
+  not purchase.
+  **What changed:**
+  1. **No fixed hour.** At login, then every 6h while the Mac is on, and it does
+     nothing unless the newest backup is over 12h old. A laptop is not a server.
+     A week with the lid shut now self-heals at the next login instead of
+     producing a week of misses.
+  2. **One job, not two.** The freshness alarm was a second script and a second
+     job watching the first; it is now a branch inside the backup script.
+     `check-backup-freshness.sh` deleted. **Accepted cost:** if the job itself is
+     removed, nothing notices. Fewer parts was worth more than that watchdog.
+  3. **A failure only warns if it matters** – judged against the age of the last
+     GOOD backup, so a flaky moment on the wifi retries at the next tick instead
+     of raising a dialog.
+  **iCloud Drive was tried for the off-site copy, and REJECTED.** A launchd job
+  gets partial, unreliable access: it wrote the database archive, was refused on
+  all 267 photos ("Operation not permitted"), and could not read the folder it
+  had just written, so it re-fetched everything every run. Before that it
+  refused to start at all (EX_CONFIG, exit 78) because launchd cannot even open
+  a LOG file inside iCloud – so the log now lives in `~/Library/Logs`.
+  **THIS IS THE SECOND TIME THE SAME LESSON ARRIVED** (the first was
+  `~/Documents`): the manual run worked perfectly both times. **A scheduled job
+  is not installed until it has been watched succeeding ON THE SCHEDULER.**
+  So there is still no copy off the Mac. The honest options are Time Machine
+  (no destination configured today) or Pro – written up in
+  [backups-and-local-db.md](backups-and-local-db.md), not papered over.
+
 - **2026-08-04 – a staleness alarm, because the danger is not the missing
-  backup but the believed-in one.** Thomas's call, in the same breath as
+  backup but the believed-in one.** *(SUPERSEDED the same day – merged into the
+  backup script, see the entry above. Kept for the reasoning, which still
+  holds.)* Thomas's call, in the same breath as
   deciding to monitor Pro rather than buy it: the risk that actually kills you
   is trusting a backup that quietly stopped in March, and that risk is
   identical whether or not Supabase is being paid. So it got built first.
