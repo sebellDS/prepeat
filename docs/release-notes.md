@@ -71,6 +71,9 @@ only thing waiting. They all go out together under this instead.
   and marks the right day as today. Before, it could still be showing last
   week, so a meal added to what looked like this week landed on the finished
   one.
+- Imported recipes read properly: no more "chef&rsquo;s" or "cr&egrave;me" in
+  the middle of a title, and a recipe written with "½" keeps its amount instead
+  of losing it off the shopping list.
 
 ## Build 14 – TestFlight 2026-08-03 (VALID, not in review)
 

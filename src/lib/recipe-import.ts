@@ -359,26 +359,75 @@ function decodeNumericEntity(match: string, digits: string, hex: boolean) {
   }
 }
 
+// Named entities, the ones recipe sites actually emit. Before 2026-08-04 only
+// six were handled, so `&rsquo;` `&eacute;` `&ndash;` survived verbatim into
+// titles, steps and ingredient names – and `&frac12;` was worse than cosmetic:
+// it never became ½, so the amount regex saw no leading number and "&frac12;
+// cup sugar" was stored as the NAME with no quantity at all. The amount was
+// silently lost on the shopping list, which is the screen that has to be right.
+//
+// Deliberately a curated table, not the full HTML5 set (~2,200 names): Latin-1,
+// the punctuation and the fractions cover every Western recipe site, and an
+// unknown entity is left VISIBLE in the text rather than swallowed, so the next
+// one that turns up is obvious rather than mysterious.
+//
+// `amp` is deliberately ABSENT – see the ordering note in cleanText.
+const NAMED_ENTITIES: Record<string, string> = {
+  // Spaces and invisibles. The soft hyphen and zero-width joiners are dropped
+  // rather than decoded: an invisible character inside an ingredient name would
+  // travel into item_merge_key and split a shopping row for no visible reason.
+  nbsp: " ", ensp: " ", emsp: " ", thinsp: " ", shy: "", zwnj: "", zwj: "",
+  // Quotes and dashes – the commonest gibberish in imported prose.
+  quot: '"', apos: "'", lsquo: "‘", rsquo: "’",
+  ldquo: "“", rdquo: "”", sbquo: "‚", bdquo: "„",
+  lsaquo: "‹", rsaquo: "›", laquo: "«", raquo: "»",
+  ndash: "–", mdash: "—", hellip: "…",
+  bull: "•", middot: "·", prime: "′", Prime: "″",
+  lt: "<", gt: ">",
+  // Fractions. These are the ones that cost an amount, not just a character.
+  frac12: "½", frac13: "⅓", frac23: "⅔", frac14: "¼", frac34: "¾",
+  frac15: "⅕", frac25: "⅖", frac35: "⅗", frac45: "⅘",
+  frac16: "⅙", frac56: "⅚", frac18: "⅛", frac38: "⅜", frac58: "⅝", frac78: "⅞",
+  // Symbols that appear in amounts and oven temperatures.
+  deg: "°", plusmn: "±", times: "×", divide: "÷", frasl: "⁄",
+  minus: "−", sup2: "²", sup3: "³", ordm: "º", ordf: "ª",
+  euro: "€", pound: "£", cent: "¢", yen: "¥",
+  sect: "§", para: "¶", dagger: "†", copy: "©", reg: "®", trade: "™",
+  // Accented Latin, lower case. Case matters: &Eacute; is a different
+  // character from &eacute;, so both cases are listed rather than folded.
+  agrave: "à", aacute: "á", acirc: "â", atilde: "ã", auml: "ä", aring: "å",
+  aelig: "æ", ccedil: "ç", egrave: "è", eacute: "é", ecirc: "ê", euml: "ë",
+  igrave: "ì", iacute: "í", icirc: "î", iuml: "ï", ntilde: "ñ",
+  ograve: "ò", oacute: "ó", ocirc: "ô", otilde: "õ", ouml: "ö", oslash: "ø",
+  ugrave: "ù", uacute: "ú", ucirc: "û", uuml: "ü",
+  yacute: "ý", yuml: "ÿ", szlig: "ß", eth: "ð", thorn: "þ",
+  // Accented Latin, upper case.
+  Agrave: "À", Aacute: "Á", Acirc: "Â", Atilde: "Ã", Auml: "Ä", Aring: "Å",
+  AElig: "Æ", Ccedil: "Ç", Egrave: "È", Eacute: "É", Ecirc: "Ê", Euml: "Ë",
+  Igrave: "Ì", Iacute: "Í", Icirc: "Î", Iuml: "Ï", Ntilde: "Ñ",
+  Ograve: "Ò", Oacute: "Ó", Ocirc: "Ô", Otilde: "Õ", Ouml: "Ö", Oslash: "Ø",
+  Ugrave: "Ù", Uacute: "Ú", Ucirc: "Û", Uuml: "Ü",
+  Yacute: "Ý", ETH: "Ð", THORN: "Þ",
+};
+
 function cleanText(html: string): string {
   return html
     .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
     .replace(/&#(\d+);/g, (m, d: string) => decodeNumericEntity(m, d, false))
     .replace(/&#[xX]([0-9a-fA-F]+);/g, (m, d: string) =>
       decodeNumericEntity(m, d, true),
     )
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&aring;/g, "å")
-    .replace(/&oslash;/g, "ø")
-    .replace(/&aelig;/g, "æ")
-    .replace(/&Aring;/g, "Å")
-    .replace(/&Oslash;/g, "Ø")
-    .replace(/&AElig;/g, "Æ")
-    // Last on purpose: decoding "&amp;" first would turn a literal
-    // "&amp;#39;" into "&#39;" and then into an apostrophe it never was.
+    // One pass over the table. An entity that is not in it falls through
+    // unchanged, which is on purpose – see the note above.
+    .replace(/&([a-zA-Z][a-zA-Z0-9]*);/g, (m, name: string) =>
+      Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, name)
+        ? NAMED_ENTITIES[name]
+        : m,
+    )
+    // Last on purpose, and NOT in the table above: decoding "&amp;" first would
+    // turn a literal "&amp;#39;" into "&#39;" and then into an apostrophe it
+    // never was. The same trap in reverse is why numeric entities are decoded
+    // before the named pass.
     .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
@@ -632,7 +681,12 @@ function tidyIngredientName(raw: string): string {
     if (at > 0) name = words.slice(0, at).join(" ");
   }
 
-  return name.replace(/\s+/g, " ").replace(/[\s,.;]+$/, "").trim();
+  // Dashes join the trailing punctuation strip (2026-08-04). Sites write
+  // "beef – diced" as often as "beef, diced", and the cuts above take the prep
+  // word while leaving the separator behind: "beef –" on a shopping list. Found
+  // while testing the entity decoding, because &ndash; now becomes a real dash
+  // instead of gibberish, which made the dangling one visible.
+  return name.replace(/\s+/g, " ").replace(/[\s,.;–—-]+$/, "").trim();
 }
 
 // The shopping list merges on name + UNIT STRING (item_merge_key, migration

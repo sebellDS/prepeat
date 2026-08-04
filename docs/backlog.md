@@ -540,18 +540,51 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
             symptom is not the same as the cause. The thing that separated them
             was evidence – `git log -S` proving the marker was never built –
             not more reasoning about the mechanism.
-- [ ] **4. Imported text shows raw codes, and some amounts vanish.**
-      [src/lib/recipe-import.ts:362](../src/lib/recipe-import.ts)-385.
-      `cleanText` decodes NUMERIC HTML entities but not named ones, so
-      `&rsquo;` `&eacute;` `&ndash;` survive as gibberish in titles, steps and
-      ingredient names. Worse, `&frac12;` is not folded to ½ and the amount
-      parser is ASCII-only, so `&frac12; cup sugar` fails to match a leading
-      amount and is stored as the NAME with no quantity – the amount is
-      silently lost on the shopping list. Mostly affects sites using the
-      microdata/meta fallback rather than the dominant JSON-LD path.
-      FIX: add a named-entity decode step (smart quotes, accented Latin,
-      dashes, ellipsis, and `&frac12;`/`&frac14;`/`&frac34;` → ½ ¼ ¾) BEFORE
-      the amount regex runs. Sits with the parser work already done 2026-07-29.
+- [x] **4. FIXED 2026-08-04. Imported text showed raw codes, and some amounts
+      vanished.** [src/lib/recipe-import.ts](../src/lib/recipe-import.ts).
+      `cleanText` decoded NUMERIC HTML entities but only six named ones, so
+      `&rsquo;` `&eacute;` `&ndash;` survived as gibberish in titles, steps and
+      ingredient names. Worse, `&frac12;` was not folded to ½ and the amount
+      parser is ASCII-only, so `&frac12; cup sugar` failed to match a leading
+      amount and was stored as the NAME with no quantity – the amount silently
+      lost on the shopping list. Mostly sites using the microdata/meta fallback
+      rather than the dominant JSON-LD path.
+      DONE: a curated `NAMED_ENTITIES` table (~110 – Latin-1 in both cases,
+      punctuation, all 15 fractions, symbols) read by ONE pass, replacing the
+      six hand-written replaces. An entity NOT in the table is left VISIBLE
+      rather than swallowed, so the next unknown one is obvious instead of
+      mysterious. The fraction half needed nothing else: `&frac12;` → ½ meets
+      the vulgar-fraction folding already built on 2026-07-29, so
+      `&frac12; cup sugar` now parses as quantity "1/2 cup", name "sugar".
+      TWO ORDERING RAILS, both commented in place because both are traps:
+      `&amp;` is decoded LAST and deliberately kept OUT of the table, or a
+      literal `&amp;#39;` would become an apostrophe it never was; and numeric
+      entities are decoded BEFORE the named pass for the mirror-image reason.
+      Invisible characters (`&shy;`, `&zwnj;`, `&zwj;`) are dropped rather than
+      decoded – one inside an ingredient name would travel into
+      `item_merge_key` and split a shopping row for no visible reason.
+      - [x] **Verified by running the REAL module, not a mirror** – the lesson
+            from the reconciler rounds. `recipe-import.ts` has zero runtime
+            imports, so `npx tsc --ignoreConfig` on that one file produces a
+            module node can import, and the actual `splitIngredient` was
+            exercised over 20 cases: every fraction entity, accented text in
+            three languages, the established rails (`400 g cherry tomatoes`,
+            `2 fed hvidløg`, ranges, numeric entities), and the awkward ones –
+            an unknown entity stays visible, a double-escaped ampersand is not
+            decoded twice, a soft hyphen never reaches a name. Typecheck and
+            lint clean. **Worth reusing: that transpile trick makes any
+            import-free lib module directly testable.**
+      - [x] **Dashes joined the trailing-punctuation strip**, beyond the
+            reported symptom and flagged rather than slipped in. The case grid
+            showed `beef – diced` leaving `beef –` on the list: the comma-less
+            prep cut takes the prep word and left the separator. Pre-existing –
+            it happens with a literal dash too – but decoding `&ndash;` made it
+            visible. `beef – Wagyu` is untouched, since only a DANGLING
+            separator is removed.
+      - [ ] **App code, so it needs a build.** Nothing about this is live for
+            any phone until the next EAS build; existing recipes imported before
+            it also keep their old text (see the re-import gap under Code
+            debts).
 - [x] **5. FIXED 2026-08-03. Three screens could strand the user on an endless
       spinner.**
       [src/app/recipes/index.tsx:114](../src/app/recipes/index.tsx) (and
