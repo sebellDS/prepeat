@@ -1230,6 +1230,17 @@ Closed 2026-07-27:
 
 ## Pre-launch checklist (v1 ship)
 
+- [ ] **⚠️ Upgrade Supabase to Pro BEFORE pressing the Release button**
+      (decided 2026-08-04). The Free plan takes no automatic backups at all, so
+      the moment the app is publicly downloadable the production database has
+      no net under it. $25/mo buys daily backups with 7-day retention. This is
+      deliberately bound to the Release button, not to a date – release is
+      manual, so the two happen in the same sitting.
+      Keep the two free projects by putting anything else in a **separate Free
+      organisation**; a Pro org bills every project in it.
+      Not needed: PITR (~$100/mo add-on, rejected), and any capacity upgrade –
+      usage is at ~6% of the smallest free limit.
+
 - [x] **🚀 SUBMITTED FOR REVIEW 2026-07-31.** All App Store Connect metadata
       entered and the version sent to Apple ("Add for Review" → Submit). Build
       12, EU-27 only, Free, 4+, privacy label published, manual release – so
@@ -1662,6 +1673,24 @@ missing from it entirely.
   does not exist; it is worth building if the mirror ever drifts, but it is not
   what failed today. **A device walk-through remains the only thing that settles
   a change.**
+  **UPDATE 2026-08-04: the harness now exists** – local Supabase in Docker (see
+  the next item and the 2026-08-04 decision). The mirror script keeps its value
+  for enumerating the state cross-product cheaply, but "the model was wrong so
+  the mirror agreed with the bug" is now testable against real SQL.
+
+- **Run every migration against local Supabase before it touches production**
+  (agreed 2026-08-04, off the back of the Free-plan-has-no-backups finding).
+  Production is one project serving every installed build at once, so an applied
+  migration has no blast radius limit. Two commands, in this order:
+  1. `npm run db:reset` – replays EVERY migration onto an empty database. This
+     is the one that catches what 0022 was: a migration that does not apply
+     cleanly from scratch. It is not a substitute for reading the SQL, it is the
+     check that the file even runs.
+  2. `npm run db:start` and point a dev build at it, for anything that changes
+     behaviour the shipped app relies on.
+  Still standing, and NOT replaced by any of this: **never drop or rename a
+  column in the same round as the code change that stops using it** (2026-07-27)
+  – local Postgres cannot see what is on somebody's phone.
 
 - **Keep [release-notes.md](release-notes.md) current, INCLUDING the version
   number** (started 2026-08-03; Thomas wants something ready to post whenever
@@ -1736,6 +1765,82 @@ missing from it entirely.
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12).
 
 ## Decisions log (recent)
+
+- **2026-08-04 – what protects the database once strangers have data in it.**
+  Thomas's realisation, unprompted: a migration is live for everybody the
+  moment it runs, while app code waits for a build – so a bad one has no blast
+  radius limit. Right, and the right week to act on it, with v1 sitting in
+  review.
+  **The asymmetry is narrower than it first looks, and that shapes the answer.**
+  Migration 0022 broke the Plan tab on every phone in an hour; 0023 fixed every
+  phone in five minutes, with no build and no Apple. A server change that
+  BREAKS something is the cheapest bug we have. What cannot be fixed forward is
+  DESTROYED DATA – a bad `UPDATE`/`DELETE`, or a `DROP` that takes the contents
+  with it. So the defence is aimed at irreversibility, not at instantness.
+  **Facts that decided it** (checked against Supabase's own pricing and backup
+  docs on the day, because I had two of them wrong from memory):
+  - **Free takes NO automatic backups at all.** Not few – none. Supabase's own
+    advice to free users is to export the data yourself.
+  - **Pro ($25/mo) is daily backups, 7-day retention.** Worst case: lose up to
+    24 hours.
+  - **PITR is NOT in Pro.** It is a ~$100/mo add-on. Rejected: paying that to
+    turn "lose a day" into "lose a minute" is not a trade a meal-planning app
+    needs to make.
+  - **Usage is nowhere near any free limit** – 31 MB of 500 MB database, 18 of
+    50,000 MAU, 162 MB of 5 GB egress. So growth is not a reason to upgrade and
+    will not be for a long time; **the only thing $25 buys is the safety net**,
+    which makes it a clean decision rather than a bundled one.
+  **THE CALL (Thomas, all three):**
+  1. **Pro at public launch, not before.** Today's 18 users are family and
+     testers – people he can ring. That changes the moment a stranger has three
+     months of recipes in there. In the pre-launch checklist, bound to the
+     Release button rather than to a date.
+  2. **A nightly export in the meantime** (`scripts/backup-supabase.sh`, launchd
+     at 03:15). Free, and the copy is ours rather than Supabase's. Its honest
+     weakness: it only runs when the Mac is on – which is exactly why it is a
+     stopgap and not the answer.
+  3. **Local Supabase in Docker as the migration test bed**, over a second
+     cloud project. Both are free (2 free projects, and they survive a Pro
+     upgrade if kept in a separate Free organisation) – but a free cloud project
+     pauses after a week idle, which is friction on the day you are in a hurry,
+     and local rebuilds the whole database from 0001 in seconds. **That last
+     part is the real argument**: replaying every migration onto an empty
+     database catches "this does not apply cleanly", which is the exact class
+     0022 belonged to. It also builds the harness the reconciler note under
+     Recurring says is missing – the mirror script proves the rules are
+     coherent, a real Postgres proves the SQL does what the rules say.
+  Three things found while wiring it up, all worth keeping:
+  - **⚠️ A launchd job cannot read anything in `~/Documents`.** The first
+    scheduled run failed with `Operation not permitted` (exit 126) – macOS
+    privacy protection covers Desktop/Documents/Downloads, and a background job
+    has none of the permissions a Terminal inherits. **The script run by hand
+    worked perfectly**, which is exactly what makes this dangerous: it would
+    have looked installed and produced nothing, and nobody finds that out until
+    the day they need a backup. Fixed by installing a runtime copy into
+    `~/Library/Application Support/Prepeat` (`npm run backup:install`), which
+    also means **editing `scripts/backup-supabase.sh` does nothing until that
+    command is re-run**. The general lesson: **a scheduled job is not installed
+    until it has been observed succeeding ON THE SCHEDULER** – `launchctl
+    kickstart` then read the exit code. Running the script yourself proves
+    nothing about the job.
+  - **`pg_dump` does not back up the recipe photos.** They are files in Supabase
+    Storage, not rows in Postgres – 267 of them, 54 MB. The `recipe-photos`
+    bucket is public-read, so the mirror needs no credentials at all: object
+    names come from `storage.objects`, each file is fetched by URL with curl.
+    That removed the last dependency on the Supabase CLI, node, and the repo –
+    which the TCC problem above made necessary anyway. It is a MIRROR, not a
+    snapshot: unchanged files are skipped (a second run takes 9s, not 2.5min)
+    and a photo deleted upstream is KEPT, deletion being the case a backup is
+    for.
+  - **The archives hold real user data** (email addresses, recipes), so they
+    live in `~/Prepeat-backups`, outside the repo – which is PUBLIC – and
+    outside iCloud. Checked on the day: `~/Documents` is a real folder, not an
+    iCloud symlink, and FileVault is on.
+  **Verified 2026-08-04**, not just written: a launchd run exited 0, and the
+  archive holds 115 recipes, 1,624 recipe ingredients, 204 plan entries, 1,857
+  shopping-list items, 8 accounts, plus 15 tables / 25 functions / 19 RLS
+  policies of schema. STILL OWED: a restore rehearsal into local Supabase – a
+  backup nobody has restored is a hypothesis, not a backup.
 
 - **2026-08-03 – Semantic Versioning, with the digits defined in app terms.**
   Thomas, after going back and forth on whether the next release was 1.0.1 or
