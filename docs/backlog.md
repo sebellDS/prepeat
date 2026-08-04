@@ -1178,6 +1178,50 @@ Closed 2026-07-27:
 
 ## Ideas – not yet committed
 
+- [ ] **A second, free Supabase project as a DEV environment** (Thomas
+      2026-08-04, wants to decide later – logged so the reasoning is not
+      re-derived). Today every dev run reads and writes the household's REAL
+      data; a test recipe invented at 11pm appears on his wife's phone.
+      **THERE IS NO BLOCKER. This is a cost/benefit call, not a technical one** –
+      I first recommended waiting, and that was me weighting Thomas's
+      complexity fatigue heavily an hour after he said the setup had got out of
+      hand. He may weigh it differently, and that is a reasonable call.
+      **WHY A CLOUD PROJECT RATHER THAN THE LOCAL DOCKER ONE.** This reverses
+      the morning's decision, on a constraint Thomas raised: **his phone is not
+      always on the same wifi as the Mac** (mainly at work), and local Supabase
+      can only ever serve a device on the same network. A cloud database is
+      reachable from anywhere. Local Docker stays for migration replay, which
+      needs no network and is the genuinely dangerous part.
+      **THE ONE THING THAT MUST BE RIGHT AT CREATION TIME: put the dev project
+      in a SEPARATE ORGANISATION from production.** Supabase bills per
+      organisation, so a dev project sitting alongside production starts
+      costing $10/mo the day production goes Pro. In its own Free organisation
+      it is free permanently. Easy now, annoying later.
+      **The three costs, weighed:**
+      1. Migrations get applied twice, dev first. Barely a tax – that ordering
+         IS the test.
+      2. A free project pauses after a week unused; restoring is a click and a
+         couple of minutes.
+      3. A third environment – but Thomas does not hold it, this file and
+         CLAUDE.md do.
+      **Two things to know before starting:**
+      - **Sign-in.** Live OTP email goes through Resend, configured on
+        production only. A dev project falls back to Supabase's built-in
+        sender, which on the free plan delivers only to addresses on the
+        project – so Thomas could sign in, family members could not. Fine for
+        dev.
+      - **Dev starts empty.** Better than restoring a production backup into
+        it: that would spread real user emails into a second cloud project for
+        no benefit. Make a test household instead.
+      **The end state:** `.env` on the Mac points at DEV, so everything run
+      locally and every build on Thomas's own phone is dev. EAS keeps its own
+      variables, so **TestFlight and the App Store stay on production**. One
+      rule, and the safe option is the default.
+      **Related trigger:** the argument becomes overwhelming at the same moment
+      as the Supabase Pro one – real users who cannot be phoned, at which point
+      "I was just testing" stops being an acceptable explanation. Deciding both
+      together is one upheaval instead of two.
+
 - [ ] **The app is unusable offline, and the shopping list is where that
       hurts** (found 2026-08-03 by Thomas testing the retry screens).
       Force-quit the app, lose signal, reopen: you get "Can't reach your
@@ -1248,6 +1292,10 @@ Closed 2026-07-27:
       Keep the two free projects by putting anything else in a **separate Free
       organisation**; a Pro org bills every project in it.
       Not needed: PITR (~$100/mo add-on, rejected), and any capacity upgrade.
+      **Decide the DEV ENVIRONMENT in the same sitting** – trigger 1 is the
+      same moment for both, and doing them together is one upheaval instead of
+      two. See "A second, free Supabase project as a DEV environment" under
+      Ideas.
 
 - [x] **🚀 SUBMITTED FOR REVIEW 2026-07-31.** All App Store Connect metadata
       entered and the version sent to Apple ("Add for Review" → Submit). Build
