@@ -1322,6 +1322,29 @@ Closed 2026-07-27:
 
 ## Pre-launch checklist (v1 ship)
 
+- [ ] **⏳ The Mac belongs to the employer, and Thomas is job-hunting**
+      (2026-08-04). Not *if* the machine goes but *when*, so everything held
+      only there has a deadline. **Full checklist:
+      [backups-and-local-db.md](backups-and-local-db.md) → "Leaving the company
+      Mac"**, audited the same day. Headlines:
+      - **Travels by itself:** all four accounts are personal (GitHub, Apple
+        Developer, Supabase, Expo), so do the three repos, and the signing key
+        is already in Apple Passwords on a personal Apple ID.
+      - **Must be copied off:** `~/Prepeat-backups/` (58 MB – nothing else
+        holds it), `app-store-assets/` (10 MB, gitignored because it shows real
+        household data), Claude's memory folder, the two env files.
+      - **Regenerates:** the LaunchAgent, the runtime copy, the log, the Apple
+        *Development* certificate and provisioning profiles. Distribution
+        credentials live at EAS, not locally.
+      - **Re-weigh Supabase Pro when the job actually changes.** The backup
+        system built today runs on a machine that gets handed back – a
+        different argument from the one declined earlier, since $25/mo buys
+        backups sitting nowhere near a computer somebody else owns.
+      - **⚖️ Worth checking with a professional, not with Claude:** a
+        commercial product built on employer-owned hardware, and IP clauses in
+        employment contracts sometimes reach further than people expect.
+        Cheaper to check early. Noted so it is not forgotten.
+
 - [x] **DONE 2026-08-04 – `credentials/AuthKey_UN3YR958DC.p8` is copied into
       Apple Passwords**, and **Thomas confirmed it visible on his iPhone**, so
       it is genuinely off this machine rather than merely saved on it. (Checked

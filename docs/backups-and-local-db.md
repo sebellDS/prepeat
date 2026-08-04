@@ -111,6 +111,65 @@ Not in the repo, so it has to be written down:
 
 ---
 
+## ⏳ Leaving the company Mac
+
+**This Mac belongs to Thomas's employer** (told 2026-08-04, while applying for
+a new job). So it is not a question of *if* the machine goes – it is *when*,
+on a date that will eventually be known. Everything below has that deadline
+attached. Audited 2026-08-04.
+
+### Travels by itself – no action
+
+All four accounts are personal, tied to Thomas's own email, so they follow him:
+**GitHub** (`thomassebell`), **Apple Developer**, **Supabase**, **Expo/EAS**.
+So do the three repos – `prepeat`, `prepeat-web`, `design-system` – provided
+everything is pushed. The Apple signing key is already in Apple Passwords,
+synced to a personal Apple ID.
+
+### Must be copied off before the Mac goes back
+
+| What | Where | Notes |
+|---|---|---|
+| `~/Prepeat-backups/` | 58 MB | Every archive and all 267 photos. Nothing else holds these. |
+| `app-store-assets/` | 10 MB | Store screenshots. Gitignored on purpose – they show real household data. |
+| `~/.claude/projects/…/memory/` | 68 KB | Claude's working notes. Largely duplicated in this repo; see below. |
+| `.env` | tiny | Re-derivable from the Supabase dashboard, but faster to copy. |
+| `~/.prepeat-backup.env` | tiny | Or just reset the database password on the new machine. |
+
+### Regenerates itself – ignore
+
+`~/Library/Application Support/Prepeat/`, the LaunchAgent plist and
+`~/Library/Logs/prepeat-backup.log` are all recreated by
+`npm run backup:install`. The **Apple Development certificate** in the login
+keychain (`sebell@mac.com`, VQ829655TW) and the two provisioning profiles are
+free to regenerate from Xcode. Distribution credentials are held by EAS, not
+locally, so they are unaffected.
+
+### The part worth doing early
+
+**The backup system built on 2026-08-04 lives on a machine that will be handed
+back.** That does not lose the data – production is on Supabase – but the
+safety net has an expiry date, which is a different argument for **Supabase
+Pro** than the one weighed and declined earlier: $25/mo buys backups that sit
+nowhere near a computer somebody else owns. Worth re-weighing when the job
+actually changes, not before.
+
+**Anything important that lives only in Claude's memory is misfiled.** The fix
+is not to copy the memory folder (it is not repo material – it holds a device
+UDID among other things) but to move any fact that matters into this repo, so
+the repo alone is enough to pick the project up cold. Thomas deferred this on
+2026-08-04 ("not yet"); it should happen before the machine goes.
+
+### ⚖️ Worth checking, and not with Claude
+
+Prep+Eat is a commercial product built on employer-owned hardware. Some
+employment contracts have IP clauses that reach further than people expect,
+particularly around work done on company equipment. **This is a question for
+Thomas's contract or a professional, not for an AI assistant** – noted here
+only so it is not forgotten, and because it is far cheaper to check early.
+
+---
+
 ## If the Mac were lost tomorrow
 
 Audited 2026-08-04. Everything below is what does NOT come back from a
