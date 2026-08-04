@@ -396,6 +396,25 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
             short_units_untouched). **This one IS live for everybody already** –
             a database change reaches every phone the moment it runs, so builds
             12 and 13 both merge liters correctly from now on.
+      - [x] **The DISPLAY half landed too, 2026-08-03** (Thomas asked for it
+            after the migration): `UNIT_SINGULARS` in
+            [src/lib/quantity.ts](../src/lib/quantity.ts) is what turns a
+            plural into a readable singular at "1", and it had the same gap –
+            an item stored as "liters" and scaled down to 1 printed
+            "1 liters". Added the r-ending singulars (liter, litre, jar,
+            container), the remaining English plurals a recipe uses (bags,
+            packs, boxes, dashes, glasses) and the Danish ones, since the UI
+            language is English but the recipes are not.
+            NOTE THESE ARE TWO LISTS DOING TWO JOBS, not a duplication to
+            collapse: this one produces text a shopper reads, `norm_item_unit`
+            produces a key nobody ever sees. Kept in the same shape so adding
+            a missing unit is one obvious edit in each. **App code, so it is on
+            the dev build only** – unlike the migration, it needs a build.
+            Known limit, not fixed: a multi-word unit never matches either list
+            ("2 liters milk" typed wholly into the quantity field stays
+            "1 liters milk"). Not reachable today, because name and quantity
+            are separate fields; it becomes real if the "Milk 2L" smart-parsing
+            idea is ever built.
       - **It does not repair existing rows**, same as 0024: this changes how
         rows are MATCHED from now on. A week's list that already holds milk
         twice keeps holding it twice until that week is rebuilt (remove the

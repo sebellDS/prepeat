@@ -45,6 +45,13 @@ export function roundQuantity(quantity: number): number {
 // map, not a blanket "drop trailing s", so Danish units that end in s or r
 // (glas, ris, liter) and imperial abbreviations (oz) are never mangled. Weight
 // and volume units (g, ml, tbsp) have no plural to fix.
+//
+// This is the DISPLAY half of the same job migration 0027 does for identity in
+// norm_item_unit (the shopping list's merge key). The two lists are kept in the
+// same shape on purpose, but they are not the same list and neither generates
+// the other: this one turns a plural into a readable singular, while the SQL
+// one folds both forms onto a key nobody ever sees. Add to both when a unit
+// turns up missing.
 const UNIT_SINGULARS: Record<string, string> = {
   cups: 'cup',
   cloves: 'clove',
@@ -60,6 +67,33 @@ const UNIT_SINGULARS: Record<string, string> = {
   sheets: 'sheet',
   tablespoons: 'tablespoon',
   teaspoons: 'teaspoon',
+  // Singulars ending in r – the shape that broke the merge key in 0024 and
+  // reads wrong here for the same reason. An imported recipe stores "l"
+  // instead (the importer's UNIT_ALIASES), so these only show up on an item
+  // typed by hand as "2 liters milk" and later scaled down to 1.
+  liters: 'liter',
+  litres: 'litre',
+  jars: 'jar',
+  containers: 'container',
+  // Remaining English plurals a recipe actually uses.
+  bags: 'bag',
+  packs: 'pack',
+  boxes: 'box',
+  dashes: 'dash',
+  glasses: 'glass',
+  // Danish, because the app's UI language is English but its recipes are not:
+  // an import from a Danish site stores "dåser", and Danish takes the singular
+  // after 1 exactly as English does.
+  dåser: 'dåse',
+  pakker: 'pakke',
+  kopper: 'kop',
+  skiver: 'skive',
+  poser: 'pose',
+  plader: 'plade',
+  stykker: 'stykke',
+  bundter: 'bundt',
+  bægre: 'bæger',
+  håndfulde: 'håndfuld',
 };
 
 export function formatQuantity(quantity: number | null, unit: string | null): string | null {
