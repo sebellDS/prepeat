@@ -61,8 +61,17 @@ the fixes, and a feature makes it MINOR. It stays unnumbered in `app.json`
 until it is actually being prepared for submission, and v1.0.0 has to be
 approved and released first either way.
 
-Build 13's fixes below were briefly logged as a "1.0.1" when they were the
-only thing waiting. They go out with this instead.
+Builds 13 and 14 below were briefly logged as a "1.0.1" when fixes were the
+only thing waiting. They all go out together under this instead.
+
+- Amounts read properly whatever the serving count: "1 liter" and "2 liters",
+  not "1 liters" or "2 liter". Danish units too. (Built after build 14 – the
+  server half of this IS live, see migration 0027 below.)
+
+## Build 14 – TestFlight 2026-08-03 (VALID, not in review)
+
+Uploaded 17:06. Cut from the code as it stood at 15:39, so anything committed
+after that is still in "Accumulating" above.
 
 - **Move last week's leftovers to this week.** A past week's shopping list
   that still has unchecked items gets a "Move all items to this week"
@@ -71,8 +80,6 @@ only thing waiting. They go out with this instead.
   making a second line. Undo puts both weeks back.
 - The shopping list checkbox sits level with the item name again, instead of
   drifting into the gap under it on rows with an amount.
-- Amounts read properly whatever the serving count: "1 liter" and "2 liters",
-  not "1 liters" or "2 liter". Danish units too.
 
 ## Build 13 – TestFlight 2026-08-03 (VALID, not in review)
 

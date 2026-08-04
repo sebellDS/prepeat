@@ -25,30 +25,34 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
 
 ## In flight (built, not yet live)
 
-- [ ] **BUILD 14 IS BUILT BUT NOT AT APPLE – three submits stalled**
-      (2026-08-03, ~15:40–16:40). The EAS build itself was clean: build 14,
-      version 1.0.0, id `5767549e-c87e-46fb-a5b1-be1c6b67c5a3`, carrying the
-      leftover move and the two checkbox fixes. Every upload then sat on
-      "Submitting" with no output and was killed by the watchdog at 600s;
-      App Store Connect still shows build 13 as the newest, so **Apple has
-      never received 14**. Nothing is at risk – testers keep build 13, and
-      v1.0/build 12 in review is untouched.
-      Attempt 2 also hit a local DNS drop mid-upload (`ENOTFOUND
-      api.expo.dev`), so it is not clean evidence; attempts 1 and 3 stalled
-      with the network fine.
-      NOT FLAKINESS ANY MORE: build 12 hung the same way on 2026-07-23, and
-      build 13 went through cleanly at 02:33 PT this same morning. The service
-      works sometimes and wedges often, and the CLI never says why – it prints
-      no error at all, it just stops.
-      NEXT STEP IS THOMAS'S, because the answer is behind an Expo login:
-      open a submission page and read the server-side log. Under
-      https://expo.dev/accounts/sebell/projects/prepeat/submissions/ –
+- [x] **Build 14 shipped to TestFlight, VALID (2026-08-03).** Carries the
+      leftover move and the two checkbox fixes; cut from the code as it stood
+      at 15:39, so the "1 liter / 2 liters" app-side work committed after that
+      is NOT in it. **The App Store review is untouched** – v1.0 stays bound to
+      build 12.
+      **I CALLED THIS WRONG AND IT IS THE LESSON OF THE DAY.** Three submits
+      each sat on "Submitting" and were killed by the watchdog at 600s. I
+      queried App Store Connect after the third, saw build 13 as newest, and
+      concluded "Apple has never received 14" – and wrote it here. Thomas then
+      found version 14 on his phone. A re-query showed build 14 VALID, uploaded
+      17:06 CEST: one of the "stalled" submits HAD succeeded, the CLI hung
+      after the upload rather than during it, and Apple was still processing
+      when I looked.
+      SO THE OLD RULE NEEDED SHARPENING. "Trust App Store Connect, not the
+      CLI spinner" (2026-07-25) is right but incomplete: **ASC's answer is
+      also a point in time.** A build missing right after a stall means "not
+      processed YET", never "never arrived". The upload lands minutes before
+      Apple lists it, so one negative check proves nothing – poll for 10-15
+      minutes before concluding anything, and never write a conclusion into
+      the backlog off a single query.
+      The watchdog is still worth keeping (it stops a genuine 90-minute hang),
+      but its message should say "check ASC in a few minutes" rather than
+      implying failure. Retrying stays free either way – Apple ignores a
+      duplicate upload of a build number it already has.
+      Submission ids, if the server-side logs are ever worth reading:
       `031c4a16-7106-4a72-b190-a4379a3daeb0`,
       `59ac675d-75ec-425b-8b8f-be95d71d4908`,
       `8676ad2c-9c50-4481-925d-222237a502c8`.
-      RELIABLE FALLBACK if it stays stuck: skip Expo's submit service and
-      upload the `.ipa` to App Store Connect with Apple's Transporter app.
-      The artifact is already built and needs no rebuild.
 
 - [ ] **Move a past week's leftovers to this week** (Thomas 2026-08-03; Figma
       434:7148 "transfer items from last week"). Built the same day it was
