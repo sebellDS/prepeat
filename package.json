@@ -60,7 +60,8 @@
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
     "backup": "./scripts/backup-supabase.sh",
-    "backup:install": "./scripts/install-backup-job.sh"
+    "backup:install": "./scripts/install-backup-job.sh",
+    "backup:verify": "./scripts/verify-backup-restore.sh"
   },
   "private": true
 }

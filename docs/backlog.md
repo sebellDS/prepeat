@@ -1839,8 +1839,48 @@ missing from it entirely.
   **Verified 2026-08-04**, not just written: a launchd run exited 0, and the
   archive holds 115 recipes, 1,624 recipe ingredients, 204 plan entries, 1,857
   shopping-list items, 8 accounts, plus 15 tables / 25 functions / 19 RLS
-  policies of schema. STILL OWED: a restore rehearsal into local Supabase – a
-  backup nobody has restored is a hypothesis, not a backup.
+  policies of schema.
+
+- **2026-08-04 – the restore rehearsal found FOUR ways the backup would not
+  have restored, and the file looked perfect throughout.** This is the entry to
+  re-read if the value of `npm run backup:verify` is ever questioned. Every
+  failure was invisible from the archive: right size, right row counts, written
+  nightly, and it would have failed on the day it was needed.
+  1. **`CREATE SCHEMA "public"` collides with every fresh database.** The dump
+     opens with it; any new Postgres – including a brand-new Supabase project –
+     already has one. Died on line 26. Fixed in the RESTORE (`drop schema
+     public cascade` first) rather than by adding `--clean` to pg_dump: that
+     would put DROP statements at the top of a file written nightly and kept
+     for 30 days. The destructive step belongs where it is a conscious act.
+  2. **The target has to be Supabase-shaped, not an empty database.** The dump
+     refers to `auth` – RLS policies call `auth.uid()`, and public tables carry
+     foreign keys into `auth.users`. Restoring into a plain scratch database
+     died on line 9236. **And therefore ORDER MATTERS**: accounts first, app
+     data second, or the foreign keys have nothing to point at. That ordering
+     was not written down anywhere before this.
+  3. **`auth.schema_migrations` / `storage.migrations` cannot be restored** –
+     "permission denied". They are GoTrue's and Storage's own ledgers, owned by
+     those services and recreated by them.
+  4. **`storage.buckets_vectors` – the same thing again**, which is the real
+     lesson: excluding service tables one by one is a denylist, and it would
+     have broken silently the next time Supabase added an internal table. The
+     dump now takes an **allowlist of exactly four tables** (`auth.users`,
+     `auth.identities`, `storage.buckets`, `storage.objects`). Deliberately not
+     kept: sessions, refresh tokens, MFA claims, one-time tokens, audit logs.
+     People sign in again after a restore – which they must anyway, since a
+     rebuilt project has a new JWT secret that old tokens cannot match.
+  **THE RESTORE PROCEDURE, now that it is known** (`scripts/verify-backup-restore.sh`
+  runs exactly this against local, so it stays true):
+  `drop schema public cascade` → `truncate storage.objects, storage.buckets
+  cascade` → `delete from auth.users cascade` → restore `auth-storage-data.sql`
+  → restore `public.sql`.
+  **PASSES as of 2026-08-04**: 7,246 rows across 15 tables restored exactly,
+  8 accounts, 267 storage rows, 15 tables / 25 functions / 19 policies.
+  **All 30 migrations also replay cleanly onto an empty database** – the 0022
+  class of failure, tested for the first time and passing.
+  THE GENERAL RULE: **an untested backup is a hypothesis.** Re-run
+  `npm run backup:verify` after any change to the schema, the dump, or the
+  Supabase plan.
 
 - **2026-08-03 – Semantic Versioning, with the digits defined in app terms.**
   Thomas, after going back and forth on whether the next release was 1.0.1 or

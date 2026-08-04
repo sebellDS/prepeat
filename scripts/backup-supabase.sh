@@ -80,12 +80,25 @@ log "dumping public schema (schema + data)"
 # new project, so only the ROWS are ours to keep. auth.users is what makes a
 # restored database still belong to the same people.
 
-log "dumping auth + storage rows (data only)"
+# An ALLOWLIST of four tables, not the whole schemas. Dumping everything in
+# auth/storage drags in service-owned tables that a restore is refused outright
+# ("permission denied for table schema_migrations", then buckets_vectors) - two
+# separate rehearsal failures on 2026-08-04, and a denylist would have broken
+# again the next time Supabase added an internal table.
+#
+# What is deliberately NOT kept: sessions, refresh tokens, MFA claims, one-time
+# tokens, audit logs. All transient. After a restore people sign in again -
+# which they would have to anyway, because a rebuilt project has a new JWT
+# secret that old tokens cannot match.
+log "dumping accounts + storage metadata (data only)"
 "$PG_BIN/pg_dump" "$SUPABASE_DB_URL" \
-  --schema=auth --schema=storage \
+  --table=auth.users \
+  --table=auth.identities \
+  --table=storage.buckets \
+  --table=storage.objects \
   --data-only --no-owner --no-privileges --no-password \
   --quote-all-identifiers \
-  -f "$WORK/auth-storage-data.sql" || die "pg_dump of auth/storage failed"
+  -f "$WORK/auth-storage-data.sql" || die "pg_dump of accounts/storage failed"
 
 # --- seal the database side -------------------------------------------------
 # Done before the photos, so a photo problem can never cost us the dump.
