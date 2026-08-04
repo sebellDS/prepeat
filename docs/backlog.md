@@ -1230,16 +1230,24 @@ Closed 2026-07-27:
 
 ## Pre-launch checklist (v1 ship)
 
-- [ ] **⚠️ Upgrade Supabase to Pro BEFORE pressing the Release button**
-      (decided 2026-08-04). The Free plan takes no automatic backups at all, so
-      the moment the app is publicly downloadable the production database has
-      no net under it. $25/mo buys daily backups with 7-day retention. This is
-      deliberately bound to the Release button, not to a date – release is
-      manual, so the two happen in the same sitting.
+- [ ] **Supabase Pro is MONITORED, not scheduled** (Thomas, 2026-08-04, after
+      asking whether he had to upgrade or could watch – the honest answer
+      changed once the local backup was proven to restore).
+      **What Pro would actually add, given what now exists:** only two things –
+      it runs when the Mac does not, and it lives somewhere other than the desk.
+      On frequency it matches nightly-vs-daily, on retention it is WORSE (7 days
+      against 30), and its backups have never been restored, where ours have.
+      **Upgrade when any ONE of these becomes true:**
+      1. **Real users who cannot be phoned** – ~30+ monthly actives, or the
+         first support email from a stranger. Today's 18 are family and testers.
+      2. **More than a few days away from the Mac.** Turn it on BEFORE
+         travelling, not after.
+      3. **Egress or database size past half the free limit** – 250 MB egress,
+         250 MB database. At 162 MB / 31 MB today, so distant, but that is the
+         point where the free tier stops being a choice.
       Keep the two free projects by putting anything else in a **separate Free
       organisation**; a Pro org bills every project in it.
-      Not needed: PITR (~$100/mo add-on, rejected), and any capacity upgrade –
-      usage is at ~6% of the smallest free limit.
+      Not needed: PITR (~$100/mo add-on, rejected), and any capacity upgrade.
 
 - [x] **🚀 SUBMITTED FOR REVIEW 2026-07-31.** All App Store Connect metadata
       entered and the version sent to Apple ("Add for Review" → Submit). Build
@@ -1881,6 +1889,26 @@ missing from it entirely.
   THE GENERAL RULE: **an untested backup is a hypothesis.** Re-run
   `npm run backup:verify` after any change to the schema, the dump, or the
   Supabase plan.
+
+- **2026-08-04 – a staleness alarm, because the danger is not the missing
+  backup but the believed-in one.** Thomas's call, in the same breath as
+  deciding to monitor Pro rather than buy it: the risk that actually kills you
+  is trusting a backup that quietly stopped in March, and that risk is
+  identical whether or not Supabase is being paid. So it got built first.
+  `scripts/check-backup-freshness.sh` warns with a dialog when the newest
+  archive is more than 3 days old, when there is no archive at all, or when the
+  last run logged FAILED.
+  **`RunAtLoad` is the whole point** – it fires at login, so a fortnight away
+  with the Mac shut is caught the moment Thomas comes back. A 10:00 daily run
+  covers a Mac that just stays logged in. Three days of tolerance means a
+  weekend away does not nag.
+  Two things deliberately built in: the dialog carries a **"Back up now"**
+  button that runs the backup, so noticing and fixing are one action; and it
+  has `giving up after 300`, because a dialog nobody dismisses would otherwise
+  keep a launchd job alive forever. The script also runs WITHOUT `set -e` – an
+  alarm that dies silently on an unexpected error is worse than no alarm.
+  Both paths tested on 2026-08-04: fresh backups log OK and exit 0 silently;
+  forcing the threshold negative produced the dialog and the STALE log line.
 
 - **2026-08-03 – Semantic Versioning, with the digits defined in app terms.**
   Thomas, after going back and forth on whether the next release was 1.0.1 or

@@ -169,3 +169,11 @@ log "photos: $got fetched, $skipped already current, $failed failed"
 [ "$failed" -eq 0 ] || log "WARNING: $failed photo(s) failed – database backup is still good"
 
 log "done – $(ls -1 "$DEST"/prepeat-*.tar.gz 2>/dev/null | wc -l | tr -d ' ') archives, $(find "$PHOTOS" -type f 2>/dev/null | wc -l | tr -d ' ') photos"
+
+# launchd appends to the log forever. Keep the last 1000 lines - roughly three
+# months of nightly runs, which is more history than anyone reads, and stops a
+# years-old file slowing down the freshness check that reads it.
+LOGFILE="$DEST/backup.log"
+if [ -f "$LOGFILE" ] && [ "$(wc -l < "$LOGFILE" | tr -d ' ')" -gt 1000 ]; then
+  tail -1000 "$LOGFILE" > "$LOGFILE.trim" && mv "$LOGFILE.trim" "$LOGFILE"
+fi
