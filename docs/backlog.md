@@ -1775,6 +1775,10 @@ missing from it entirely.
 ## Decisions log (recent)
 
 - **2026-08-04 – what protects the database once strangers have data in it.**
+  *(The runbook – commands, file locations, what is installed on the Mac, and
+  the real restore procedure – is
+  [backups-and-local-db.md](backups-and-local-db.md). The entries below are the
+  reasoning behind it.)*
   Thomas's realisation, unprompted: a migration is live for everybody the
   moment it runs, while app code waits for a build – so a bad one has no blast
   radius limit. Right, and the right week to act on it, with v1 sitting in

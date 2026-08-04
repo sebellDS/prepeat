@@ -37,6 +37,16 @@ Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
 - `npm start` – Expo dev server (then i for iOS simulator)
 - `npm run lint` – ESLint via expo lint
 - `npx tsc --noEmit` – typecheck
+- `npm run db:reset` – replay EVERY migration onto an empty local database.
+  **Run this before any migration reaches production** – production is one
+  project serving every installed build at once. Needs Docker running.
+- `npm run backup` / `npm run backup:verify` – back up the live database now /
+  restore the newest backup locally and check every row. Backups also run
+  nightly at 03:15 and need neither Docker nor node.
+  Full runbook: [docs/backups-and-local-db.md](docs/backups-and-local-db.md).
+  **Editing `scripts/backup-supabase.sh` does nothing until
+  `npm run backup:install` is re-run** – the scheduled job runs an installed
+  copy, because macOS forbids background jobs from reading `~/Documents`.
 - `./scripts/build-iphone.sh` – build + install the Release app on
   Thomas's iPhone (unlocked; cable or same Wi-Fi – the pairing installs
   wirelessly too, cable is the fallback). Prints timestamped phases and
