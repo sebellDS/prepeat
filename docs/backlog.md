@@ -128,8 +128,8 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
 
 ## Known bugs (open)
 
-- [ ] **⚠️ A plan change that lands on a CHECKED shopping line is completely
-      invisible – the "changed in the plan" marker was never built.** Found
+- [x] **A plan change that needed MORE than you ticked off was completely
+      invisible. FIXED AND APPLIED 2026-08-04 as migration 0028.** Found
       2026-08-04 from Thomas's report: *"it does not update shopping list when
       adding a meal to plan"*, then *"it works in next week but not in
       current"*, then *"it works after I deleted all meals and checked all the
@@ -156,16 +156,77 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
       the rails landed (0013, 2026-07-16, and decision #8 on 2026-07-25). It
       went unnoticed because a fresh week's list is clean, and demo/testing
       lists rarely have checked items.
-      NEEDS A DESIGN, so it is not built yet: no Figma frame exists for the
-      marker, and per the build-the-design rule it must not be improvised.
-      Worth deciding at the same time WHICH rule the shopper wants – the marker
-      is one answer, "add a second line for the new amount" is another, and
-      "update the checked line and un-check it" is a third. The rails decision
-      (#8) chose "never overwrite", which is defensible; it just has to be
-      visible.
-      Interim thought for the design conversation: the cheapest honest version
-      is a per-row hint using components that already exist, since the row
-      already has a second line for the amount.
+      **THE CASE THAT SETTLED IT – Thomas's own week, 2026-08-04.** Plan on
+      Sunday; shop on Monday and tick off what is already in the kitchen;
+      Tuesday guests arrive, so bump Wednesday's recipe from 4 to 8 servings.
+      *"The raised servings does not affect the shopping list."* Every recorded
+      contribution doubled and not one line changed, because Monday's shopping
+      had checked them all. The app knew he would be short of everything for a
+      dinner with guests and showed nothing.
+      An earlier argument here – that a shortfall is usually a false alarm
+      because you bought a whole pack anyway – DOES NOT SURVIVE THIS, and was
+      withdrawn. That holds for a rounding difference; a serving bump is a
+      FACTOR, so every ingredient doubles at once and the shortfall is
+      proportional and real.
+      **FIXED WITHOUT A MARKER, and without any design: migration 0028.** The
+      marker was the wrong frame. The question is what a tick MEANS – see the
+      sub-item below – so when the requirement rises, the line is no longer
+      settled and belongs back on the list. 0028 un-checks it and folds the new
+      amount in, which needs no new component, no new token, and no build: an
+      un-checked row is an ordinary UPDATE that travels on the realtime channel
+      the list already watches.
+      This does not weaken decision #8 as much as it first looks. Those rails
+      stop BACKGROUND reconciliation from overwriting what the user owns; a
+      serving bump is a deliberate act by someone looking at the app, and
+      showing it is honest rather than surprising. Hand-edited lines are still
+      never touched, and a DECREASE still never disturbs a tick.
+      - [x] **WHAT A TICK MEANS, and it is not "I bought this"** (Thomas,
+            correcting a first draft of 0028): *"the recipes add something to
+            shopping. then the human checks whats in the kitchen, then goes
+            shopping."* So a tick is a JUDGEMENT – "I have enough for what this
+            line says" – made against a specific amount. When the plan raises
+            that amount the judgement is stale, and whether the cupboard still
+            covers the new number is something only the person who looked in it
+            can say. Un-checking hands it back to them. That is the entire basis
+            of the rule, and it is why the fix needs no marker.
+      - [x] **NO EXCEPTIONS BY KIND OF ITEM – a first draft had one and it was
+            wrong.** That draft carved out seasoning-scale units (tsp, tbsp,
+            pinch…) so salt and pepper would not keep returning. Thomas rejected
+            it: *"I don't think we can make exceptions like that. what if people
+            don't have salt and peber."* He is right – it hardcodes an
+            assumption about what a household stocks, and the app cannot know
+            that for a spice any more than for mince. It would be the app
+            guessing on the household's behalf, quietly. The uniform rule
+            assumes nothing, and the churn is small and comprehensible: it
+            happens only when someone CHANGES a meal, a deliberate act they just
+            performed, and re-ticking a line is one tap.
+            It also turns out the common case is handled for a principled
+            reason rather than a guess: "salt and pepper to taste" parses to NO
+            amount, and every path here requires one, so those lines never come
+            back at all.
+            LESSON: an exception that encodes a guess about the user's world is
+            worse than the churn it saves. When the app cannot know, ask the
+            person who can.
+      - [ ] **Learned pantry, the proper way to make it quieter about staples.**
+            A per-household "I always have this", the same teach-it-once shape
+            as `item_category_memory` (decision #7) and a close sibling of
+            Teach-a-synonym under Later. The household TELLS the app; the app
+            never guesses. Only worth building if the re-ticking actually proves
+            annoying in real weeks.
+      - [x] **APPLIED 2026-08-04**, verifying select returned all four columns
+            true (contribute_fn, rescale_fn, contribute_is_0028,
+            rescale_is_0028). **Live for everybody already** – a database change
+            reaches every phone the moment it runs, so builds 12, 13 and 14 all
+            behave this way now, with no app change needed.
+            Worth copying from this one's verifying select: the last two columns
+            read `prosrc like '%0028%'` to prove the new BODIES landed. A
+            replaced function body is invisible to an `exists in pg_proc` check,
+            which every earlier migration's select relied on – so those could
+            have passed on a file that never ran its `create or replace` at all.
+      **The marker itself is now moot for this gap, but the finding stands**: no
+      client has ever read `shopping_list_item_contributions`, so if a marker is
+      ever wanted for the cases 0028 deliberately leaves alone – a decrease, a
+      hand-edited line, a pantry unit – it still has to be designed and built.
 
 - [ ] **The same ingredient can still appear twice on the shopping list**
       (Thomas, 2026-07-29, looking at the week-32 demo list: *"a lot of item

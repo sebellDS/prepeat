@@ -114,6 +114,13 @@ at launch.
 
 ## Server changes (live for everyone, no build needed)
 
+- **2026-08-04 – migration 0028.** Raise a recipe's
+  servings after you have been through the list, and the ingredients you had
+  already ticked off come back with the new amount, so you can check whether
+  you still have enough – before, nothing happened at all. **Live for everyone
+  including v1.0's build 12.** Lowering servings leaves your list alone, and an
+  amount you typed yourself is never overwritten.
+
 - **2026-08-03 – migration 0027.** "1 liter milk" and "2 liters milk" become
   one line on the shopping list again, along with jars, containers and
   pinches. **Live for everyone including v1.0's build 12.** Applies to weeks
