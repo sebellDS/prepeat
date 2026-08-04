@@ -1217,10 +1217,25 @@ Closed 2026-07-27:
       locally and every build on Thomas's own phone is dev. EAS keeps its own
       variables, so **TestFlight and the App Store stay on production**. One
       rule, and the safe option is the default.
+      **SUPABASE PRO DOES NOT SOLVE THIS** (Thomas asked, 2026-08-04; checked
+      against Supabase's own docs rather than answered from memory). Pro
+      protects ONE project – backups, capacity, support. It buys no second
+      database.
+      **Supabase BRANCHING was evaluated and rejected**, so it does not get
+      re-proposed: it needs Pro or above, and although there is no fixed fee,
+      usage runs ~$0.0134/hour on default compute – a permanently-up branch is
+      ~$10/mo, the same as simply adding a project. Worse, it is built around
+      pull requests (preview branches pause when idle and are DELETED when the
+      PR closes; Thomas does not work in PRs), **every branch has its own URL
+      and keys, so pointing an iPhone at one means a new build each time**, and
+      branching is explicitly NOT covered by the spend cap.
+      **So the two decisions are INDEPENDENT.** A dev project in its own Free
+      organisation stays free whether or not production ever goes Pro – either,
+      both or neither is coherent.
       **Related trigger:** the argument becomes overwhelming at the same moment
       as the Supabase Pro one – real users who cannot be phoned, at which point
-      "I was just testing" stops being an acceptable explanation. Deciding both
-      together is one upheaval instead of two.
+      "I was just testing" stops being an acceptable explanation. Same trigger,
+      so decide them in one sitting; but one does not buy the other.
 
 - [ ] **The app is unusable offline, and the shopping list is where that
       hurts** (found 2026-08-03 by Thomas testing the retry screens).
