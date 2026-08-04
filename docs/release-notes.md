@@ -71,7 +71,8 @@ only thing waiting. They go out with this instead.
   making a second line. Undo puts both weeks back.
 - The shopping list checkbox sits level with the item name again, instead of
   drifting into the gap under it on rows with an amount.
-- Amounts read properly at one: "1 liter", not "1 liters". Danish units too.
+- Amounts read properly whatever the serving count: "1 liter" and "2 liters",
+  not "1 liters" or "2 liter". Danish units too.
 
 ## Build 13 – TestFlight 2026-08-03 (VALID, not in review)
 

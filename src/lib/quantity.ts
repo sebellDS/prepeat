@@ -96,10 +96,27 @@ const UNIT_SINGULARS: Record<string, string> = {
   håndfulde: 'håndfuld',
 };
 
+// The other direction, and the one that shows up far more often: a recipe
+// stores "1 liter milk", the cook doubles the servings, and it has to read
+// "2 liters" rather than "2 liter". Derived by INVERTING the map above rather
+// than typed out again, so the two directions can never disagree and a new
+// unit is still one edit. Abbreviations are absent from both, which is what
+// keeps "2 g" and "2 tsp" from growing an s, and so are the Danish invariants
+// (glas, ris, fed).
+const UNIT_PLURALS: Record<string, string> = Object.fromEntries(
+  Object.entries(UNIT_SINGULARS).map(([plural, singular]) => [singular, plural]),
+);
+
 export function formatQuantity(quantity: number | null, unit: string | null): string | null {
   if (quantity == null) return unit;
   const amount = roundQuantity(quantity);
   if (unit == null) return String(amount);
-  const shown = amount === 1 ? (UNIT_SINGULARS[unit.toLowerCase()] ?? unit) : unit;
+  // Anything that is not exactly 1 takes the plural, including fractions:
+  // "1.5 liters", "0.5 cups". A unit already in the wanted form is not in the
+  // relevant map, so it passes through untouched.
+  const shown =
+    amount === 1
+      ? (UNIT_SINGULARS[unit.toLowerCase()] ?? unit)
+      : (UNIT_PLURALS[unit.toLowerCase()] ?? unit);
   return `${amount} ${shown}`;
 }

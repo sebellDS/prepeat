@@ -415,6 +415,25 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
             "1 liters milk"). Not reachable today, because name and quantity
             are separate fields; it becomes real if the "Milk 2L" smart-parsing
             idea is ever built.
+      - [x] **AND THE OTHER DIRECTION, which is the common one** – found by
+            Thomas on the device within minutes of the build above: a recipe
+            storing "1 liter milk" doubled to x2 servings read "2 liter". The
+            fix above only ever turned a plural INTO a singular at 1; nothing
+            put the s back at 2, so scaling a recipe – the everyday action, far
+            more common than editing an amount down to 1 – was the case left
+            broken. `formatQuantity` now uses `UNIT_PLURALS`, derived by
+            INVERTING `UNIT_SINGULARS` so the two directions cannot disagree
+            and a new unit is still a one-line edit. Abbreviations are absent
+            from both lists, which is what keeps "2 g" and "2 tsp" from growing
+            an s, and so are the Danish invariants (glas, ris, fed).
+            LESSON, and it is the 2026-08-03 retry-button one wearing a
+            different hat: a fix aimed at the symptom that was REPORTED can
+            leave the same defect standing in the direction nobody mentioned.
+            "1 liters" was the example given, so that is what got fixed and
+            what got tested – 14 units checked at quantity 1, none at 2. The
+            question worth asking before calling a display fix done is what the
+            value is the REST of the time, not just at the one value in the
+            bug report.
       - **It does not repair existing rows**, same as 0024: this changes how
         rows are MATCHED from now on. A week's list that already holds milk
         twice keeps holding it twice until that week is rebuilt (remove the
