@@ -877,6 +877,32 @@ Closed 2026-07-27:
       optional convenience.
 ## Later (v1.1+)
 
+- [ ] **Swap the App Store Connect URLs from `github.io` to `prepeat.app` –
+      AFTER v1.0 is approved** (found 2026-08-04). The custom domain went live
+      at some point without the paperwork catching up: `prepeat.app` serves a
+      valid certificate, `http://` returns 301 to `https://`, and DNS answers
+      with all four GitHub Pages apex IPs. App Store Connect still holds the old
+      `thomassebell.github.io/prepeat-web/…` links for Privacy Policy and
+      Support.
+      **NOT URGENT, AND DELIBERATELY NOT DONE NOW.** Setting a custom domain
+      makes the `github.io` URLs redirect to it – verified: the privacy policy
+      link Apple holds ends at `https://prepeat.app/privacy` with a 200. So
+      nothing is broken, and changing metadata while a version is IN REVIEW
+      invites questions for no benefit. Do it once v1.0 is approved, so the
+      listing shows Thomas's own domain rather than a GitHub URL.
+      Two things checked at the same time, both fine, both worth not
+      re-investigating:
+      - **The mail path is intact.** Resend's records live on the **`send.`
+        subdomain** (SPF via `amazonses.com`, DKIM key, bounce MX), which is why
+        the ROOT SPF mentions Porkbun instead. **That reads like a fault and is
+        not** – "fixing" it would break the record carrying every user's sign-in
+        code. Now written into `prepeat-web`'s README as a verified table.
+      - **`prepeat-web`'s README described the domain move as a future plan**
+        for a job already finished; rewritten as a record. The step ORDER is
+        kept, because claiming the domain in the repo before pointing DNS is
+        the part that is easy to get wrong, and `.app` being on the HSTS
+        preload list makes a mistake unfixable-looking in the browser.
+
 - [ ] **Sign in with Apple (iOS)** – considered 2026-07-30 while setting up the
       App Review demo account, deferred to after v1.0 (Thomas: "Mailbox now,
       Apple later"). Findings worth keeping:
