@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 
-import { DAY_LABELS, toDateKey, weekDates } from "@/lib/week";
+import { useTodayKey } from "@/lib/use-today";
+import { DAY_LABELS, weekDates } from "@/lib/week";
 
 /**
  * The connected day bar in the add-meal sheet (Figma weekBar 211:52272,
@@ -20,7 +21,9 @@ export function WeekBar({
   selectedDates: string[];
   onToggle: (date: string) => void;
 }) {
-  const todayKey = toDateKey(new Date());
+  // Live: reading the clock in a render body is cached forever by the React
+  // Compiler – see use-today.ts.
+  const todayKey = useTodayKey();
   const dates = weekDates(weekStart);
   return (
     <View className="w-full flex-row overflow-hidden rounded-medium bg-surface-neutral-white">

@@ -36,6 +36,7 @@ import {
 import { fetchRecipe, type Recipe } from "@/lib/recipes";
 import { type LiveStatus } from "@/lib/shopping-list";
 import { supabase } from "@/lib/supabase";
+import { useCurrentWeekStart } from "@/lib/use-today";
 import { addWeeksKey, fromDateKey, weekStartOf } from "@/lib/week";
 
 /** How far back the week switcher reaches (decided 2026-07-16). */
@@ -404,7 +405,11 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const userId = session!.user.id;
 
-  const currentWeekStart = useMemo(() => weekStartOf(new Date()), []);
+  // Live, not computed once at mount – see useCurrentWeekStart and known bug 3.
+  const currentWeekStart = useCurrentWeekStart();
+  // The boot effect reads the week through this ref, so a boundary crossed
+  // mid-session cannot re-run it. The roll-over effect below owns the reaction.
+  const currentWeekRef = useRef(currentWeekStart);
   const [state, dispatch] = useReducer(reducer, {
     weeks: [],
     entries: [],
@@ -477,7 +482,9 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
       const weeks = await fetchWeeks(household.id);
       if (cancelled) return;
       dispatch({ type: "ready", weeks });
-      const viewed = weeks.find((w) => w.weekStart === currentWeekStart);
+      // The live week, read when the boot actually runs: a retry after a week
+      // boundary has to load the NEW week, not the one this provider mounted on.
+      const viewed = weeks.find((w) => w.weekStart === currentWeekRef.current);
       if (viewed) {
         const entries = await fetchEntries(viewed.id);
         if (cancelled) return;
@@ -490,7 +497,7 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [household.id, currentWeekStart, bootAttempt]);
+  }, [household.id, bootAttempt]);
 
   // Realtime on the household's plans: a week created or pushed on another
   // phone appears here. Entry-level changes ride the per-week channel below.
@@ -607,6 +614,31 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  // A week boundary crossed while this provider was alive (known bug 3). The
+  // ref is synced FIRST so the boot below already sees the new week.
+  useEffect(() => {
+    const previous = currentWeekRef.current;
+    currentWeekRef.current = currentWeekStart;
+    if (previous === currentWeekStart) return;
+    // Someone who had deliberately navigated back to an older week stays
+    // there; it just stops being the current week. Re-read the weeks so the
+    // switcher gains the new one.
+    if (stateRef.current.viewedWeekStart !== previous) {
+      refresh();
+      return;
+    }
+    // Anyone looking at what used to be "this week" moves onto the new one –
+    // that is the week they think they have open, and where a meal they add
+    // should land. Point at it, then re-run the boot, which already IS "load
+    // the weeks, then load the viewed week's entries". That order is the whole
+    // reason not to use viewWeek() here: it only looks in the weeks list we
+    // already hold, and a plan another phone created for the new week is not
+    // in it yet. Only bootAttempt is bumped, not retry(), so the Live badge is
+    // left alone – nothing about a new week says the connection changed.
+    dispatch({ type: "view-week", weekStart: currentWeekStart });
+    setBootAttempt((n) => n + 1);
+  }, [currentWeekStart, refresh]);
 
   // The switcher's reachable weeks: existing plans plus the current week
   // (which always shows, row or not), max two weeks back.

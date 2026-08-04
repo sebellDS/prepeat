@@ -39,7 +39,8 @@ import {
   type MoveReceipt,
 } from '@/lib/shopping-core';
 import { supabase } from '@/lib/supabase';
-import { addWeeksKey, weekStartOf } from '@/lib/week';
+import { useCurrentWeekStart } from '@/lib/use-today';
+import { addWeeksKey } from '@/lib/week';
 
 // Moved to shopping-core.ts (2026-07-16, plan milestone) – re-exported so
 // existing imports keep working.
@@ -553,7 +554,12 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   // Week navigation (designed 2026-07-16): every week has its own list.
   // Reachable weeks mirror the plan's rule – existing lists, weeks with a
   // plan, and the current week; two weeks back at most.
-  const currentWeekStart = useMemo(() => weekStartOf(new Date()), []);
+  // Live, not computed once at mount – see useCurrentWeekStart and known bug 3.
+  const currentWeekStart = useCurrentWeekStart();
+  // Callbacks and the boot effect read the week through this ref, so a week
+  // boundary crossed mid-session cannot change their identity and re-run them.
+  // The roll-over effect below keeps it in step and owns the reaction.
+  const currentWeekRef = useRef(currentWeekStart);
   const [viewedWeekStart, setViewedWeekStart] = useState(currentWeekStart);
   const [weekOptions, setWeekOptions] = useState<string[]>([currentWeekStart]);
   const viewedWeekRef = useRef(viewedWeekStart);
@@ -562,7 +568,8 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   }, [viewedWeekStart]);
 
   const fetchWeekOptions = useCallback(async (): Promise<string[]> => {
-    const minWeek = addWeeksKey(currentWeekStart, -2);
+    const currentWeek = currentWeekRef.current;
+    const minWeek = addWeeksKey(currentWeek, -2);
     const [lists, plans] = await Promise.all([
       supabase
         .from('shopping_lists')
@@ -580,11 +587,11 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     ]);
     if (lists.error) throw lists.error;
     if (plans.error) throw plans.error;
-    const weeks = new Set<string>([currentWeekStart]);
+    const weeks = new Set<string>([currentWeek]);
     for (const row of lists.data ?? []) weeks.add(row.week_start_date);
     for (const row of plans.data ?? []) weeks.add(row.week_start_date);
     return [...weeks].sort();
-  }, [household.id, currentWeekStart]);
+  }, [household.id]);
 
   // Callbacks read the latest state through a ref so they can stay stable.
   const stateRef = useRef(state);
@@ -659,8 +666,12 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     (async () => {
       // getOrCreateListId and fetchPrefs are independent – run them together
       // (migrateDevicePrefs still has to wait for serverPrefs).
+      // The live week, read at the moment the boot runs rather than captured
+      // when the effect was created: a "Try again" pressed after a week
+      // boundary has to resolve the NEW week's list, not the one this provider
+      // mounted on.
       const [listId, serverPrefs] = await Promise.all([
-        getOrCreateListId(household.id, userId, currentWeekStart),
+        getOrCreateListId(household.id, userId, currentWeekRef.current),
         fetchPrefs(household.id),
       ]);
       const prefs = await migrateDevicePrefs(household.id, serverPrefs);
@@ -684,7 +695,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [household.id, userId, currentWeekStart, fetchWeekOptions, bootAttempt]);
+  }, [household.id, userId, fetchWeekOptions, bootAttempt]);
 
   // Switching weeks swaps the whole list: resolve that week's list row and
   // load its items. The realtime channel follows listId automatically.
@@ -714,6 +725,25 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     },
     [household.id, userId],
   );
+
+  // A week boundary crossed while this provider was alive (known bug 3). The
+  // ref is synced FIRST so anything reading it afterwards – fetchWeekOptions,
+  // a retry's boot – already sees the new week.
+  // Who follows the roll-over: a shopper looking at what used to be "this
+  // week" is moved onto the new one, because that is the list they think they
+  // have open. A shopper who had deliberately navigated back to an older week
+  // is left exactly where they are; the week simply stops being current, and
+  // "Move all items to this week" appears for it like any other past week.
+  // viewWeek is safe to use here, unlike on the plan side, because it resolves
+  // the week's list against the SERVER (getOrCreateListId) rather than looking
+  // it up in state we might not have refetched yet.
+  useEffect(() => {
+    const previous = currentWeekRef.current;
+    currentWeekRef.current = currentWeekStart;
+    if (previous === currentWeekStart) return;
+    fetchWeekOptions().then(setWeekOptions, () => {});
+    if (viewedWeekRef.current === previous) viewWeek(currentWeekStart);
+  }, [currentWeekStart, fetchWeekOptions, viewWeek]);
 
   // Realtime: stream the other phones' item changes into local state. The
   // subscribe status doubles as the Live badge; a RE-subscribe (reconnect)

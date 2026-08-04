@@ -20,7 +20,8 @@ import {
   useMealPlan,
   type PlanEntry,
 } from "@/lib/meal-plan";
-import { DAY_LABELS, DAY_NAMES, toDateKey, weekDates } from "@/lib/week";
+import { useTodayKey } from "@/lib/use-today";
+import { DAY_LABELS, DAY_NAMES, weekDates } from "@/lib/week";
 
 // The Plan tab (the (plan) group's index keeps it at "/", so the app
 // opens here): the weekly meal
@@ -49,7 +50,10 @@ function PlanContent() {
   const insets = useSafeAreaInsets();
   const [sheet, setSheet] = useState<SheetState>({ kind: "none" });
 
-  const todayKey = toDateKey(new Date());
+  // Live: reading the clock in a render body is cached forever by the React
+  // Compiler, so "today" used to stay on whatever day the app was opened –
+  // see use-today.ts.
+  const todayKey = useTodayKey();
   const dates = useMemo(
     () => weekDates(plan.viewedWeekStart),
     [plan.viewedWeekStart],

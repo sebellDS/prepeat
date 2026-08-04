@@ -67,6 +67,10 @@ only thing waiting. They all go out together under this instead.
 - Amounts read properly whatever the serving count: "1 liter" and "2 liters",
   not "1 liters" or "2 liter". Danish units too. (Built after build 14 – the
   server half of this IS live, see migration 0027 below.)
+- An app left open or asleep over Sunday midnight now knows it is a new week,
+  and marks the right day as today. Before, it could still be showing last
+  week, so a meal added to what looked like this week landed on the finished
+  one.
 
 ## Build 14 – TestFlight 2026-08-03 (VALID, not in review)
 

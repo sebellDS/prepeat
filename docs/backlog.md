@@ -240,18 +240,111 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
             for TestFlight build 12, while #1, #5 and #6 are still only on the
             dev build. That asymmetry is the code-vs-live distinction the
             2026-07-27 outage taught, running in the good direction for once.
-- [ ] **3. "This week" is frozen at app launch, so a meal can land on last
-      week.** [src/lib/shopping-list.tsx:489](../src/lib/shopping-list.tsx)
-      and [src/lib/meal-plan.tsx:407](../src/lib/meal-plan.tsx).
-      Both providers compute the current week ONCE at mount (empty-dependency
-      useMemo) and never recompute. Returning to the foreground calls
-      `refresh()`/`retry()`, neither of which recomputes the week. Leave the
+- [x] **3. FIXED 2026-08-04 (NOT YET WALKED ON A DEVICE – see below).
+      "This week" was frozen at app launch, so a meal could land on last
+      week.** [src/lib/shopping-list.tsx](../src/lib/shopping-list.tsx)
+      and [src/lib/meal-plan.tsx](../src/lib/meal-plan.tsx).
+      Both providers computed the current week ONCE at mount (empty-dependency
+      useMemo) and never recomputed. Returning to the foreground called
+      `refresh()`/`retry()`, neither of which recomputed the week. Leave the
       app open across a week boundary (Sunday night → Monday) and it still
-      treats the finished week as "this week" – so a meal added to what looks
-      like the current week actually lands on the PREVIOUS week's plan and
-      list. Depends on iOS keeping the app alive across that exact boundary.
-      FIX: recompute `currentWeekStart` on the AppState "active" handler and
-      inside `refresh()`, instead of memoizing once at mount.
+      treated the finished week as "this week" – so a meal added to what looks
+      like the current week actually landed on the PREVIOUS week's plan and
+      list.
+      DONE as ONE shared clock, [src/lib/use-today.ts](../src/lib/use-today.ts)
+      (`useTodayKey` + `useCurrentWeekStart` derived from it), rather than the
+      same wiring in two providers and `new Date()` in three components.
+      - **The audit's suggested fix was not enough, and this is the
+        interesting part.** It said "recompute on the AppState active handler
+        and inside refresh()". But `active` only fires when the app COMES BACK,
+        and the bug as written is about an app *left open* – which never
+        backgrounds, so `active` never fires and nothing would have recomputed.
+        The suggestion fixes the overnight-and-reopened case and misses the
+        literal one. The clock therefore does both: a foreground handler AND a
+        tick.
+      - **⚠️ THE REACT COMPILER FREEZES `new Date()` IN A RENDER BODY. Read
+        this before writing any date-dependent UI.** Found 2026-08-04 when
+        Thomas tested the fix: the week rolled over correctly at 00:00 and
+        Monday was NOT marked as today. `reactCompiler: true` (app.json)
+        memoizes render-body expressions by their reactive inputs, and
+        `toDateKey(new Date())` has NONE – so it is cached for the lifetime of
+        the component and never recomputed, however many times that component
+        re-renders. It LOOKS like live code and behaves like a value frozen at
+        mount. This is the documented React Compiler caveat about impure render
+        code (`Date.now()`, `Math.random()`), and it means an earlier note in
+        this very entry was WRONG: three components were dismissed as safe
+        "because they recompute on every render", and none of them did.
+        Fixed at [(plan)/index.tsx](../src/app/(plan)/index.tsx) (the day
+        highlight), [week-bar.tsx](../src/components/plan/week-bar.tsx) (which
+        day cells are greyed out as past) and
+        [add-to-plan-sheet.tsx](../src/components/recipes/add-to-plan-sheet.tsx)
+        (which DAY a meal lands on, and the floor for navigating back) – all
+        three now take the clock from the hook.
+        THE RULE: never read the clock during render. It is not live, whatever
+        it looks like. Take it from `useTodayKey`/`useCurrentWeekStart`.
+      - **One clock, two values, so they cannot disagree.** The week is derived
+        from the day key rather than read separately – the inconsistency Thomas
+        saw (week says Monday, highlight says Sunday) is structurally
+        impossible now. It is one module-level ticker with
+        `useSyncExternalStore`, so every consumer changes on the same tick and
+        the app has ONE timer rather than one per component.
+      - **The tick is dumb and short (10s), after the first version failed on
+        the phone.** That version scheduled a single timer to land exactly on
+        midnight, capped at 15 minutes so React Native never saw a multi-day
+        `setTimeout`. The flaw: a timer fires after that much REAL time has
+        passed and knows nothing about the wall clock moving underneath it.
+        Thomas set the phone's clock forward to Sunday 23:58 with the app open,
+        and the pending timer still had its original delay to run – simulated
+        against the real `week.ts`, it would have rolled over at **00:11**,
+        eleven minutes late. Not merely a test artifact: a phone coming back
+        from being switched off, or correcting itself against the network, jumps
+        its clock the same way. Re-reading the clock every ten seconds has none
+        of that cleverness and none of its failure modes; the cost is a date
+        read and a string compare six times a minute, foreground only, and
+        nothing is notified unless the day actually changed.
+        The `msUntilNextWeekStart` helper the clever version needed was deleted
+        rather than left behind as dead code.
+      - **Who follows a roll-over.** Someone looking at what used to be "this
+        week" is moved onto the new one: that is the week they think they have
+        open, and where a meal they add should land. Someone who had
+        deliberately navigated BACK to an older week stays there – it simply
+        stops being current, and on Shopping "Move all items to this week"
+        appears for it like any other past week.
+      - **The two providers do it differently, on purpose.** Shopping reuses
+        `viewWeek`, which resolves the week's list against the SERVER
+        (`getOrCreateListId`). Plan cannot: its `viewWeek` looks the week up in
+        the weeks list already in state, and a plan another phone created for
+        the new week is not in it yet – so Plan re-runs its boot instead, which
+        already is "load the weeks, THEN load the viewed week's entries". It
+        bumps `bootAttempt` only, never `retry()`, so the Live badge is left
+        alone; nothing about a new week says the connection changed.
+      - **The boot effects no longer depend on the week.** They read it from a
+        ref instead, so a boundary crossed mid-session cannot re-run them (a
+        re-run would have swapped the visible list out from under a shopper).
+        The same ref is what makes a "Try again" pressed AFTER a roll-over
+        resolve the NEW week rather than the one the provider mounted on.
+      - **This also fixes the leftover-move's inherited copy of this bug** –
+        the "Move all items to this week" note under In flight. The move target
+        is now the live week, so it can no longer aim at a week that has since
+        become last week.
+      - [x] **The week roll-over itself is CONFIRMED ON DEVICE 2026-08-04**
+            (Thomas, clock set to Sunday 23:58): *"it switched on 00:00 to a new
+            week"*. The day highlight was the same test's second finding, fixed
+            above.
+      - [x] **Verified off-device, the parts that can be.** The shared clock was
+            run headless against the real `use-today.ts` and `week.ts` under
+            TZ=Europe/Copenhagen, with a stubbed AppState and a controllable
+            clock – 18 checks: the day turns at midnight and the week turns with
+            it, day and week always agree, nothing is notified on a day that did
+            not change, a second consumer reuses the one ticker, the ticker
+            stops only when the last consumer unmounts, a foreground catches up
+            a week-old clock, and a remount re-syncs a stale module value.
+            Typecheck and lint clean.
+      - [ ] **WALK ORDINARY USE ON THE DEVICE.** Still unproven, and the
+            2026-08-03 retry-button lesson says this is exactly the class of
+            code review passes and use breaks: that normal operation survived
+            the effect-dependency surgery in both providers – open both tabs,
+            switch weeks, add and remove a meal, force-quit and reopen.
 - [ ] **4. Imported text shows raw codes, and some amounts vanish.**
       [src/lib/recipe-import.ts:362](../src/lib/recipe-import.ts)-385.
       `cleanText` decodes NUMERIC HTML entities but not named ones, so

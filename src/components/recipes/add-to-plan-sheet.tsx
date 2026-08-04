@@ -4,13 +4,12 @@ import { Pressable, Text, View } from "react-native";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { WeekPicker } from "@/components/ui/week-picker";
+import { useCurrentWeekStart, useTodayKey } from "@/lib/use-today";
 import {
   addWeeksKey,
   DAY_LABELS,
   DAY_NAMES,
-  toDateKey,
   weekDates,
-  weekStartOf,
 } from "@/lib/week";
 
 /**
@@ -103,8 +102,11 @@ function SheetContent({
 }) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [servings, setServings] = useState(initialServings);
-  const today = toDateKey(new Date());
-  const currentWeekStart = weekStartOf(new Date());
+  // Both live, and both off the same tick – reading the clock in a render body
+  // is cached forever by the React Compiler (see use-today.ts). The sheet can
+  // sit open across midnight, and it decides which DAY a meal lands on.
+  const today = useTodayKey();
+  const currentWeekStart = useCurrentWeekStart();
   // The viewed week – starts on the current week; the nav walks forward to
   // plan a later week and stops at the current one going back.
   const [weekStart, setWeekStart] = useState(currentWeekStart);
