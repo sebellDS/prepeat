@@ -1322,14 +1322,23 @@ Closed 2026-07-27:
 
 ## Pre-launch checklist (v1 ship)
 
-- [ ] **⚠️ Put a copy of `credentials/AuthKey_UN3YR958DC.p8` in the password
-      manager** (found 2026-08-04, when Thomas asked whether the setup could be
-      rebuilt on a new Mac). App Store Connect issues that key **once** and it
-      can never be downloaded again; it is gitignored because it signs
-      releases, so it exists in exactly one place on earth. Losing the Mac
-      means revoking and regenerating it – discovered at the moment a fix needs
-      shipping. It is 257 bytes and password managers take attachments.
-      Thomas's to do; not something to hand around.
+- [x] **DONE 2026-08-04 – `credentials/AuthKey_UN3YR958DC.p8` is copied into
+      Apple Passwords**, which syncs via iCloud, so it now survives the Mac.
+      Found when Thomas asked whether the setup could be rebuilt on a new Mac.
+      App Store Connect issues that key **once** and it can never be downloaded
+      again; it is gitignored because it signs releases, so until today it
+      existed in exactly one place on earth. Losing the Mac would have meant
+      revoking and regenerating it – discovered at the moment a fix needed
+      shipping.
+      Stored as a password entry rather than an attachment (Apple Passwords
+      takes no files, and the key is 257 bytes of ASCII), with the Key ID and
+      Issuer ID in the notes. **The BEGIN/END PRIVATE KEY lines are part of the
+      key** – it is unusable without them.
+      Recoverable anyway, and deliberately not duplicated: `ascApiKeyId` and
+      `ascApiKeyIssuerId` live in `eas.json`, which is in the PUBLIC repo.
+      Neither is usable without the `.p8`, so this is not an exposure – but if
+      the key file is ever compromised, **revoke it in App Store Connect**
+      rather than merely replacing it, because the other two pieces are public.
       Full "if the Mac were lost" audit in
       [backups-and-local-db.md](backups-and-local-db.md) – everything else is
       recoverable, including the design system (pushed to GitHub) and both env
