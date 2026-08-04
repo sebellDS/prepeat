@@ -114,12 +114,19 @@ at launch.
 
 ## Server changes (live for everyone, no build needed)
 
-- **2026-08-04 – migration 0028.** Raise a recipe's
-  servings after you have been through the list, and the ingredients you had
-  already ticked off come back with the new amount, so you can check whether
-  you still have enough – before, nothing happened at all. **Live for everyone
-  including v1.0's build 12.** Lowering servings leaves your list alone, and an
-  amount you typed yourself is never overwritten.
+- **2026-08-04 – migration 0030.** Clearing the done
+  items no longer stops the above from working: change a meal afterwards and
+  what you still need shows up as usual. Before this it went quiet again.
+  **Live for everyone including v1.0's build 12.**
+- **2026-08-04 – migration 0029.** Change a meal
+  after you have been through the list and anything you still need shows up as
+  its own line, with just the extra amount on it – the things you already ticked
+  off stay ticked off. Before this, nothing happened at all (and briefly, with
+  0028 below, it asked for the whole amount again instead of the difference).
+- **2026-08-04 – migration 0028.** Superseded by 0029 the same day. Raise a
+  recipe's servings and the ticked-off ingredients came back with the new
+  TOTAL, which overstates what is left to buy. **Live for everyone including
+  v1.0's build 12** until 0029 runs.
 
 - **2026-08-03 – migration 0027.** "1 liter milk" and "2 liters milk" become
   one line on the shopping list again, along with jars, containers and

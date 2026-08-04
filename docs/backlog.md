@@ -168,18 +168,53 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
       withdrawn. That holds for a rounding difference; a serving bump is a
       FACTOR, so every ingredient doubles at once and the shortfall is
       proportional and real.
-      **FIXED WITHOUT A MARKER, and without any design: migration 0028.** The
-      marker was the wrong frame. The question is what a tick MEANS – see the
-      sub-item below – so when the requirement rises, the line is no longer
-      settled and belongs back on the list. 0028 un-checks it and folds the new
-      amount in, which needs no new component, no new token, and no build: an
-      un-checked row is an ordinary UPDATE that travels on the realtime channel
-      the list already watches.
-      This does not weaken decision #8 as much as it first looks. Those rails
-      stop BACKGROUND reconciliation from overwriting what the user owns; a
-      serving bump is a deliberate act by someone looking at the app, and
-      showing it is honest rather than surprising. Hand-edited lines are still
-      never touched, and a DECREASE still never disturbs a tick.
+      **FIXED WITHOUT A MARKER, and without any design – but it took two goes.**
+      The marker was the wrong frame either way: the question is what a tick
+      MEANS (see the sub-item below), so when the requirement rises the line is
+      no longer settled and the shopper has to be told.
+      - [x] **0028, APPLIED then SUPERSEDED THE SAME DAY. It answered the wrong
+            question.** It un-checked the ticked line and put the new TOTAL on
+            it. Thomas tested it within the hour: he added "Test 1" (1 litre of
+            milk) three times, ticked the merged 3 l off, doubled ONE of the
+            three meals – and the list asked for **4 litres**.
+            Four is the correct total (1 + 1 + 2). It is the wrong answer: he
+            had already accounted for 3, so what he needed was "buy 1 more".
+            WHY IT WENT WRONG, and it is the same failure as the display-half
+            bug earlier the same day: the choice between showing the TOTAL and
+            showing what is OUTSTANDING was noticed while writing 0028 and
+            decided silently, in favour of the total, *because it kept 0025's
+            bookkeeping simple*. Convenience of the invariant is not a reason to
+            hand someone a number they have to do arithmetic against – and the
+            trade was never put to Thomas, which is the actual error.
+            LESSON: when a choice between two behaviours is noticed during
+            implementation, that is a decision, not a detail. Surface it.
+      - [x] **0029 is the real fix, chosen by Thomas from three options** (one
+            line showing the total; two lines; a new column recording what was
+            satisfied). A line holds ONE number and this situation has TWO facts
+            – what the plan needs and what the shopper already secured – so they
+            get a line each. The ticked line is never touched again, and what is
+            still missing appears as its own active line: "3 l [ticked]" plus
+            "1 l".
+            THE NUMBER WAS ALREADY IN THE DATA, which is what made it cheap:
+            0025 gave every contribution both `quantity` (what the meal needs)
+            and `applied_quantity` (how much is folded into the visible line),
+            so *still needed* is just
+            `SUM(quantity - coalesce(applied_quantity, 0))`. Nothing new is
+            recorded; it is a query.
+            RECOMPUTED, NEVER INCREMENTED – this is the part that makes the
+            reverse operations work, and where an incremental version would rot.
+            Un-double the meal and the sum returns to zero, so the extra line
+            removes itself. Every path was walked in simulation before the SQL
+            was written: un-double, double two, remove the meal, and – the one
+            that catches naive versions – tick the extra litre off and then
+            double a SECOND meal, which correctly asks for 1 more rather than 2.
+            It also fixes Thomas's original report ("adding a meal to plan does
+            not update the shopping list") through the same mechanism.
+            0029 REVERTS 0028's un-freezing in both reconcilers, back to 0025's
+            rails exactly. The rails were never the problem; the missing half was
+            that nothing told the shopper.
+      Hand-edited lines are still never overwritten, and a DECREASE still never
+      disturbs anything – the sum simply drops.
       - [x] **WHAT A TICK MEANS, and it is not "I bought this"** (Thomas,
             correcting a first draft of 0028): *"the recipes add something to
             shopping. then the human checks whats in the kitchen, then goes
@@ -213,11 +248,47 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
             Teach-a-synonym under Later. The household TELLS the app; the app
             never guesses. Only worth building if the re-ticking actually proves
             annoying in real weeks.
-      - [x] **APPLIED 2026-08-04**, verifying select returned all four columns
-            true (contribute_fn, rescale_fn, contribute_is_0028,
-            rescale_is_0028). **Live for everybody already** – a database change
-            reaches every phone the moment it runs, so builds 12, 13 and 14 all
-            behave this way now, with no app change needed.
+      - [x] **0028 APPLIED 2026-08-04** (all four columns true), then corrected
+            by 0029 the same day – see above. **Live for everybody already** – a
+            database change reaches every phone the moment it runs, so builds 12,
+            13 and 14 all behave this way now, with no app change needed.
+      - [x] **0029 APPLIED 2026-08-04**, verifying select returned all six
+            columns true (outstanding_column, sync_fn, contribute_is_0029,
+            rescale_is_0029, withdraw_is_0029, unfreezing_gone). That last one
+            reads `prosrc` to prove 0028's un-freezing is gone from the live
+            body, not merely that the function exists. **Live for everybody
+            already**, builds 12/13/14 included, with no app change needed.
+      - [x] **0030: "Clear done items" switched the whole thing off** (Thomas,
+            same day, testing 0029 within the hour): *"if I clear all marked item
+            in shopping, the logic collapses and nothing is shown if I change
+            servings."* Right, and it was one line – 0029's sync opened with
+            `if not found or v_line.deleted_at is not null then return`, and
+            clearing the done band soft-deletes those rows. So every later plan
+            change found a deleted line and bailed before computing anything.
+            THE GUARD READ "deleted" AS "no longer relevant", when CLEARING IS
+            THE STRONGEST FORM OF SATISFIED – the shopper ticked it off and then
+            swept it away because it was handled. The requirement it covered did
+            not go anywhere, so the difference is still owed.
+            0030 fixes both halves of that confusion: bail only when the row does
+            not exist or is NOT TICKED, and count a ticked outstanding line as
+            satisfied whether or not it was later cleared (without the second
+            half, clearing the done band twice would ask for an already-bought
+            litre all over again).
+            LESSON, and it is the third time today in a different costume: this
+            is unreachable without three or four steps of setup, so nothing but
+            a real walk-through finds it. Two migrations passed their verifying
+            selects and neither said anything about this.
+      - [x] **0030 APPLIED and CONFIRMED ON DEVICE 2026-08-04** – Thomas walked
+            the 3x "Test 1" case with a clear in the middle (tick the merged 3 l
+            off, Clear done items, double one of the three meals, un-double it)
+            and reported *"it works now"*. **Live for everybody**, builds 12, 13
+            and 14 included, with no app change needed.
+            Three of 0030's fixes came from the state grid rather than from
+            testing, and none of them would have been reachable by hand without
+            several steps of setup: a hand-edited outstanding line being
+            overwritten, a shopper-deleted one coming back, and sync's own
+            tombstones counting as "already bought" so that un-doubling then
+            re-doubling showed nothing.
             Worth copying from this one's verifying select: the last two columns
             read `prosrc like '%0028%'` to prove the new BODIES landed. A
             replaced function body is invisible to an `exists in pg_proc` check,
@@ -1558,6 +1629,39 @@ missing from it entirely.
       iOS-only.
 
 ## Recurring
+
+- **Before changing the plan → shopping reconciler, run
+  `node scripts/check-shopping-reconciler.mjs`** and read every row (agreed
+  2026-08-04, after getting that reconciler wrong three times in one afternoon).
+  WHAT WENT WRONG, because the two causes need different answers:
+  1. **A decision made silently.** The choice between showing the plan's TOTAL
+     and showing what is still OWED was noticed while writing migration 0028 and
+     settled in favour of the total *because it kept the bookkeeping simple*.
+     Thomas got a list asking for 4 litres when he needed 1.
+     THE RULE: when implementation surfaces a choice between two behaviours,
+     that is a decision, not a detail. Say so and ask. Convenience of the
+     invariant is never a reason to pick what the user sees.
+  2. **States nobody enumerated.** "Clear done items" silently switched the
+     whole mechanism off, and earlier the same day a plural fix worked in one
+     direction only. Both times the verification covered the path being thought
+     about, and the bug sat in a state that was never listed – even though
+     "cleared" is a BUTTON in the UI.
+     THE RULE: enumerate the states and walk the cross-product, rather than
+     writing down the scenarios that come to mind. That is what the script does:
+     every line state (ticked / cleared / unticked / hand-edited / deleted by
+     the shopper) against every plan change, plus the multi-step sequences that
+     single-state checks cannot reach.
+  IT PAID FOR ITSELF IMMEDIATELY: the grid found three more bugs in 0030 before
+  it was ever applied – a hand-edited outstanding line being overwritten, a
+  shopper-deleted one coming back, and sync's own tombstones being counted as
+  "already bought" so that un-doubling then re-doubling showed nothing.
+  ITS LIMIT, which matters: the script mirrors the SQL, it does not run it. It
+  proves the rules are coherent, not that the functions implement them – and on
+  both occasions the model was wrong, a mirror written from the same model would
+  have agreed with the bug. A local Postgres harness would close that gap and
+  does not exist; it is worth building if the mirror ever drifts, but it is not
+  what failed today. **A device walk-through remains the only thing that settles
+  a change.**
 
 - **Keep [release-notes.md](release-notes.md) current, INCLUDING the version
   number** (started 2026-08-03; Thomas wants something ready to post whenever
