@@ -1323,7 +1323,10 @@ Closed 2026-07-27:
 ## Pre-launch checklist (v1 ship)
 
 - [x] **DONE 2026-08-04 – `credentials/AuthKey_UN3YR958DC.p8` is copied into
-      Apple Passwords**, which syncs via iCloud, so it now survives the Mac.
+      Apple Passwords**, and **Thomas confirmed it visible on his iPhone**, so
+      it is genuinely off this machine rather than merely saved on it. (Checked
+      on purpose: an unsynced entry looks like protection and is not – the same
+      trap as the scheduled job that "looked installed" twice today.)
       Found when Thomas asked whether the setup could be rebuilt on a new Mac.
       App Store Connect issues that key **once** and it can never be downloaded
       again; it is gitignored because it signs releases, so until today it
