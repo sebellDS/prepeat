@@ -109,6 +109,40 @@ Not in the repo, so it has to be written down:
 - **node via nvm** – `~/.nvm/versions/node/v20.20.2/bin`. Not needed by the
   backup, which is why a node upgrade cannot break it.
 
+---
+
+## If the Mac were lost tomorrow
+
+Audited 2026-08-04. Everything below is what does NOT come back from a
+`git clone` – which is precisely what cannot be worked out from the repo.
+
+| | Where it really lives | If the Mac dies |
+|---|---|---|
+| Code, migrations, scripts, docs | GitHub | fine |
+| Design system | `thomassebell/design-system` on GitHub | fine |
+| EAS build config and secrets | Expo's servers – `eas login` | fine |
+| `.env` (Supabase URL + publishable key) | Supabase dashboard | 2 minutes to redo |
+| `~/.prepeat-backup.env` (db password) | resettable in the dashboard | 2 minutes to redo |
+| **`credentials/*.p8`** (Apple API key) | **nowhere else** | **see below** |
+| **`~/Prepeat-backups/`** | **nowhere else** | **all backups gone** |
+| `app-store-assets/` | nowhere else | regenerable, tedious |
+
+### ⚠️ The Apple signing key is download-once
+
+`credentials/AuthKey_*.p8` is issued by App Store Connect and **can only be
+downloaded at the moment it is created**. It is gitignored on purpose (it
+signs releases). If the Mac is lost it cannot be recovered – only revoked and
+replaced, which you would discover at the moment you needed to ship a fix.
+
+**Keep a copy in a password manager.** It is a 257-byte file and 1Password and
+similar take attachments.
+
+### ⚠️ Losing the Mac means losing every backup
+
+Production would be unaffected, so this is not data loss on its own – but there
+would be no backup at all until the new Mac ran one. It is the same off-site
+gap described above, with a concrete face on it.
+
 ### Setting this up on a new Mac
 
 1. `brew install libpq`

@@ -1322,6 +1322,20 @@ Closed 2026-07-27:
 
 ## Pre-launch checklist (v1 ship)
 
+- [ ] **⚠️ Put a copy of `credentials/AuthKey_UN3YR958DC.p8` in the password
+      manager** (found 2026-08-04, when Thomas asked whether the setup could be
+      rebuilt on a new Mac). App Store Connect issues that key **once** and it
+      can never be downloaded again; it is gitignored because it signs
+      releases, so it exists in exactly one place on earth. Losing the Mac
+      means revoking and regenerating it – discovered at the moment a fix needs
+      shipping. It is 257 bytes and password managers take attachments.
+      Thomas's to do; not something to hand around.
+      Full "if the Mac were lost" audit in
+      [backups-and-local-db.md](backups-and-local-db.md) – everything else is
+      recoverable, including the design system (pushed to GitHub) and both env
+      files (re-derivable from the Supabase dashboard). The other single-copy
+      item is `~/Prepeat-backups/` itself.
+
 - [ ] **Supabase Pro is MONITORED, not scheduled** (Thomas, 2026-08-04, after
       asking whether he had to upgrade or could watch – the honest answer
       changed once the local backup was proven to restore).
