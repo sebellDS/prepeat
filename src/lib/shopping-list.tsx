@@ -670,14 +670,23 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       // when the effect was created: a "Try again" pressed after a week
       // boundary has to resolve the NEW week's list, not the one this provider
       // mounted on.
+      const bootWeek = currentWeekRef.current;
       const [listId, serverPrefs] = await Promise.all([
-        getOrCreateListId(household.id, userId, currentWeekRef.current),
+        getOrCreateListId(household.id, userId, bootWeek),
         fetchPrefs(household.id),
       ]);
       const prefs = await migrateDevicePrefs(household.id, serverPrefs);
       const [rows, weeks] = await Promise.all([fetchItems(listId), fetchWeekOptions()]);
       if (cancelled) return;
+      // Week-independent, so it lands either way.
       setWeekOptions(weeks);
+      // The same guard viewWeek uses: never put one week's listId and items
+      // under another week's label. A roll-over cannot reach here (bumping
+      // bootAttempt cancels this chain outright), but a viewWeek DOES NOT
+      // cancel the boot, so a week switched during a slow boot would otherwise
+      // be overwritten by it. The household prefs in this payload are lost
+      // when that happens; the next tab focus refetches them.
+      if (viewedWeekRef.current !== bootWeek) return;
       dispatch({
         type: 'ready',
         listId,
@@ -728,22 +737,41 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
 
   // A week boundary crossed while this provider was alive (known bug 3). The
   // ref is synced FIRST so anything reading it afterwards – fetchWeekOptions,
-  // a retry's boot – already sees the new week.
+  // the boot – already sees the new week.
   // Who follows the roll-over: a shopper looking at what used to be "this
   // week" is moved onto the new one, because that is the list they think they
   // have open. A shopper who had deliberately navigated back to an older week
   // is left exactly where they are; the week simply stops being current, and
   // "Move all items to this week" appears for it like any other past week.
-  // viewWeek is safe to use here, unlike on the plan side, because it resolves
-  // the week's list against the SERVER (getOrCreateListId) rather than looking
-  // it up in state we might not have refetched yet.
+  //
+  // Following it RE-RUNS THE BOOT rather than calling viewWeek, and that is
+  // load-bearing (Thomas, 2026-08-04: "it works in next week but not in
+  // current"). viewWeek would start a SECOND chain alongside a boot that may
+  // still be in flight, and the boot is four round trips deep against
+  // viewWeek's two – so the boot lands last and puts the old week's listId and
+  // items under the new week's label. The list then looks fine while quietly
+  // belonging to the wrong week, and a meal added to the current week
+  // contributes to a list that is not on screen. Re-running the boot has no
+  // such race: bumping bootAttempt makes React run the previous run's cleanup
+  // first, which sets its `cancelled` flag, so the older chain drops itself.
+  // It also matches what the plan provider does on a roll-over.
   useEffect(() => {
     const previous = currentWeekRef.current;
     currentWeekRef.current = currentWeekStart;
     if (previous === currentWeekStart) return;
-    fetchWeekOptions().then(setWeekOptions, () => {});
-    if (viewedWeekRef.current === previous) viewWeek(currentWeekStart);
-  }, [currentWeekStart, fetchWeekOptions, viewWeek]);
+    if (viewedWeekRef.current !== previous) {
+      // Not following: just re-read the switcher's weeks so the new current
+      // week appears in it.
+      fetchWeekOptions().then(setWeekOptions, () => {});
+      return;
+    }
+    setViewedWeekStart(currentWeekStart);
+    // Eagerly, rather than waiting for the sync effect on the next render: the
+    // boot's own guard compares against this ref.
+    viewedWeekRef.current = currentWeekStart;
+    dispatch({ type: 'begin-load' });
+    setBootAttempt((n) => n + 1);
+  }, [currentWeekStart, fetchWeekOptions]);
 
   // Realtime: stream the other phones' item changes into local state. The
   // subscribe status doubles as the Live badge; a RE-subscribe (reconnect)

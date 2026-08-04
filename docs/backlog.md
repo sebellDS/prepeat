@@ -128,6 +128,45 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
 
 ## Known bugs (open)
 
+- [ ] **⚠️ A plan change that lands on a CHECKED shopping line is completely
+      invisible – the "changed in the plan" marker was never built.** Found
+      2026-08-04 from Thomas's report: *"it does not update shopping list when
+      adding a meal to plan"*, then *"it works in next week but not in
+      current"*, then *"it works after I deleted all meals and checked all the
+      items in shopping. Then added a new meal."* Those three together are the
+      diagnosis: next week's list is empty so new lines appear, while the
+      current week's list has been shopped and its lines are CHECKED.
+      THE RAILS ARE WORKING AS DESIGNED – the missing half is the UI.
+      `plan-shopping.ts` and migrations 0013/0014/0025 all state the rule:
+      a checked line is never silently overwritten, and instead *"the shopper
+      sees a 'changed in the plan' marker"*, computed as
+      `is_checked && sum(contributions) ≠ quantity`. That marker DOES NOT
+      EXIST in the app. Verified two ways: `fetchItems`
+      ([shopping-list.tsx:405](../src/lib/shopping-list.tsx)) selects explicit
+      columns and never touches `shopping_list_item_contributions`, and
+      `git log -S contributions -- src/lib/shopping-list.tsx` returns nothing,
+      so it was never once read. There is no view or generated column doing it
+      server-side either.
+      SO THE USER-VISIBLE BEHAVIOUR IS: add a meal, and any ingredient that
+      merges into an already-checked line produces no new row, no quantity
+      change and no marker – nothing whatsoever. It reads exactly as "the
+      shopping list is broken", against listing copy that promises the list
+      "builds itself from the plan".
+      NOT A REGRESSION from the 2026-08-04 clock work – it has been true since
+      the rails landed (0013, 2026-07-16, and decision #8 on 2026-07-25). It
+      went unnoticed because a fresh week's list is clean, and demo/testing
+      lists rarely have checked items.
+      NEEDS A DESIGN, so it is not built yet: no Figma frame exists for the
+      marker, and per the build-the-design rule it must not be improvised.
+      Worth deciding at the same time WHICH rule the shopper wants – the marker
+      is one answer, "add a second line for the new amount" is another, and
+      "update the checked line and un-check it" is a third. The rails decision
+      (#8) chose "never overwrite", which is defensible; it just has to be
+      visible.
+      Interim thought for the design conversation: the cheapest honest version
+      is a per-row hint using components that already exist, since the row
+      already has a second line for the amount.
+
 - [ ] **The same ingredient can still appear twice on the shopping list**
       (Thomas, 2026-07-29, looking at the week-32 demo list: *"a lot of item
       are the same, but named differently"*). `item_merge_key` (migration
@@ -345,6 +384,30 @@ cut: fix 1 and 6 before the next build, the rest as a fast follow.
             code review passes and use breaks: that normal operation survived
             the effect-dependency surgery in both providers – open both tabs,
             switch weeks, add and remove a meal, force-quit and reopen.
+      - [x] **A RACE THIS INTRODUCED, found and fixed 2026-08-04 while chasing
+            something else.** The first version had the roll-over call
+            `viewWeek` on the shopping side. That starts a SECOND chain
+            alongside a boot that may still be in flight, and the boot is four
+            round trips deep against viewWeek's two – so the boot lands LAST
+            and puts the old week's `listId` and items under the new week's
+            label. The list then looks fine while quietly belonging to the
+            wrong week, and a meal added to the current week contributes to a
+            list that is not on screen.
+            Fixed by having the roll-over RE-RUN THE BOOT (bump `bootAttempt`)
+            instead: React runs the previous run's cleanup first, which sets its
+            `cancelled` flag, so the older chain drops itself. One code path,
+            no race, and it now matches what the plan provider does.
+            A guard was added to the boot as well, for the case
+            `bootAttempt` cannot cover: a `viewWeek` does NOT cancel an
+            in-flight boot, so a week switched during a slow boot would
+            otherwise be overwritten by it.
+            NOTE this was NOT what Thomas was reporting – that turned out to be
+            the missing "changed in the plan" marker, first item under Known
+            bugs. The race is real but was found by reading the code, not from
+            the symptom. LESSON: a plausible mechanism that explains the
+            symptom is not the same as the cause. The thing that separated them
+            was evidence – `git log -S` proving the marker was never built –
+            not more reasoning about the mechanism.
 - [ ] **4. Imported text shows raw codes, and some amounts vanish.**
       [src/lib/recipe-import.ts:362](../src/lib/recipe-import.ts)-385.
       `cleanText` decodes NUMERIC HTML entities but not named ones, so
