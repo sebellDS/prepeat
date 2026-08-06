@@ -622,6 +622,18 @@ export default function AddRecipeScreen() {
             ? "section"
             : "ingredient"
         }
+        onDelete={() => {
+          const target = ingredientSheet;
+          setIngredientSheet(null);
+          if (target != null && target !== "add") {
+            // Only the heading goes; its ingredients stay and join whatever
+            // section precedes them - decision 2 (Thomas, 2026-08-04), which
+            // positional grouping gives for free.
+            setIngredients((current) =>
+              current.filter((_, i) => i !== target.index),
+            );
+          }
+        }}
         onClose={() => setIngredientSheet(null)}
         onSubmit={(name, quantityText, kind) => {
           const target = ingredientSheet;

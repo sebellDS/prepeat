@@ -691,6 +691,19 @@ export default function RecipeDetailScreen() {
             ? "section"
             : "ingredient"
         }
+        onDelete={async () => {
+          const target = editingIngredient;
+          setEditingIngredient(null);
+          if (target === null || target === "new") return;
+          // The heading only. Its ingredients stay and join the section above,
+          // which is decision 2 and needs no extra work - grouping is
+          // positional. Undo uses the same path as a swiped row.
+          setUndoTarget({ kind: "ingredient", snapshot: target });
+          await deleteIngredient(target.id).catch((error) =>
+            console.warn("[recipes] delete section failed", error),
+          );
+          reload();
+        }}
         onClose={() => setEditingIngredient(null)}
         onSubmit={async (name, quantityText, kind) => {
           const target = editingIngredient;

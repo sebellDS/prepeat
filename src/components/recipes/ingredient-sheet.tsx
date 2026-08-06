@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabItem } from "@/components/ui/tabs";
+import { ds } from "@/constants/ds";
 
 /** Which kind of row the sheet is editing. */
 export type IngredientKind = "ingredient" | "section";
@@ -24,6 +26,7 @@ export function IngredientSheet({
   initialName,
   initialQuantity,
   initialKind = "ingredient",
+  onDelete,
   onClose,
   onSubmit,
 }: {
@@ -33,6 +36,13 @@ export function IngredientSheet({
   initialQuantity: string;
   /** Opening on an existing row starts on that row's tab. */
   initialKind?: IngredientKind;
+  /**
+   * Removes the row being edited. Only wired for SECTIONS: an ingredient is
+   * deleted by swiping its row, but a heading sits outside the cards and has
+   * no swipe, so without this it could not be deleted at all (Thomas,
+   * 2026-08-06).
+   */
+  onDelete?: () => void;
   onClose: () => void;
   onSubmit: (
     name: string,
@@ -67,6 +77,7 @@ export function IngredientSheet({
         kind={kind}
         initialName={initialName}
         initialQuantity={initialQuantity}
+        onDelete={editing && kind === "section" ? onDelete : undefined}
         onSubmit={onSubmit}
       />
     </BottomSheet>
@@ -77,11 +88,13 @@ function SheetContent({
   kind,
   initialName,
   initialQuantity,
+  onDelete,
   onSubmit,
 }: {
   kind: IngredientKind;
   initialName: string;
   initialQuantity: string;
+  onDelete?: () => void;
   onSubmit: (
     name: string,
     quantityText: string | null,
@@ -152,6 +165,32 @@ function SheetContent({
           Done
         </Text>
       </Pressable>
+      {/* IMPROVISED, and marked as such: Thomas asked for "red delete button
+          with trash can icon, under the done button" (2026-08-06); no frame
+          draws it. Shape follows the Done button above it; colours are the DS
+          button/danger family, including the pressed state the DS defines. */}
+      {onDelete != null && (
+        <Pressable
+          onPress={onDelete}
+          accessibilityRole="button"
+          accessibilityLabel="Delete section"
+          className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium py-comp-large"
+          style={({ pressed }) => ({
+            backgroundColor: pressed
+              ? ds.colors.button.danger.fill.pressed
+              : ds.colors.button.danger.fill.enabled,
+          })}
+        >
+          <MaterialIcons
+            name="delete"
+            size={24}
+            color={ds.colors.button.danger.label.enabled}
+          />
+          <Text className="font-paragraph text-components-button-label font-default text-button-danger-label-enabled">
+            Delete section
+          </Text>
+        </Pressable>
+      )}
     </>
   );
 }

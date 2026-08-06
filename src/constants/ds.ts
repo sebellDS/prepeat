@@ -73,6 +73,9 @@ interface DsTheme {
         label: ButtonStates;
       };
       text: { label: ButtonStates; underline: ButtonStates };
+      /** Destructive actions. Present in ds-theme.cjs; this type had not
+       *  caught up until the section delete button needed it (2026-08-06). */
+      danger: { fill: ButtonStates; label: ButtonStates };
     };
     chip: {
       solid: { fill: ChipStates; label: ChipStates };
