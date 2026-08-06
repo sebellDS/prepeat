@@ -103,6 +103,7 @@ function SheetContent({
 }) {
   const [name, setName] = useState(initialName);
   const [quantity, setQuantity] = useState(initialQuantity);
+  const [pressed, setPressed] = useState(false);
   const nameRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -172,14 +173,21 @@ function SheetContent({
       {onDelete != null && (
         <Pressable
           onPress={onDelete}
+          onPressIn={() => setPressed(true)}
+          onPressOut={() => setPressed(false)}
           accessibilityRole="button"
           accessibilityLabel="Delete section"
-          className="w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium py-comp-large"
-          style={({ pressed }) => ({
-            backgroundColor: pressed
-              ? ds.colors.button.danger.fill.pressed
-              : ds.colors.button.danger.fill.enabled,
-          })}
+          // The pressed colour goes through className, NOT a style function:
+          // NativeWind turns className into style, and a style passed as a
+          // function is dropped in that merge - which rendered this button
+          // with its white label on no background at all (found on device,
+          // 2026-08-06).
+          className={
+            "w-full flex-row items-center justify-center gap-comp-xsmall rounded-medium py-comp-large " +
+            (pressed
+              ? "bg-button-danger-fill-pressed"
+              : "bg-button-danger-fill-enabled")
+          }
         >
           <MaterialIcons
             name="delete"
