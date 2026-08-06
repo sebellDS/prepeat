@@ -107,6 +107,43 @@ export function scaledQuantityText(
   );
 }
 
+/**
+ * Splits a flat ingredient list into its sections: a heading, then the rows
+ * under it, until the next heading.
+ *
+ * POSITIONAL, because that is what the data is - `sort_order` is the only
+ * ordering and a heading owns whatever follows it. Original indices come along
+ * because callers address rows by index (edit, delete, reorder).
+ *
+ * Lives HERE rather than in a screen so the editor and the recipe detail draw
+ * the same thing. Duplicating this was how the section flag came to be dropped
+ * at six separate sites on 2026-08-06.
+ */
+export interface SectionGroup<T> {
+  section: { row: T; index: number } | null;
+  rows: { row: T; index: number }[];
+}
+
+export function groupBySection<T extends { isSection?: boolean }>(
+  rows: T[],
+): SectionGroup<T>[] {
+  const groups: SectionGroup<T>[] = [];
+  let current: SectionGroup<T> | null = null;
+  rows.forEach((row, index) => {
+    if (row.isSection) {
+      current = { section: { row, index }, rows: [] };
+      groups.push(current);
+      return;
+    }
+    if (current == null) {
+      current = { section: null, rows: [] };
+      groups.push(current);
+    }
+    current.rows.push({ row, index });
+  });
+  return groups;
+}
+
 export async function fetchRecipes(
   householdId: string,
 ): Promise<RecipeSummary[]> {

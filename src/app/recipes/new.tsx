@@ -32,11 +32,12 @@ import { useHousehold } from "@/lib/household-context";
 import {
   createRecipe,
   fetchRecipe,
+  groupBySection,
   replaceIngredientsAndSteps,
   updateRecipeFacts,
   uploadRecipePhoto,
+  type DraftIngredient,
 } from "@/lib/recipes";
-import type { DraftIngredient } from "@/lib/recipes";
 
 /**
  * The editor's rows as the data layer wants them: an empty quantity box means
@@ -53,38 +54,6 @@ function toDraftIngredients(rows: DraftIngredient[]): DraftIngredient[] {
     quantityText: row.quantityText || null,
     isSection: row.isSection,
   }));
-}
-
-/**
- * Ingredients as the screen draws them: a heading followed by the rows under
- * it, until the next heading.
- *
- * POSITIONAL, because that is what the data is – `sortOrder` is the only
- * ordering and a heading owns whatever follows it. Original indices are
- * carried through because edit, delete and reorder all address rows by index.
- */
-interface IngredientGroup {
-  section: { row: DraftIngredient; index: number } | null;
-  rows: { row: DraftIngredient; index: number }[];
-}
-
-function groupIngredients(rows: DraftIngredient[]): IngredientGroup[] {
-  const groups: IngredientGroup[] = [];
-  let current: IngredientGroup | null = null;
-  rows.forEach((row, index) => {
-    if (row.isSection) {
-      current = { section: { row, index }, rows: [] };
-      groups.push(current);
-      return;
-    }
-    if (current == null) {
-      // Rows before any heading - an ordinary ungrouped list.
-      current = { section: null, rows: [] };
-      groups.push(current);
-    }
-    current.rows.push({ row, index });
-  });
-  return groups;
 }
 
 /** Leading number in "10 min" style time fields; empty/absent → null. */
@@ -442,7 +411,7 @@ export default function AddRecipeScreen() {
             )}
             {/* One card per section, its heading sitting outside the card
                 (Figma 496:9255). 16px between every heading and card. */}
-            {groupIngredients(ingredients).map((group, groupIndex) => (
+            {groupBySection(ingredients).map((group, groupIndex) => (
               <Fragment key={group.section ? `s${group.section.index}` : `g${groupIndex}`}>
                 {group.section != null && (
                   <View className="w-full flex-row items-center gap-comp-small">

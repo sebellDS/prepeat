@@ -42,6 +42,7 @@ import {
   deleteIngredient,
   deleteStep,
   fetchRecipe,
+  groupBySection,
   reorderIngredients,
   reorderSteps,
   scaledQuantityText,
@@ -361,7 +362,14 @@ export default function RecipeDetailScreen() {
 
           <ServingsCounter value={chosenServings} onChange={setServings} />
 
-          <View className="w-full gap-comp-xsmall">
+          <View className="w-full gap-layout-small">
+            {/* IMPROVISED, and marked as such: Thomas designed sections for the
+                CREATE/EDIT screen (Figma 121:11255); no frame draws them here.
+                This mirrors that screen exactly - heading outside the card, one
+                card per section, 16px apart - because leaving the detail screen
+                flat would show DOUGH as a tickable ingredient while you cook,
+                which is the thing sections exist to stop. Worth a frame. */}
+            {!recipe.ingredients.some((row) => row.isSection) && (
             <View className="w-full flex-row items-center">
               <Text className="flex-1 font-header text-display-6 font-emphasized leading-xsmall text-text-default">
                 Ingredients
@@ -381,8 +389,19 @@ export default function RecipeDetailScreen() {
                 </Pressable>
               )}
             </View>
+            )}
+            {groupBySection(recipe.ingredients).map((group, groupIndex) => (
+              <Fragment
+                key={group.section ? group.section.row.id : `g${groupIndex}`}
+              >
+                {group.section != null && (
+                  <Text className="w-full font-header text-display-6 font-emphasized leading-xsmall text-text-default">
+                    {group.section.row.name}
+                  </Text>
+                )}
+                {group.rows.length > 0 && (
             <View className="w-full overflow-hidden rounded-large">
-              {recipe.ingredients.map((ingredient, index) => (
+              {group.rows.map(({ row: ingredient, index }) => (
                 <Fragment key={ingredient.id}>
                   {index > 0 && <RowDivider />}
                   <IngredientRow
@@ -409,10 +428,15 @@ export default function RecipeDetailScreen() {
                   />
                 </Fragment>
               ))}
-              {recipe.ingredients.length === 0 && (
-                <EmptyRowHint text="No ingredients yet – add the first one below." />
-              )}
             </View>
+                )}
+              </Fragment>
+            ))}
+            {recipe.ingredients.length === 0 && (
+              <View className="w-full overflow-hidden rounded-large">
+                <EmptyRowHint text="No ingredients yet – add the first one below." />
+              </View>
+            )}
           </View>
 
           <View className="w-full gap-comp-xsmall">
