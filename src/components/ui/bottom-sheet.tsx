@@ -111,6 +111,15 @@ export function BottomSheet({
             style={{
               marginBottom: -80,
               paddingBottom: 120,
+              // Figma 508:13824 / 495:4756. marginBottom -80 with paddingBottom
+              // 120 already leaves the 40px the design asks for, so the
+              // keyboard-bleed fix and the spec happen to agree - do not
+              // "correct" one into breaking the other.
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.25,
+              shadowRadius: 24,
+              elevation: 12,
               ...(scroll
                 ? {
                     maxHeight: `${maxHeightPercent}%` as const,
@@ -123,7 +132,7 @@ export function BottomSheet({
                   }
                 : null),
             }}
-            className="w-full gap-layout-small rounded-t-xlarge bg-surface-neutral-lightest p-layout-small"
+            className="w-full gap-layout-medium rounded-t-large bg-surface-neutral-lightest p-layout-small"
           >
             {onBack ? (
               <View className="w-full flex-row items-center justify-between">
@@ -153,7 +162,7 @@ export function BottomSheet({
                 </Pressable>
               </View>
             ) : null}
-            <View className="w-full gap-comp-xsmall">
+            <View className="w-full gap-layout-xsmall">
               <View className="w-full flex-row items-center">
                 <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">
                   {title}
@@ -167,14 +176,14 @@ export function BottomSheet({
                   >
                     <SymbolView
                       name="xmark"
-                      size={20}
+                      size={24}
                       tintColor={ds.colors.icon.default}
                     />
                   </Pressable>
                 )}
               </View>
               {subtitle ? (
-                <Text className="font-paragraph text-small font-default text-text-subtle">
+                <Text className="font-paragraph text-paragraph font-default text-text-subtle">
                   {subtitle}
                 </Text>
               ) : null}

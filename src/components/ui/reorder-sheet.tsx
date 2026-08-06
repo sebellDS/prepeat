@@ -1,9 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import {
-  Modal,
-  Pressable,
   ScrollView,
   Text,
   useWindowDimensions,
@@ -14,6 +11,8 @@ import {
   GestureDetector,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
+
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   runOnJS,
@@ -77,50 +76,23 @@ export function ReorderSheet({
   // Cap the sheet below the status bar / notch so a long ingredient list can't
   // push the title and close button off the top of the screen; the rows scroll
   // inside instead (Thomas, 2026-07-25: close was unreachable on a long list).
-  const sheetMaxHeight = windowHeight - insets.top - 24;
+  // The list is capped rather than the sheet, so a long recipe scrolls its rows
+  // while the title and close stay put (Thomas, 2026-07-25: close was
+  // unreachable on a long list).
+  const listMaxHeight = windowHeight - insets.top - 220;
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      title={title}
+      subtitle={hint}
+      onClose={onClose}
     >
-      <GestureHandlerRootView className="flex-1">
-        <Pressable
-          className="flex-1 bg-black/30"
-          onPress={onClose}
-          accessibilityLabel="Close"
-        />
-        <View
-          style={{ maxHeight: sheetMaxHeight }}
-          className="w-full gap-layout-medium rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large"
-        >
-          <View className="w-full flex-row items-start gap-comp-small">
-            <View className="flex-1 gap-layout-xsmall">
-              <Text className="font-header text-display-5 font-emphasized text-text-default">
-                {title}
-              </Text>
-              <Text className="font-paragraph text-paragraph font-default text-text-subtle">
-                {hint}
-              </Text>
-            </View>
-            <Pressable
-              onPress={onClose}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
-              <SymbolView
-                name="xmark"
-                size={24}
-                tintColor={ds.colors.icon.default}
-              />
-            </Pressable>
-          </View>
+      {/* Gestures inside a Modal need their own root on iOS. */}
+      <GestureHandlerRootView style={{ flexShrink: 1 }}>
           <ScrollView
             scrollEnabled={!dragging}
             showsVerticalScrollIndicator={false}
-            style={{ flexShrink: 1 }}
+            style={{ flexShrink: 1, maxHeight: listMaxHeight }}
             contentContainerStyle={{ height: items.length * ROW_HEIGHT }}
           >
             {items.map((item, index) => (
@@ -150,9 +122,8 @@ export function ReorderSheet({
               />
             ))}
           </ScrollView>
-        </View>
       </GestureHandlerRootView>
-    </Modal>
+    </BottomSheet>
   );
 }
 
