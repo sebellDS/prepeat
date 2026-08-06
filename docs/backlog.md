@@ -31,8 +31,30 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
       "DOUGH"/"FILLING"/"CREAM CHEESE FROSTING" arrived as ingredients with no
       amount – and would have landed on the shopping list.
       - [x] **Migration 0031 applied to DEV** – `recipe_ingredients.is_section`.
-            Not yet on production; the app half is unbuilt and nothing uses the
-            column.
+            Not yet on production; the UI half is unbuilt and no shipped build
+            writes the column.
+      - [x] **The DATA half works, verified on device 2026-08-06.** Importing
+            ambitiouskitchen's cinnamon rolls now flags DOUGH / FILLING / CREAM
+            CHEESE FROSTING as sections, keeps **"Extra-virgin olive oil"** as a
+            real ingredient (the amountless case that detection could have
+            hidden), and puts **no headings** in the plan snapshot or on the
+            shopping list. Checked in the database, not on the screen.
+      - **⚠️ IT TOOK THREE DEVICE BUILDS, AND THE LESSON IS STRUCTURAL.** The
+            importer was right the whole time; the editor threw the flag away at
+            **six** separate places – the import handoff, the edit load, the
+            sheet's add and edit branches, and BOTH save branches. Each site
+            rebuilt `{ name, quantityText }` by hand, so adding a field to the
+            shared type could not make any of them fail to compile. It passed
+            typecheck, lint, a device build and a careful re-read, twice.
+            **What actually fixed it: making `isSection` REQUIRED on
+            `DraftIngredient` rather than optional.** It found the sixth site
+            within seconds. An optional field is one the compiler cannot help
+            with, and the editor also had a *duplicate local* `DraftIngredient`
+            shadowing the shared one – same name, narrower shape, no complaint.
+            Both are gone; `toDraftIngredients()` is the single conversion.
+            THE RULE: when a shape is built by hand in more than one place, make
+            new fields required and give it one constructor. Vigilance is not a
+            mechanism.
       - **NAMED "Section", NOT "Category"** (proposed by Claude, agreed by
             Thomas, corrected in Figma the same day). **"Category" already means
             the shopping list's aisles** – there is a `CategoryGroup` component,
