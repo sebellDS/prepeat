@@ -1236,65 +1236,6 @@ Closed 2026-07-27:
 
 ## Ideas – not yet committed
 
-- [ ] **A second, free Supabase project as a DEV environment** (Thomas
-      2026-08-04, wants to decide later – logged so the reasoning is not
-      re-derived). Today every dev run reads and writes the household's REAL
-      data; a test recipe invented at 11pm appears on his wife's phone.
-      **THERE IS NO BLOCKER. This is a cost/benefit call, not a technical one** –
-      I first recommended waiting, and that was me weighting Thomas's
-      complexity fatigue heavily an hour after he said the setup had got out of
-      hand. He may weigh it differently, and that is a reasonable call.
-      **WHY A CLOUD PROJECT RATHER THAN THE LOCAL DOCKER ONE.** This reverses
-      the morning's decision, on a constraint Thomas raised: **his phone is not
-      always on the same wifi as the Mac** (mainly at work), and local Supabase
-      can only ever serve a device on the same network. A cloud database is
-      reachable from anywhere. Local Docker stays for migration replay, which
-      needs no network and is the genuinely dangerous part.
-      **THE ONE THING THAT MUST BE RIGHT AT CREATION TIME: put the dev project
-      in a SEPARATE ORGANISATION from production.** Supabase bills per
-      organisation, so a dev project sitting alongside production starts
-      costing $10/mo the day production goes Pro. In its own Free organisation
-      it is free permanently. Easy now, annoying later.
-      **The three costs, weighed:**
-      1. Migrations get applied twice, dev first. Barely a tax – that ordering
-         IS the test.
-      2. A free project pauses after a week unused; restoring is a click and a
-         couple of minutes.
-      3. A third environment – but Thomas does not hold it, this file and
-         CLAUDE.md do.
-      **Two things to know before starting:**
-      - **Sign-in.** Live OTP email goes through Resend, configured on
-        production only. A dev project falls back to Supabase's built-in
-        sender, which on the free plan delivers only to addresses on the
-        project – so Thomas could sign in, family members could not. Fine for
-        dev.
-      - **Dev starts empty.** Better than restoring a production backup into
-        it: that would spread real user emails into a second cloud project for
-        no benefit. Make a test household instead.
-      **The end state:** `.env` on the Mac points at DEV, so everything run
-      locally and every build on Thomas's own phone is dev. EAS keeps its own
-      variables, so **TestFlight and the App Store stay on production**. One
-      rule, and the safe option is the default.
-      **SUPABASE PRO DOES NOT SOLVE THIS** (Thomas asked, 2026-08-04; checked
-      against Supabase's own docs rather than answered from memory). Pro
-      protects ONE project – backups, capacity, support. It buys no second
-      database.
-      **Supabase BRANCHING was evaluated and rejected**, so it does not get
-      re-proposed: it needs Pro or above, and although there is no fixed fee,
-      usage runs ~$0.0134/hour on default compute – a permanently-up branch is
-      ~$10/mo, the same as simply adding a project. Worse, it is built around
-      pull requests (preview branches pause when idle and are DELETED when the
-      PR closes; Thomas does not work in PRs), **every branch has its own URL
-      and keys, so pointing an iPhone at one means a new build each time**, and
-      branching is explicitly NOT covered by the spend cap.
-      **So the two decisions are INDEPENDENT.** A dev project in its own Free
-      organisation stays free whether or not production ever goes Pro – either,
-      both or neither is coherent.
-      **Related trigger:** the argument becomes overwhelming at the same moment
-      as the Supabase Pro one – real users who cannot be phoned, at which point
-      "I was just testing" stops being an acceptable explanation. Same trigger,
-      so decide them in one sitting; but one does not buy the other.
-
 - [ ] **The app is unusable offline, and the shopping list is where that
       hurts** (found 2026-08-03 by Thomas testing the retry screens).
       Force-quit the app, lose signal, reopen: you get "Can't reach your
@@ -1943,6 +1884,62 @@ missing from it entirely.
       ds-theme.cjs and walk the affected screens (agreed 2026-07-12).
 
 ## Decisions log (recent)
+
+- **2026-08-04 – DONE: a second, free Supabase project as the DEV environment.**
+  Thomas decided to do it now rather than at the trigger. Until today every dev
+  run read and wrote the household's REAL data – a test recipe invented at 11pm
+  appeared on his wife's phone.
+  **The shape, which turned out cleaner than expected because the app already
+  had half of it:**
+  | | database | how it is built |
+  |---|---|---|
+  | **Prep+Eat (dev)**, `app.prepeat.dev` | DEV | `./scripts/build-iphone.sh`, and `npm start` |
+  | **Prep+Eat**, `app.prepeat` | PRODUCTION | TestFlight / App Store, via EAS |
+  `APP_VARIANT=dev` already gave the direct-to-device build its own bundle id,
+  name and icon, so the two install **side by side** on the phone. Nothing had
+  to be built for that.
+  **`.env` on the Mac points at DEV; EAS on Expo's servers points at
+  PRODUCTION** – verified with `eas env:list`, not assumed. `.env` keeps the
+  production pair as commented lines directly beneath, so switching back is a
+  two-line edit rather than a hunt through the dashboard.
+  **Setup facts worth keeping:**
+  - Project `rulasawjdtymovobrovv`, **in a separate Free organisation
+    ("Sebell Dev")** – a Pro org bills every project in it, so this is what
+    keeps dev free forever.
+  - **Postgres 17.6, North EU (Stockholm)** – deliberately identical to
+    production, since a test bed on a different engine or region proves less.
+  - Migrations applied with `supabase db push --db-url`, which needs no
+    `supabase login` and records the migration ledger properly. All 30 applied
+    clean, and dev came out an exact structural twin: 15 tables, 25 functions,
+    19 policies, both roles granted on all 15 tables.
+  - **GitHub integration deliberately NOT connected.** It auto-applies
+    migrations on push, which is the opposite of the point – the value of a dev
+    environment is that applying a migration is a deliberate act you can test
+    before repeating it on production.
+  - **Sign-in on dev** uses Supabase's built-in sender, not Resend (which is
+    configured on production only), so it delivers to Thomas but not to family
+    members. Fine for dev.
+
+- **⚠️ 2026-08-04 – the migrations do NOT grant table access, and that is a
+  time bomb.** Found while creating the dev project, and it nearly broke it.
+  The migrations only ever `grant` on three FUNCTIONS; they never grant
+  anything on a TABLE. Production's `anon`/`authenticated` grants on all 15
+  tables come from the project-level **"Automatically expose new tables"**
+  setting, not from any SQL in this repo.
+  **So the migrations are not self-contained.** A database rebuilt from them
+  alone – a restore, a new dev project, a future migration to another host –
+  comes out with 15 tables the app cannot read, failing in a way production
+  never does. Ticking that box on the dev project is the only reason it works.
+  **AND THE SETTING IS BEING REMOVED.** `supabase/config.toml` records that
+  `auto_expose_new_tables` disappears on **2026-10-30**, once always-revoked
+  becomes permanent. After that date a newly created project cannot be told to
+  auto-expose at all, and the repo's migrations will produce a broken database
+  with no switch to flip.
+  **The fix, before that date:** a migration that grants explicitly
+  (`grant select, insert, update, delete on ... to authenticated`, matching
+  what production has today), so the SQL carries its own permissions. Cheap
+  now; discovered during a restore it would be very expensive. Verify against
+  production's actual grants rather than guessing at the list.
 
 - **2026-08-04 – what protects the database once strangers have data in it.**
   *(The runbook – commands, file locations, what is installed on the Mac, and

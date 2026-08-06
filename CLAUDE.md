@@ -29,6 +29,15 @@ Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
   hardcoded in components.
 - Supabase: Postgres + Realtime + Auth + RLS. Client at `src/lib/supabase.ts`,
   schema migrations in `supabase/migrations/`.
+  **Three environments (since 2026-08-04) – know which one you are touching:**
+  | | database | reached by |
+  |---|---|---|
+  | **dev** `rulasawjdtymovobrovv` | Prepeat Dev, own Free org | `.env` on the Mac – so `npm start` and `./scripts/build-iphone.sh` (`app.prepeat.dev`, installs beside the real app) |
+  | **production** `wfrusfivvnutrtddyhiz` | real users | EAS variables on Expo's servers – TestFlight and App Store only |
+  | **local** | Docker | `npm run db:start` – migration replay, no network |
+  A migration goes **dev first, then production**, never the other way. Apply
+  to dev with `npx supabase db push --db-url "$SUPABASE_DEV_DB_URL"` (the URL
+  is in `~/.prepeat-dev.env`, gitignored and outside the repo).
 - Figma MCP for design-to-code: screens are designed in Figma and implemented
   from frames via the Figma integration.
 
