@@ -57,12 +57,16 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
       - **Sections are REORDERABLE** – the Figma header carries a drag_handle,
             and there is one "Add ingredient" button at the end of the list
             rather than one per section.
-      - [ ] **Two wording questions still open** (raised 2026-08-04, Thomas's
-            call): the sheet title stays **"Add ingredient" even on the Section
-            tab**, so you add a section under a heading that says otherwise –
-            dynamic title, or something neutral like "Add to recipe"? And the
-            two placeholders are inconsistent: "Cherry tomatoes" (a bare
-            example) beside "e.g. 250g" (prefixed).
+      - [x] **Wording settled and corrected in Figma 2026-08-04.** The sheet
+            **title follows the tab** – "Add ingredient" / "Add section"
+            (`496:5765`), rather than one neutral title for both. And
+            **placeholders all carry "e.g."**: "e.g. Cherry tomatoes" beside
+            the existing "e.g. 250g".
+            ⚠️ **One improvisation to sanity-check when building:** the Section
+            tab has no EMPTY-state frame – it is only drawn holding "Dough" as a
+            value, so its Name placeholder is undrawn. Following the rule above
+            it should be **"e.g. Dough"**, but that is Claude's inference from
+            the ingredient field, not something Thomas drew.
 
 - [x] **Build 14 shipped to TestFlight, VALID (2026-08-03).** Carries the
       leftover move and the two checkbox fixes; cut from the code as it stood
