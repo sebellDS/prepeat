@@ -80,6 +80,13 @@ disturbing the review queue – the same call as builds 13 and 14.
   and marks the right day as today. Before, it could still be showing last
   week, so a meal added to what looked like this week landed on the finished
   one.
+- **Recipes can have sections now.** A recipe that groups its ingredients –
+  Dough, Filling, Frosting – keeps those headings instead of listing them as
+  things to buy, and they no longer turn up on your shopping list. Imported
+  recipes get their sections automatically; you can also add, rename and delete
+  your own.
+- Reordering ingredients has a new look, and shows your sections while you
+  drag, so you can see what you are moving.
 - Imported recipes read properly: no more "chef&rsquo;s" or "cr&egrave;me" in
   the middle of a title, and a recipe written with "½" keeps its amount instead
   of losing it off the shopping list.
