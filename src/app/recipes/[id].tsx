@@ -395,9 +395,25 @@ export default function RecipeDetailScreen() {
                 key={group.section ? group.section.row.id : `g${groupIndex}`}
               >
                 {group.section != null && (
-                  <Text className="w-full font-header text-display-6 font-emphasized leading-xsmall text-text-default">
-                    {group.section.row.name}
-                  </Text>
+                  <View className="w-full flex-row items-center gap-comp-small">
+                    <Text className="flex-1 font-header text-display-6 font-emphasized leading-xsmall text-text-default">
+                      {group.section.row.name}
+                    </Text>
+                    {recipe.ingredients.length > 1 && (
+                      <Pressable
+                        onPress={() => setReordering("ingredients")}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel="Reorder ingredients"
+                      >
+                        <MaterialIcons
+                          name="drag-handle"
+                          size={24}
+                          color={ds.colors.text.accent}
+                        />
+                      </Pressable>
+                    )}
+                  </View>
                 )}
                 {group.rows.length > 0 && (
             <View className="w-full overflow-hidden rounded-large">

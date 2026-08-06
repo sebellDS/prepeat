@@ -415,14 +415,25 @@ export default function AddRecipeScreen() {
               <Fragment key={group.section ? `s${group.section.index}` : `g${groupIndex}`}>
                 {group.section != null && (
                   <View className="w-full flex-row items-center gap-comp-small">
-                    <Text className="flex-1 font-header text-display-6 font-emphasized text-text-default">
-                      {group.section.row.name}
-                    </Text>
+                    {/* Tap the NAME to rename; the handle reorders, which is
+                        what the Figma header draws it for. */}
                     <Pressable
-                      onPress={() => setIngredientSheet({ index: group.section!.index })}
-                      hitSlop={8}
+                      className="flex-1"
+                      onPress={() =>
+                        setIngredientSheet({ index: group.section!.index })
+                      }
                       accessibilityRole="button"
                       accessibilityLabel={`Edit section ${group.section.row.name}`}
+                    >
+                      <Text className="font-header text-display-6 font-emphasized text-text-default">
+                        {group.section.row.name}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setReordering("ingredients")}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Reorder ingredients"
                     >
                       <MaterialIcons
                         name="drag-handle"
