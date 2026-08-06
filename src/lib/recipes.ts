@@ -453,11 +453,16 @@ export async function updateIngredient(
   id: string,
   name: string,
   quantityText: string | null,
+  isSection = false,
 ): Promise<void> {
-  const { quantity, unit } = parseQuantity(quantityText);
+  // Switching an ingredient to a heading drops its amount, because a heading
+  // has none - that is what the sheet's Section tab means.
+  const { quantity, unit } = isSection
+    ? { quantity: null, unit: null }
+    : parseQuantity(quantityText);
   const { error } = await supabase
     .from("recipe_ingredients")
-    .update({ name: name.trim(), quantity, unit })
+    .update({ name: name.trim(), quantity, unit, is_section: isSection })
     .eq("id", id);
   if (error) throw error;
 }

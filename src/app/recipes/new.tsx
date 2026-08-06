@@ -615,29 +615,32 @@ export default function AddRecipeScreen() {
             ? (ingredients[ingredientSheet.index]?.quantityText ?? "")
             : ""
         }
+        initialKind={
+          ingredientSheet != null &&
+          ingredientSheet !== "add" &&
+          ingredients[ingredientSheet.index]?.isSection
+            ? "section"
+            : "ingredient"
+        }
         onClose={() => setIngredientSheet(null)}
-        onSubmit={(name, quantityText) => {
+        onSubmit={(name, quantityText, kind) => {
           const target = ingredientSheet;
+          const isSection = kind === "section";
           setIngredientSheet(null);
+          const row = { name, quantityText: quantityText ?? "", isSection };
           if (target === "add") {
-            setIngredients((current) => [
-              ...current,
-              // The sheet cannot create a heading yet - that arrives with the
-              // Section tab - so anything added here is an ingredient.
-              { name, quantityText: quantityText ?? "", isSection: false },
-            ]);
+            setIngredients((current) => {
+              // Decision 1 (Thomas, 2026-08-04): the FIRST section absorbs the
+              // ingredients already listed, rather than appearing empty below
+              // them - so it goes in at the top. Later sections append, since
+              // the rows under them have not been written yet.
+              const firstSection =
+                isSection && !current.some((existing) => existing.isSection);
+              return firstSection ? [row, ...current] : [...current, row];
+            });
           } else if (target != null) {
             setIngredients((current) =>
-              current.map((existing, i) =>
-                i === target.index
-                  ? {
-                      name,
-                      quantityText: quantityText ?? "",
-                      // Renaming a heading keeps it a heading.
-                      isSection: existing.isSection,
-                    }
-                  : existing,
-              ),
+              current.map((existing, i) => (i === target.index ? row : existing)),
             );
           }
         }}

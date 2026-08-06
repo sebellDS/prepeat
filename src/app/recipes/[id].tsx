@@ -684,19 +684,28 @@ export default function RecipeDetailScreen() {
             ? (editingIngredient.quantityText ?? "")
             : ""
         }
+        initialKind={
+          editingIngredient !== null &&
+          editingIngredient !== "new" &&
+          editingIngredient.isSection
+            ? "section"
+            : "ingredient"
+        }
         onClose={() => setEditingIngredient(null)}
-        onSubmit={async (name, quantityText) => {
+        onSubmit={async (name, quantityText, kind) => {
           const target = editingIngredient;
+          const isSection = kind === "section";
           setEditingIngredient(null);
           try {
             if (target !== null && target !== "new") {
-              await updateIngredient(target.id, name, quantityText);
+              await updateIngredient(target.id, name, quantityText, isSection);
             } else {
               await addIngredient(
                 recipe.id,
                 name,
                 quantityText,
                 recipe.ingredients.length,
+                isSection,
               );
             }
           } catch (error) {

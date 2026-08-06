@@ -20,6 +20,7 @@ import {
 
 import { WeekBar } from "@/components/plan/week-bar";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { TabItem } from "@/components/ui/tabs";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
 import { ServingsCounter } from "@/components/recipes/servings-counter";
@@ -151,40 +152,6 @@ function SheetTabs({
         onPress={() => onChange("manual")}
       />
     </View>
-  );
-}
-
-function TabItem({
-  label,
-  active,
-  divider = false,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  divider?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      className={
-        "flex-1 items-center justify-center px-layout-xsmall py-layout-small " +
-        (active ? "bg-surface-secondary-main " : "") +
-        (divider ? "border-r border-surface-neutral-lightest" : "")
-      }
-    >
-      <Text
-        className={
-          "font-paragraph text-small font-emphasized leading-xxsmall " +
-          (active ? "text-text-inverse" : "text-text-default")
-        }
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
