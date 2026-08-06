@@ -418,7 +418,10 @@ export default function AddRecipeScreen() {
                 goes. */}
             {!ingredients.some((row) => row.isSection) && (
             <View className="w-full flex-row items-center">
-              <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
+              {/* Same style as a section heading (Thomas, 2026-08-06): the
+                  first section REPLACES this line, so they are one slot and
+                  must not change typeface when that happens. */}
+              <Text className="flex-1 font-header text-display-6 font-emphasized text-text-default">
                 Ingredients
               </Text>
               {ingredients.length > 1 && (

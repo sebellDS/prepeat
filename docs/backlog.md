@@ -73,6 +73,12 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
             4. **Delete every section and the "Ingredients" header comes back.**
       - **Sheet colour: match the add-meal sheet**, not a DS-wide retune – so
             no other screens need walking.
+      - **The "Ingredients" header uses the SAME style as a section heading**
+            (`header/display-6`, Montserrat) – Thomas, 2026-08-06, asked because
+            no frame draws "Ingredients" in the new style and guessing would
+            have invented it. It follows from decision 1: the first section
+            *replaces* that line, so they are one slot and it must not change
+            typeface the moment a section appears.
       - **Reuse, do not rebuild:** `add-meal-sheet.tsx` already has the tab
             component the design uses (`TabItem`, "Recipes"/…), and section
             headers want the Shopping screen's drag-handle reorder pattern.
