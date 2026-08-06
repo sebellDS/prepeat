@@ -401,9 +401,12 @@ export default function RecipeDetailScreen() {
                 )}
                 {group.rows.length > 0 && (
             <View className="w-full overflow-hidden rounded-large">
-              {group.rows.map(({ row: ingredient, index }) => (
+              {group.rows.map(({ row: ingredient }, rowIndex) => (
                 <Fragment key={ingredient.id}>
-                  {index > 0 && <RowDivider />}
+                  {/* Position WITHIN the card, not in the whole list - the
+                      heading holds index 0, so the original index would draw a
+                      divider above every section's first row. */}
+                  {rowIndex > 0 && <RowDivider />}
                   <IngredientRow
                   ingredient={ingredient}
                   quantityText={scaledQuantityText(
