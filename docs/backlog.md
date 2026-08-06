@@ -1931,6 +1931,38 @@ missing from it entirely.
 
 ## Decisions log (recent)
 
+- **⚠️ 2026-08-06 – `get_design_context` output embeds STALE token values, and
+  I read them out loud three times before Thomas caught it.** *"You keep saying
+  you are using noto serif bold, but that's not the correct font. I think you
+  keep reading the wrong tokens."* He was right, and the rule already existed
+  (CLAUDE.md: published Figma library values lag the DS repo) – what was
+  missing was noticing WHERE the stale value hides.
+  **The trap:** the MCP returns CSS custom properties with a fallback baked in –
+  `var(--typography/font-family/header, 'Noto_Serif:Bold')`. The NAME before the
+  comma is authoritative. The VALUE after it is Figma's published library, which
+  lags. It reads like a spec and is not one.
+  **What was actually wrong on 2026-08-06**, Figma fallback → real DS value in
+  `src/constants/ds-theme.cjs`:
+  | token | Figma said | DS says |
+  |---|---|---|
+  | `font-family/header` | Noto Serif | **Montserrat** |
+  | `font-family/paragraph` | Noto Sans | **IBM Plex Sans** |
+  | `text/default` | `#0a0f0b` | **`#4F4230`** |
+  | `text/subtle` | `#476b4a` | **`#5F503A`** |
+  Independent corroboration that took ten seconds and should have been the first
+  move: `package.json` installs `@expo-google-fonts/montserrat` and
+  `@expo-google-fonts/ibm-plex-sans`, and no Noto anything.
+  **Also found: `color/text/primary` does not exist in the DS at all.** The text
+  group is default/subtle/disabled/link/brand/accent/inverse/danger/success/
+  warning/info. Figma's frames name a token the token set does not have, so a
+  literal translation would invent a colour. Nearest real token is
+  `text/default`, which is what the existing headers already use.
+  **THE RULE, sharpened: take the token NAME from Figma and the VALUE from
+  `ds-theme.cjs`. Never quote a value that came out of the Figma payload** – not
+  in code, not in conversation, because saying it aloud is how it gets believed.
+  If a name has no match in `ds-theme.cjs`, that is a finding to raise, not a
+  gap to fill.
+
 - **2026-08-04 – DONE: a second, free Supabase project as the DEV environment.**
   Thomas decided to do it now rather than at the trigger. Until today every dev
   run read and wrote the household's REAL data – a test recipe invented at 11pm
