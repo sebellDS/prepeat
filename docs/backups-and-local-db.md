@@ -221,6 +221,37 @@ gap described above, with a concrete face on it.
 
 ---
 
+## ⚠️ Creating a Supabase project for this app
+
+**The migrations are not enough.** Five things live only in the dashboard, and
+each one breaks the app in a way that does not point at its cause. Written
+2026-08-04 after the dev project rediscovered two of them the hard way, and the
+same list applies to a disaster restore into a new project.
+
+| Setting | Value | What goes wrong otherwise |
+|---|---|---|
+| **Automatically expose new tables** | **ON** | The migrations never `grant` on tables – only on three functions. Off, and you get 15 tables the app cannot read. |
+| **Email OTP Length** | **6** | New projects default to **8**. The app truncates to 6 (`CODE_LENGTH`), so every sign-in fails as "invalid code". |
+| **SMTP** | Resend | Supabase's built-in sender only reaches project members, AND locks template editing – so you cannot get a code at all. |
+| **Email templates** | `{{ .Token }}` | The stock templates send a confirmation LINK. The app expects a code and there is no way to complete sign-in. |
+| **Region + Postgres** | eu-north-1, 17 | Match production, or the test bed proves less than it appears to. |
+
+SMTP settings that work, for reference: host `smtp.resend.com`, port `465`,
+username `resend`, password = a Resend API key scoped to `prepeat.app`, sender
+`dev@prepeat.app` (a distinct address so a dev code is never mistaken for a
+real one). Both **Confirm signup** and **Magic Link** templates need the token –
+the first fires for an address the project has never seen, the second every
+time after.
+
+**The pattern worth noticing:** every item here is a project setting the repo
+does not carry. `CODE_LENGTH = 6` had a code comment recording the 2026-07-07
+change, and it still cost an hour, because a comment in a component is not
+where anyone looks while creating a database. Configuration that the app
+depends on belongs in a checklist like this one, not only next to the code that
+assumes it.
+
+---
+
 ## Restoring for real
 
 `npm run backup:verify` runs exactly this against the local database, which is

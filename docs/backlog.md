@@ -1916,9 +1916,43 @@ missing from it entirely.
     migrations on push, which is the opposite of the point – the value of a dev
     environment is that applying a migration is a deliberate act you can test
     before repeating it on production.
-  - **Sign-in on dev** uses Supabase's built-in sender, not Resend (which is
-    configured on production only), so it delivers to Thomas but not to family
-    members. Fine for dev.
+  - **Sign-in on dev needed FOUR things nobody had written down**, and getting
+    there took an hour of blind debugging. Full checklist now in
+    [backups-and-local-db.md](backups-and-local-db.md) → "Creating a Supabase
+    project for this app". In the order they bit:
+    1. **The built-in sender is not enough.** It reaches only project members
+       AND locks template editing, so custom SMTP is a prerequisite, not an
+       upgrade. Resend, same account as production, key scoped to
+       `prepeat.app`, sender `dev@prepeat.app` so a dev code is never mistaken
+       for a real one.
+    2. **Stock templates send a LINK, not a code.** `{{ .Token }}` is the whole
+       trick. BOTH **Confirm signup** (an address the project has never seen)
+       and **Magic Link** (every time after) need it – fixing only one leaves a
+       failure that looks intermittent.
+    3. **⚠️ Email OTP Length defaults to 8 on new projects; this app needs 6.**
+       The killer, because it fails silently: `CODE_LENGTH = 6` in
+       `onboarding-flow.tsx` truncates the input, so the app submits the first
+       6 digits of an 8-digit code and Supabase correctly says "invalid". The
+       app, the template and the typing all look fine.
+    4. Email confirmation left ON, matching production. (Turning it off was
+       floated as a fix and withdrawn – it was working around a symptom of #3.)
+
+- **⚠️ 2026-08-04 – a pattern, now twice: the app depends on Supabase settings
+  the repo does not carry.** Worth naming, because both instances were found by
+  accident within an hour of each other while building the dev project.
+  1. **Table grants** come from "Automatically expose new tables", not from any
+     SQL here (see the entry below).
+  2. **OTP length** must be 6; new projects default to 8.
+  Neither is in a migration, so **a database rebuilt from this repo alone is
+  subtly broken** – and both fail in ways that point somewhere else entirely.
+  THE SHARPER LESSON, from #2: **the knowledge already existed.**
+  `CODE_LENGTH = 6` carried a comment recording the 2026-07-07 change from 8,
+  and it still cost an hour – because a comment next to the code that assumes a
+  setting is not where anyone looks while creating a database. Configuration
+  the app depends on belongs in the setup checklist; the comment now points at
+  it rather than standing alone.
+  **This is also a restore risk**, not just a dev-setup annoyance: a disaster
+  recovery into a fresh project hits every one of these, on the worst day.
 
 - **⚠️ 2026-08-04 – the migrations do NOT grant table access, and that is a
   time bomb.** Found while creating the dev project, and it nearly broke it.

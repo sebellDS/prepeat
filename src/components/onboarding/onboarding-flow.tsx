@@ -585,7 +585,13 @@ function Field({
   );
 }
 
-// Codes are 6 digits (Supabase auth setting, shortened from 8 on 2026-07-07).
+// ⚠️ THIS MUST MATCH "Email OTP Length" IN THE SUPABASE PROJECT.
+// Production was shortened from 8 to 6 on 2026-07-07. New Supabase projects
+// still default to 8, and the input below silently truncates anything longer -
+// so an 8-digit project makes every sign-in fail as "invalid code" with no hint
+// that a dashboard toggle is the cause. That cost an hour on the dev project
+// (2026-08-04); the setup checklist in docs/backups-and-local-db.md now covers
+// it. Change this only alongside the setting, in every project at once.
 export const CODE_LENGTH = 6;
 
 /**
