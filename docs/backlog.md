@@ -62,11 +62,14 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
             (`496:5765`), rather than one neutral title for both. And
             **placeholders all carry "e.g."**: "e.g. Cherry tomatoes" beside
             the existing "e.g. 250g".
-            ⚠️ **One improvisation to sanity-check when building:** the Section
-            tab has no EMPTY-state frame – it is only drawn holding "Dough" as a
-            value, so its Name placeholder is undrawn. Following the rule above
-            it should be **"e.g. Dough"**, but that is Claude's inference from
-            the ingredient field, not something Thomas drew.
+            The Section field's placeholder is **"e.g. Sauce"** (Thomas, drawn
+            in Figma the same day). Claude proposed "e.g. Dough" from the
+            ingredient field and Thomas rejected it, rightly: it only makes
+            sense to someone who bakes, and it repeated the word the filled
+            frame already used, so the example taught nothing. "Sauce" is a part
+            of the dish in almost any cuisine. **The rule for any future
+            placeholder here: one concrete example, universal rather than
+            domain-locked, and never the same word the filled state shows.**
 
 - [x] **Build 14 shipped to TestFlight, VALID (2026-08-03).** Carries the
       leftover move and the two checkbox fixes; cut from the code as it stood
