@@ -37,20 +37,22 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
             identical to dev, 0 rows flagged - nothing is backfilled.
             **SAFE FOR THE PHONES:** additive only, and every installed build
             selects named columns, so TestFlight build 14 is unaffected.
-      - **⚠️ PRODUCTION HAS NO MIGRATION LEDGER, and `supabase db push` would
-            therefore try to apply ALL 31 MIGRATIONS TO IT.** Found 2026-08-06
-            while applying 0031: `supabase_migrations.schema_migrations` does
-            not exist there, because production's history was applied by hand
-            through the SQL editor. A push would have re-run everything -
-            including **0022, which DROPS columns**.
-            So production migrations are applied one file at a time with
-            `psql --single-transaction -f <file>`, never with `db push`. Dev
-            has a ledger (it was created by push) and is fine.
-            **Worth fixing properly**: creating the ledger and recording 0001
-            to 0031 as applied would make production pushable and end the
+      - [x] **⚠️ PRODUCTION HAD NO MIGRATION LEDGER – created 2026-08-06.**
+            Found while applying 0031: `supabase_migrations.schema_migrations`
+            did not exist there, because production's history had been applied
+            by hand through the SQL editor. **`supabase db push` would have
+            treated production as empty and re-run all 31 migrations, including
+            0022, which DROPS columns.** One query to check; not checking would
+            have caused the worst outage this project has had, using a command
+            that looks routine.
+            Fixed rather than worked around. The ledger's 31 rows were derived
+            from the migration FILENAMES, after verifying those were
+            byte-identical to the ledger the CLI itself wrote on the dev project
+            - a copy of a known-good ledger, not a guess. Verified with
+            `db push --dry-run`: *"Remote database is up to date"*, 0 pending.
+            **So production is now pushable like dev**, which ends the
             hand-application that once half-applied a migration (the SQL editor
-            runs only what is highlighted). Thomas's call - it is a change to
-            production, and the safe manual path works today.
+            runs only what is highlighted, 2026-07-30).
       - [x] **The DATA half works, verified on device 2026-08-06.** Importing
             ambitiouskitchen's cinnamon rolls now flags DOUGH / FILLING / CREAM
             CHEESE FROSTING as sections, keeps **"Extra-virgin olive oil"** as a

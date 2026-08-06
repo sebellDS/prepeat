@@ -35,9 +35,13 @@ Eat. Repeat." The old working name "Madapp" may linger in docs/projektgrundlag.
   | **dev** `rulasawjdtymovobrovv` | Prepeat Dev, own Free org | `.env` on the Mac – so `npm start` and `./scripts/build-iphone.sh` (`app.prepeat.dev`, installs beside the real app) |
   | **production** `wfrusfivvnutrtddyhiz` | real users | EAS variables on Expo's servers – TestFlight and App Store only |
   | **local** | Docker | `npm run db:start` – migration replay, no network |
-  A migration goes **dev first, then production**, never the other way. Apply
-  to dev with `npx supabase db push --db-url "$SUPABASE_DEV_DB_URL"` (the URL
-  is in `~/.prepeat-dev.env`, gitignored and outside the repo).
+  A migration goes **dev first, then production**, never the other way. Both
+  take `npx supabase db push --db-url "$URL"` – dev from `~/.prepeat-dev.env`,
+  production from `~/.prepeat-backup.env`, both gitignored and outside the repo.
+  **Always `--dry-run` against production first and read what it lists.**
+  Production had no migration ledger until 2026-08-06, and a push would have
+  re-run all 31 migrations including the one that drops columns; the ledger
+  exists now, but the dry run is what proves it.
 - Figma MCP for design-to-code: screens are designed in Figma and implemented
   from frames via the Figma integration.
 
