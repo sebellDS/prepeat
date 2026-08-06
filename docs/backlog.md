@@ -30,9 +30,27 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
       Came out of importing ambitiouskitchen.com's cinnamon rolls, where
       "DOUGH"/"FILLING"/"CREAM CHEESE FROSTING" arrived as ingredients with no
       amount – and would have landed on the shopping list.
-      - [x] **Migration 0031 applied to DEV** – `recipe_ingredients.is_section`.
-            Not yet on production; the UI half is unbuilt and no shipped build
-            writes the column.
+      - [x] **Migration 0031 applied to DEV, then PRODUCTION (2026-08-06)** –
+            `recipe_ingredients.is_section`. Backed up first, all 31 migrations
+            replayed onto an empty local database first, and the restore
+            re-verified afterwards (7,249 rows exact). Production came out
+            identical to dev, 0 rows flagged - nothing is backfilled.
+            **SAFE FOR THE PHONES:** additive only, and every installed build
+            selects named columns, so TestFlight build 14 is unaffected.
+      - **⚠️ PRODUCTION HAS NO MIGRATION LEDGER, and `supabase db push` would
+            therefore try to apply ALL 31 MIGRATIONS TO IT.** Found 2026-08-06
+            while applying 0031: `supabase_migrations.schema_migrations` does
+            not exist there, because production's history was applied by hand
+            through the SQL editor. A push would have re-run everything -
+            including **0022, which DROPS columns**.
+            So production migrations are applied one file at a time with
+            `psql --single-transaction -f <file>`, never with `db push`. Dev
+            has a ledger (it was created by push) and is fine.
+            **Worth fixing properly**: creating the ledger and recording 0001
+            to 0031 as applied would make production pushable and end the
+            hand-application that once half-applied a migration (the SQL editor
+            runs only what is highlighted). Thomas's call - it is a change to
+            production, and the safe manual path works today.
       - [x] **The DATA half works, verified on device 2026-08-06.** Importing
             ambitiouskitchen's cinnamon rolls now flags DOUGH / FILLING / CREAM
             CHEESE FROSTING as sections, keeps **"Extra-virgin olive oil"** as a
