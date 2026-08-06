@@ -36,11 +36,7 @@ import {
   updateRecipeFacts,
   uploadRecipePhoto,
 } from "@/lib/recipes";
-
-interface DraftIngredient {
-  name: string;
-  quantityText: string;
-}
+import type { DraftIngredient } from "@/lib/recipes";
 
 /** Leading number in "10 min" style time fields; empty/absent → null. */
 function parseMinutes(text: string): number | null {
@@ -109,6 +105,7 @@ export default function AddRecipeScreen() {
           recipe.ingredients.map((ingredient) => ({
             name: ingredient.name,
             quantityText: ingredient.quantityText ?? "",
+            isSection: ingredient.isSection,
           })),
         );
         setSteps(recipe.steps.map((step) => step.text));
@@ -143,6 +140,7 @@ export default function AddRecipeScreen() {
       imported.ingredients.map((ingredient) => ({
         name: ingredient.name,
         quantityText: ingredient.quantityText ?? "",
+        isSection: ingredient.isSection === true,
       })),
     );
     setSteps(imported.steps);
@@ -413,7 +411,7 @@ export default function AddRecipeScreen() {
                           <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
                             {ingredient.name}
                           </Text>
-                          {ingredient.quantityText.length > 0 && (
+                          {(ingredient.quantityText?.length ?? 0) > 0 && (
                             <Text className="font-paragraph text-paragraph font-default text-text-subtle">
                               {ingredient.quantityText}
                             </Text>
@@ -570,13 +568,22 @@ export default function AddRecipeScreen() {
         onSubmit={(name, quantityText) => {
           const target = ingredientSheet;
           setIngredientSheet(null);
-          const row = { name, quantityText: quantityText ?? "" };
           if (target === "add") {
-            setIngredients((current) => [...current, row]);
+            setIngredients((current) => [
+              ...current,
+              { name, quantityText: quantityText ?? "" },
+            ]);
           } else if (target != null) {
             setIngredients((current) =>
               current.map((existing, i) =>
-                i === target.index ? row : existing,
+                i === target.index
+                  ? {
+                      name,
+                      quantityText: quantityText ?? "",
+                      // Renaming a heading keeps it a heading.
+                      isSection: existing.isSection,
+                    }
+                  : existing,
               ),
             );
           }
