@@ -52,21 +52,35 @@ Two more rules this file exists to keep straight:
 
 ## Accumulating toward the next version
 
-Whatever is here is on the dev build ONLY: not on TestFlight, not in review, and
-it needs a build to reach anyone. The section grows as changes land and empties
-each time a build ships – it is empty right now.
+More goes in before this ships, so this section grows. On the dev build only:
+not on TestFlight, not in review, and it needs a build to reach anyone.
 
-**This will be 1.1.0** under the rule above – not a choice, just what the rule
-says: it carries a new capability (moving leftovers between weeks) alongside
-the fixes, and a feature makes it MINOR. It stays unnumbered in `app.json`
-until it is actually being prepared for submission, and v1.0.0 has to be
-approved and released first either way.
+**This will be 1.1.0** under the rule above – a new capability (moving
+leftovers between weeks, and now ingredient sections) alongside the fixes, and
+a feature makes it MINOR. It stays unnumbered in `app.json` until it is
+actually being prepared for submission, and v1.0.0 has to be approved and
+released first either way.
 
-Builds 13, 14 and 15 below were briefly logged as a "1.0.1" when fixes were the
-only thing waiting. They all go out together under this instead.
+_(nothing yet – build 16 took everything below)_
 
-Nothing is accumulating here right now – everything committed so far is in
-build 15.
+## Build 16 – TestFlight 2026-08-06 (VALID, not in review)
+
+Uploaded 22:03 CEST, VALID three minutes later. Everything that had
+accumulated since build 15 on 2026-08-04. **Needs migration 0031**, which was
+applied to production the same evening – the sections would be invisible
+without it.
+
+- **Recipes can have sections now.** A recipe that groups its ingredients –
+  Dough, Filling, Frosting – keeps those headings instead of listing them as
+  things to buy, and they no longer turn up on your shopping list. Imported
+  recipes get their sections automatically; you can also add, rename and delete
+  your own.
+- Reordering ingredients has a new look, and shows your sections while you
+  drag, so you can see what you are moving.
+- Every sheet in the app – add ingredient, add meal, edit item, invite someone –
+  now has the same corners and spacing. They had drifted apart.
+
+
 
 ## Build 15 – TestFlight 2026-08-04 (VALID, not in review)
 
@@ -80,13 +94,6 @@ disturbing the review queue – the same call as builds 13 and 14.
   and marks the right day as today. Before, it could still be showing last
   week, so a meal added to what looked like this week landed on the finished
   one.
-- **Recipes can have sections now.** A recipe that groups its ingredients –
-  Dough, Filling, Frosting – keeps those headings instead of listing them as
-  things to buy, and they no longer turn up on your shopping list. Imported
-  recipes get their sections automatically; you can also add, rename and delete
-  your own.
-- Reordering ingredients has a new look, and shows your sections while you
-  drag, so you can see what you are moving.
 - Imported recipes read properly: no more "chef&rsquo;s" or "cr&egrave;me" in
   the middle of a title, and a recipe written with "½" keeps its amount instead
   of losing it off the shopping list.
