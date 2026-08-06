@@ -55,6 +55,38 @@ function toDraftIngredients(rows: DraftIngredient[]): DraftIngredient[] {
   }));
 }
 
+/**
+ * Ingredients as the screen draws them: a heading followed by the rows under
+ * it, until the next heading.
+ *
+ * POSITIONAL, because that is what the data is – `sortOrder` is the only
+ * ordering and a heading owns whatever follows it. Original indices are
+ * carried through because edit, delete and reorder all address rows by index.
+ */
+interface IngredientGroup {
+  section: { row: DraftIngredient; index: number } | null;
+  rows: { row: DraftIngredient; index: number }[];
+}
+
+function groupIngredients(rows: DraftIngredient[]): IngredientGroup[] {
+  const groups: IngredientGroup[] = [];
+  let current: IngredientGroup | null = null;
+  rows.forEach((row, index) => {
+    if (row.isSection) {
+      current = { section: { row, index }, rows: [] };
+      groups.push(current);
+      return;
+    }
+    if (current == null) {
+      // Rows before any heading - an ordinary ungrouped list.
+      current = { section: null, rows: [] };
+      groups.push(current);
+    }
+    current.rows.push({ row, index });
+  });
+  return groups;
+}
+
 /** Leading number in "10 min" style time fields; empty/absent → null. */
 function parseMinutes(text: string): number | null {
   const match = text.match(/\d+/);
@@ -379,7 +411,12 @@ export default function AddRecipeScreen() {
 
         <>
           {/* Ingredients builder */}
-          <View className="w-full gap-comp-xsmall px-layout-small">
+          <View className="w-full gap-layout-small px-layout-small">
+            {/* Decision 1 (Thomas, 2026-08-04): the first section REPLACES this
+                header rather than sitting beside it, so it disappears the
+                moment a section exists - and comes back when the last one
+                goes. */}
+            {!ingredients.some((row) => row.isSection) && (
             <View className="w-full flex-row items-center">
               <Text className="flex-1 font-paragraph text-paragraph font-emphasized text-text-default">
                 Ingredients
@@ -399,43 +436,63 @@ export default function AddRecipeScreen() {
                 </Pressable>
               )}
             </View>
-            <View className="w-full gap-layout-small overflow-hidden rounded-large bg-surface-neutral-white p-layout-small">
-              {ingredients.length > 0 && (
-                <View style={{ marginHorizontal: -16, marginTop: -16 }}>
-                  {ingredients.map((ingredient, index) => (
-                    <Fragment key={`${ingredient.name}-${index}`}>
-                      {index > 0 && (
-                        <View
-                          className="h-px bg-border-subtle"
-                        />
-                      )}
-                      <SwipeActions
-                        label={ingredient.name}
-                        onEdit={() => setIngredientSheet({ index })}
-                        onDelete={() =>
-                          setIngredients((current) =>
-                            current.filter((_, i) => i !== index),
-                          )
-                        }
-                      >
-                        <View className="h-[56px] w-full flex-row items-center gap-layout-small bg-surface-neutral-white px-layout-small">
-                          <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
-                            {ingredient.name}
-                          </Text>
-                          {(ingredient.quantityText?.length ?? 0) > 0 && (
-                            <Text className="font-paragraph text-paragraph font-default text-text-subtle">
-                              {ingredient.quantityText}
+            )}
+            {/* One card per section, its heading sitting outside the card
+                (Figma 496:9255). 16px between every heading and card. */}
+            {groupIngredients(ingredients).map((group, groupIndex) => (
+              <Fragment key={group.section ? `s${group.section.index}` : `g${groupIndex}`}>
+                {group.section != null && (
+                  <View className="w-full flex-row items-center gap-comp-small">
+                    <Text className="flex-1 font-header text-display-6 font-emphasized text-text-default">
+                      {group.section.row.name}
+                    </Text>
+                    <Pressable
+                      onPress={() => setIngredientSheet({ index: group.section!.index })}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Edit section ${group.section.row.name}`}
+                    >
+                      <MaterialIcons
+                        name="drag-handle"
+                        size={24}
+                        color={ds.colors.text.accent}
+                      />
+                    </Pressable>
+                  </View>
+                )}
+                {group.rows.length > 0 && (
+                  <View className="w-full overflow-hidden rounded-large bg-surface-neutral-white">
+                    {group.rows.map(({ row, index }, rowIndex) => (
+                      <Fragment key={`${row.name}-${index}`}>
+                        {rowIndex > 0 && <View className="h-px bg-border-subtle" />}
+                        <SwipeActions
+                          label={row.name}
+                          onEdit={() => setIngredientSheet({ index })}
+                          onDelete={() =>
+                            setIngredients((current) =>
+                              current.filter((_, i) => i !== index),
+                            )
+                          }
+                        >
+                          <View className="h-[56px] w-full flex-row items-center gap-layout-small bg-surface-neutral-white px-layout-small">
+                            <Text className="flex-1 font-paragraph text-paragraph font-default text-text-default">
+                              {row.name}
                             </Text>
-                          )}
-                          <SwipeHint />
-                        </View>
-                      </SwipeActions>
-                    </Fragment>
-                  ))}
-                  {/* Close off the list with a line before the add button. */}
-                  <View className="h-px bg-border-subtle" />
-                </View>
-              )}
+                            {(row.quantityText?.length ?? 0) > 0 && (
+                              <Text className="font-paragraph text-paragraph font-default text-text-subtle">
+                                {row.quantityText}
+                              </Text>
+                            )}
+                            <SwipeHint />
+                          </View>
+                        </SwipeActions>
+                      </Fragment>
+                    ))}
+                  </View>
+                )}
+              </Fragment>
+            ))}
+            <View className="w-full overflow-hidden rounded-large bg-surface-neutral-white p-layout-small">
               <OutlineButton
                 icon="add"
                 label="Add ingredient"
