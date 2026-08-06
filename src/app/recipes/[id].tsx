@@ -630,6 +630,7 @@ export default function RecipeDetailScreen() {
             : recipe.ingredients.map((ingredient) => ({
                 key: ingredient.id,
                 label: ingredient.name,
+                isSection: ingredient.isSection,
               }))
         }
         onClose={() => setReordering(null)}

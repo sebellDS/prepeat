@@ -25,11 +25,17 @@ import Animated, {
 
 import { ds } from "@/constants/ds";
 
-const ROW_HEIGHT = 52;
+const ROW_HEIGHT = 56;
 
 export interface ReorderItem {
   key: string;
   label: string;
+  /**
+   * A section heading rather than a row. Draws as a heading on the sheet's own
+   * background, with its own handle, per Figma 508:13822. Lists without
+   * sections (instructions, shopping categories) simply never set it.
+   */
+  isSection?: boolean;
 }
 
 /**
@@ -87,12 +93,17 @@ export function ReorderSheet({
         />
         <View
           style={{ maxHeight: sheetMaxHeight }}
-          className="w-full gap-layout-xsmall rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large"
+          className="w-full gap-layout-medium rounded-t-xlarge bg-surface-neutral-lightest p-layout-small pb-layout-large"
         >
-          <View className="w-full flex-row items-center">
-            <Text className="flex-1 font-header text-display-5 font-emphasized text-text-default">
-              {title}
-            </Text>
+          <View className="w-full flex-row items-start gap-comp-small">
+            <View className="flex-1 gap-layout-xsmall">
+              <Text className="font-header text-display-5 font-emphasized text-text-default">
+                {title}
+              </Text>
+              <Text className="font-paragraph text-paragraph font-default text-text-subtle">
+                {hint}
+              </Text>
+            </View>
             <Pressable
               onPress={onClose}
               hitSlop={8}
@@ -101,14 +112,11 @@ export function ReorderSheet({
             >
               <SymbolView
                 name="xmark"
-                size={20}
+                size={24}
                 tintColor={ds.colors.icon.default}
               />
             </Pressable>
           </View>
-          <Text className="font-paragraph text-small font-default text-text-subtle">
-            {hint}
-          </Text>
           <ScrollView
             scrollEnabled={!dragging}
             showsVerticalScrollIndicator={false}
@@ -121,6 +129,15 @@ export function ReorderSheet({
                 item={item}
                 index={index}
                 count={items.length}
+                firstInCard={
+                  !item.isSection &&
+                  (index === 0 || items[index - 1].isSection === true)
+                }
+                lastInCard={
+                  !item.isSection &&
+                  (index === items.length - 1 ||
+                    items[index + 1].isSection === true)
+                }
                 activeIndex={activeIndex}
                 hoverIndex={hoverIndex}
                 setDrag={setDrag}
@@ -143,6 +160,8 @@ function DraggableRow({
   item,
   index,
   count,
+  firstInCard,
+  lastInCard,
   onMove,
   onDragChange,
   activeIndex,
@@ -152,6 +171,8 @@ function DraggableRow({
   item: ReorderItem;
   index: number;
   count: number;
+  firstInCard: boolean;
+  lastInCard: boolean;
   onMove: (from: number, to: number) => void;
   onDragChange: (dragging: boolean) => void;
   activeIndex: SharedValue<number>;
@@ -238,13 +259,26 @@ function DraggableRow({
         animatedStyle,
       ]}
       className={
-        "flex-row items-center rounded-small px-comp-medium " +
-        (dragging ? "bg-surface-neutral-lighter" : "bg-surface-neutral-white")
+        item.isSection
+          ? // A heading has no card behind it; the right padding lines its
+            // handle up with the row handles below (Figma 508:13966).
+            "flex-row items-center pr-layout-small"
+          : "flex-row items-center px-layout-small " +
+            (dragging
+              ? "bg-surface-neutral-lighter"
+              : "bg-surface-neutral-white") +
+            (firstInCard ? " rounded-t-large" : "") +
+            (lastInCard ? " rounded-b-large" : "") +
+            (lastInCard ? "" : " border-b border-border-subtle")
       }
     >
       <Text
         numberOfLines={1}
-        className="flex-1 font-paragraph text-paragraph font-default text-text-default"
+        className={
+          item.isSection
+            ? "flex-1 font-header text-display-6 font-emphasized text-text-default"
+            : "flex-1 font-paragraph text-paragraph font-default text-text-default"
+        }
       >
         {item.label}
       </Text>

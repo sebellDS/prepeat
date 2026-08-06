@@ -695,6 +695,7 @@ export default function AddRecipeScreen() {
             : ingredients.map((ingredient, index) => ({
                 key: String(index),
                 label: ingredient.name,
+                isSection: ingredient.isSection,
               }))
         }
         onClose={() => setReordering(null)}
