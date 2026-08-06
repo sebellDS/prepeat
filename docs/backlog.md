@@ -25,6 +25,45 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
 
 ## In flight (built, not yet live)
 
+- [ ] **Ingredient SECTIONS in create/edit recipe** (Thomas designed 2026-08-04;
+      Figma `nA8SLN8rhdBov97B1IYxnP` node **121:11255**, "recipe – add recipe").
+      Came out of importing ambitiouskitchen.com's cinnamon rolls, where
+      "DOUGH"/"FILLING"/"CREAM CHEESE FROSTING" arrived as ingredients with no
+      amount – and would have landed on the shopping list.
+      - [x] **Migration 0031 applied to DEV** – `recipe_ingredients.is_section`.
+            Not yet on production; the app half is unbuilt and nothing uses the
+            column.
+      - **NAMED "Section", NOT "Category"** (proposed by Claude, agreed by
+            Thomas, corrected in Figma the same day). **"Category" already means
+            the shopping list's aisles** – there is a `CategoryGroup` component,
+            a `Category` type, and draggable category headers on the Shopping
+            screen. Two different "categories", both rendered as a header over a
+            group with a drag handle, with ingredients flowing from one into the
+            other, is a collision users would meet within a minute.
+      - **The four states, all Thomas's calls (2026-08-04):**
+            1. **The first section absorbs what is already there.** It replaces
+               the "Ingredients" header rather than sitting beside it, and the
+               ingredients already listed become part of it.
+            2. **Deleting a section keeps its ingredients** – they become
+               unsectioned rather than being deleted with it.
+            3. **An empty section is allowed** – a heading over nothing is a
+               legitimate state, not something to prevent.
+            4. **Delete every section and the "Ingredients" header comes back.**
+      - **Sheet colour: match the add-meal sheet**, not a DS-wide retune – so
+            no other screens need walking.
+      - **Reuse, do not rebuild:** `add-meal-sheet.tsx` already has the tab
+            component the design uses (`TabItem`, "Recipes"/…), and section
+            headers want the Shopping screen's drag-handle reorder pattern.
+      - **Sections are REORDERABLE** – the Figma header carries a drag_handle,
+            and there is one "Add ingredient" button at the end of the list
+            rather than one per section.
+      - [ ] **Two wording questions still open** (raised 2026-08-04, Thomas's
+            call): the sheet title stays **"Add ingredient" even on the Section
+            tab**, so you add a section under a heading that says otherwise –
+            dynamic title, or something neutral like "Add to recipe"? And the
+            two placeholders are inconsistent: "Cherry tomatoes" (a bare
+            example) beside "e.g. 250g" (prefixed).
+
 - [x] **Build 14 shipped to TestFlight, VALID (2026-08-03).** Carries the
       leftover move and the two checkbox fixes; cut from the code as it stood
       at 15:39, so the "1 liter / 2 liters" app-side work committed after that
