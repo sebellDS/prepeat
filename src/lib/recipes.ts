@@ -36,6 +36,14 @@ export interface RecipeIngredient {
   quantity: number | null;
   unit: string | null;
   sortOrder: number;
+  /**
+   * A section heading ("Dough", "For the filling") rather than an ingredient.
+   * POSITIONAL: it applies to every following row until the next heading, which
+   * is how recipes are written and how imported data arrives - so sortOrder
+   * stays the single source of order and headings are not a nested structure.
+   * Never carries an amount, and never reaches the shopping list.
+   */
+  isSection: boolean;
 }
 
 export interface RecipeStep {
@@ -138,7 +146,7 @@ export async function fetchRecipe(id: string): Promise<Recipe> {
   const { data, error } = await supabase
     .from("recipes")
     .select(
-      "id, title, description, servings, prep_minutes, cook_minutes, image_url, is_favorite, created_by_user_id, source_url, recipe_ingredients(id, name, quantity, unit, sort_order), recipe_steps(id, step_number, text)",
+      "id, title, description, servings, prep_minutes, cook_minutes, image_url, is_favorite, created_by_user_id, source_url, recipe_ingredients(id, name, quantity, unit, sort_order, is_section), recipe_steps(id, step_number, text)",
     )
     .eq("id", id)
     .single();
@@ -151,6 +159,7 @@ export async function fetchRecipe(id: string): Promise<Recipe> {
         quantity: number | string | null;
         unit: string | null;
         sort_order: number;
+        is_section?: boolean | null;
       }) => ({
         id: row.id,
         name: row.name,
@@ -161,6 +170,9 @@ export async function fetchRecipe(id: string): Promise<Recipe> {
           row.unit,
         ),
         sortOrder: row.sort_order,
+        // Defaulted rather than assumed: rows written before migration 0031,
+        // and any build reading a database that predates it, have no column.
+        isSection: row.is_section === true,
       }),
     )
     .sort(
@@ -199,8 +211,18 @@ export interface RecipeDraft {
   cookMinutes: number | null;
   imageUrl: string | null;
   /** Free-text quantities, parsed at the database boundary. */
-  ingredients: { name: string; quantityText: string | null }[];
+  ingredients: DraftIngredient[];
   steps: string[];
+}
+
+/**
+ * An ingredient as the editor holds it, before the quantity is parsed.
+ * A section heading carries a name and nothing else.
+ */
+export interface DraftIngredient {
+  name: string;
+  quantityText: string | null;
+  isSection?: boolean;
 }
 
 export async function createRecipe(
@@ -228,13 +250,17 @@ export async function createRecipe(
 
   if (draft.ingredients.length > 0) {
     const rows = draft.ingredients.map((ingredient, index) => {
-      const { quantity, unit } = parseQuantity(ingredient.quantityText);
+      const isSection = ingredient.isSection === true;
+      const { quantity, unit } = isSection
+        ? { quantity: null, unit: null }
+        : parseQuantity(ingredient.quantityText);
       return {
         recipe_id: recipeId,
         name: ingredient.name.trim(),
         quantity,
         unit,
         sort_order: index,
+        is_section: isSection,
       };
     });
     const { error: ingredientsError } = await supabase
@@ -312,7 +338,7 @@ export async function softDeleteRecipe(id: string): Promise<void> {
  */
 export async function replaceIngredientsAndSteps(
   recipeId: string,
-  ingredients: { name: string; quantityText: string | null }[],
+  ingredients: DraftIngredient[],
   steps: string[],
 ): Promise<void> {
   const { error: clearIngredientsError } = await supabase
@@ -328,13 +354,19 @@ export async function replaceIngredientsAndSteps(
 
   if (ingredients.length > 0) {
     const rows = ingredients.map((ingredient, index) => {
-      const { quantity, unit } = parseQuantity(ingredient.quantityText);
+      const isSection = ingredient.isSection === true;
+      // A heading has no amount to parse, and storing one would let it reach
+      // the shopping list if the section flag were ever lost.
+      const { quantity, unit } = isSection
+        ? { quantity: null, unit: null }
+        : parseQuantity(ingredient.quantityText);
       return {
         recipe_id: recipeId,
         name: ingredient.name.trim(),
         quantity,
         unit,
         sort_order: index,
+        is_section: isSection,
       };
     });
     const { error } = await supabase.from("recipe_ingredients").insert(rows);
@@ -358,14 +390,18 @@ export async function addIngredient(
   name: string,
   quantityText: string | null,
   sortOrder: number,
+  isSection = false,
 ): Promise<void> {
-  const { quantity, unit } = parseQuantity(quantityText);
+  const { quantity, unit } = isSection
+    ? { quantity: null, unit: null }
+    : parseQuantity(quantityText);
   const { error } = await supabase.from("recipe_ingredients").insert({
     recipe_id: recipeId,
     name: name.trim(),
     quantity,
     unit,
     sort_order: sortOrder,
+    is_section: isSection,
   });
   if (error) throw error;
 }

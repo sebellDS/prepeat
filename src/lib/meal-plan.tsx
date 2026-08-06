@@ -266,9 +266,13 @@ async function snapshotEntryIngredients(
   entryId: string,
   recipe: Recipe,
 ): Promise<void> {
-  if (recipe.ingredients.length === 0) return;
+  // Section headings are recipe furniture, not shopping-list items. Dropping
+  // them HERE means they can never reach the list even if a later change
+  // forgets about them - the shopping code never has to know sections exist.
+  const shoppable = recipe.ingredients.filter((i) => !i.isSection);
+  if (shoppable.length === 0) return;
   const { error } = await supabase.from("meal_plan_entry_ingredients").insert(
-    recipe.ingredients.map((ingredient, index) => ({
+    shoppable.map((ingredient, index) => ({
       entry_id: entryId,
       name: ingredient.name,
       quantity: ingredient.quantity,

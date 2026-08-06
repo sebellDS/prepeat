@@ -16,7 +16,7 @@ export interface ImportedRecipe {
   prepMinutes: number | null;
   cookMinutes: number | null;
   imageUrl: string | null;
-  ingredients: { name: string; quantityText: string | null }[];
+  ingredients: { name: string; quantityText: string | null; isSection?: boolean }[];
   steps: string[];
   /** Where it came from, stored on the recipe for attribution. */
   sourceUrl: string;
@@ -741,7 +741,7 @@ function liftTrailingUnit(
   };
 }
 
-export function splitIngredient(text: string): {
+function splitIngredientParts(text: string): {
   name: string;
   quantityText: string | null;
 } {
@@ -807,3 +807,69 @@ export function splitIngredient(text: string): {
   // No unit was found up front, but the name may end in one.
   return liftTrailingUnit(name, amount);
 }
+
+/**
+ * Is this "ingredient" really a SECTION HEADING?
+ *
+ * Schema.org's `recipeIngredient` is a flat list of strings, so a site that
+ * groups its ingredients has nowhere to say so – the heading arrives as just
+ * another entry. ambitiouskitchen.com's cinnamon rolls gave us "DOUGH",
+ * "FILLING" and "CREAM CHEESE FROSTING" (Thomas, 2026-08-04), which without
+ * this would land on the shopping list next to the milk.
+ *
+ * DELIBERATELY CAUTIOUS, because the two mistakes are not equally bad. A false
+ * negative leaves a heading looking like an ingredient – visible, and one tap
+ * to fix. A false positive HIDES a real ingredient from the list and from the
+ * shopping list, where nobody would think to look for it.
+ *
+ * So "has no amount" is never enough on its own: that same recipe lists
+ * "Extra-virgin olive oil" with no amount, and it is a real ingredient. A
+ * heading also has to LOOK like one – shouted, or punctuated as a heading.
+ *
+ * The one accepted false positive: a site that SHOUTS a single amountless
+ * ingredient ("MILK") gets it read as a heading. No site we have imported does
+ * that, and the cost is one visible row to fix rather than a hidden one.
+ */
+function looksLikeSectionHeading(
+  raw: string,
+  parsed: { name: string; quantityText: string | null },
+): boolean {
+  const name = parsed.name.trim();
+  // An amount settles it: headings never carry one.
+  if (parsed.quantityText != null && parsed.quantityText.trim() !== "") {
+    return false;
+  }
+  if (name.length === 0 || name.length > 40) return false;
+  // A digit means a measurement or a count crept in - not a heading.
+  if (/\d/.test(name)) return false;
+  if (name.split(/\s+/).length > 5) return false;
+
+  const letters = name.replace(/[^A-Za-zÀ-ÿ]/g, "");
+  if (letters.length < 2) return false;
+
+  // "DOUGH", "CREAM CHEESE FROSTING" - shouted, which no site does for a
+  // single ingredient.
+  if (letters === letters.toUpperCase()) return true;
+  // "For the dough:", "Dough:" - punctuated as a heading. Tested on the RAW
+  // string, because tidyIngredientName has already stripped the colon by the
+  // time we see the parsed name, which made "Dough:" slip through.
+  if (raw.trim().endsWith(":")) return true;
+  // "For the filling" - the other common phrasing, without the colon.
+  if (/^for the\s/i.test(name)) return true;
+  return false;
+}
+
+export function splitIngredient(text: string): {
+  name: string;
+  quantityText: string | null;
+  isSection: boolean;
+} {
+  const parsed = splitIngredientParts(text);
+  const isSection = looksLikeSectionHeading(text, parsed);
+  return {
+    name: isSection ? parsed.name.replace(/:\s*$/, "") : parsed.name,
+    quantityText: parsed.quantityText,
+    isSection,
+  };
+}
+
