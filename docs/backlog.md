@@ -102,6 +102,21 @@ invite. Check betaTesters vs Users-and-Access before blaming email or spam.
       - **Reuse, do not rebuild:** `add-meal-sheet.tsx` already has the tab
             component the design uses (`TabItem`, "Recipes"/…), and section
             headers want the Shopping screen's drag-handle reorder pattern.
+      - [ ] **TRUE SECTION DRAGGING – deferred, Thomas 2026-08-06: "for now is
+            fine that every row moves independently".** The reorder sheet
+            (Figma 508:13822) draws a handle on each heading and each row, and
+            today every item moves ALONE. Because grouping is positional that
+            still behaves coherently – drag a row past a heading and it joins
+            that section – but dragging a heading does not carry its rows, which
+            is what the handle implies.
+            **Two things to settle before building it.** First, a design
+            question Thomas has not drawn: should dragging a heading move the
+            whole group, and what happens when one is dropped INTO another
+            section? Second, the cost: `reorder-sheet.tsx` positions rows
+            absolutely at `index * ROW_HEIGHT` and the drag maths assumes every
+            item is the same height. Group dragging means variable-height
+            blocks, so it is a rewrite of the gesture geometry rather than a
+            tweak – the reason it was worth deferring rather than half-doing.
       - **Sections are REORDERABLE** – the Figma header carries a drag_handle,
             and there is one "Add ingredient" button at the end of the list
             rather than one per section.
