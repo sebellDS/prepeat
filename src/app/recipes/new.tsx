@@ -38,6 +38,23 @@ import {
 } from "@/lib/recipes";
 import type { DraftIngredient } from "@/lib/recipes";
 
+/**
+ * The editor's rows as the data layer wants them: an empty quantity box means
+ * "no amount", not an empty string.
+ *
+ * Deliberately the ONLY place this conversion happens. isSection was dropped
+ * five separate times in this file (import, edit load, sheet write-back, and
+ * both save branches) because each site rebuilt the object by hand, and adding
+ * a field to the shared type could not make any of them fail to compile.
+ */
+function toDraftIngredients(rows: DraftIngredient[]): DraftIngredient[] {
+  return rows.map((row) => ({
+    name: row.name,
+    quantityText: row.quantityText || null,
+    isSection: row.isSection,
+  }));
+}
+
 /** Leading number in "10 min" style time fields; empty/absent → null. */
 function parseMinutes(text: string): number | null {
   const match = text.match(/\d+/);
@@ -185,10 +202,7 @@ export default function AddRecipeScreen() {
         });
         await replaceIngredientsAndSteps(
           id,
-          ingredients.map((ingredient) => ({
-            name: ingredient.name,
-            quantityText: ingredient.quantityText || null,
-          })),
+          toDraftIngredients(ingredients),
           steps,
         );
         router.back();
@@ -204,10 +218,7 @@ export default function AddRecipeScreen() {
             prepMinutes: parseMinutes(prep),
             cookMinutes: parseMinutes(cook),
             imageUrl,
-            ingredients: ingredients.map((ingredient) => ({
-              name: ingredient.name,
-              quantityText: ingredient.quantityText || null,
-            })),
+            ingredients: toDraftIngredients(ingredients),
             steps,
           },
         );
@@ -571,7 +582,9 @@ export default function AddRecipeScreen() {
           if (target === "add") {
             setIngredients((current) => [
               ...current,
-              { name, quantityText: quantityText ?? "" },
+              // The sheet cannot create a heading yet - that arrives with the
+              // Section tab - so anything added here is an ingredient.
+              { name, quantityText: quantityText ?? "", isSection: false },
             ]);
           } else if (target != null) {
             setIngredients((current) =>

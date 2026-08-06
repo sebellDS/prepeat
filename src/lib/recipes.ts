@@ -222,7 +222,13 @@ export interface RecipeDraft {
 export interface DraftIngredient {
   name: string;
   quantityText: string | null;
-  isSection?: boolean;
+  /**
+   * REQUIRED, not optional, and deliberately so. As an optional field this was
+   * silently dropped at five separate construction sites in the recipe editor
+   * and the feature shipped to a device not working. Required means every
+   * `{ name, quantityText }` literal fails to compile until it says what it is.
+   */
+  isSection: boolean;
 }
 
 export async function createRecipe(
